@@ -1,0 +1,237 @@
+{# templates/payroll/salary_preview.html #}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>محاسبه حقوق — {{ coach }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Vazirmatn", Tahoma, sans-serif; background: #f4f6f9; direction: rtl; color: #1a1a2e; }
+    .page   { max-width: 860px; margin: 0 auto; padding: 1.5rem; }
+    .card   { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 1.5rem; margin-bottom: 1.25rem; }
+    h1      { font-size: 1.3rem; font-weight: 700; margin-bottom: .25rem; }
+    h2      { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: #495057; }
+    .meta   { color: #868e96; font-size: .85rem; margin-bottom: 1.5rem; }
+
+    /* ── Stat Grid ─────────────────────── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+    .stat-box  {
+      border-radius: 10px; padding: 1rem; text-align: center;
+    }
+    .stat-box .label { font-size: .75rem; color: #868e96; margin-bottom: .3rem; }
+    .stat-box .value { font-size: 1.6rem; font-weight: 800; }
+    .stat-box.green  { background: #d3f9d8; }
+    .stat-box.red    { background: #ffe3e3; }
+    .stat-box.yellow { background: #fff3bf; }
+    .stat-box.blue   { background: #d0ebff; }
+
+    /* ── Progress ──────────────────────── */
+    .progress-wrap { margin: 1rem 0; }
+    .progress-bar-bg {
+      background: #dee2e6; border-radius: 100px; height: 12px; overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%; border-radius: 100px;
+      background: linear-gradient(90deg, #3b5bdb, #74c0fc);
+      transition: width .6s ease;
+    }
+    .progress-label { font-size: .8rem; color: #495057; margin-top: .3rem; }
+
+    /* ── Breakdown Table ────────────────── */
+    .breakdown { width: 100%; border-collapse: collapse; }
+    .breakdown td { padding: .6rem .75rem; border-bottom: 1px solid #f1f3f5; }
+    .breakdown tr:last-child td { border-bottom: none; }
+    .breakdown td:first-child { color: #868e96; font-size: .88rem; }
+    .breakdown td:last-child  { font-weight: 600; text-align: left; }
+    .breakdown .total td { background: #f8f9fa; font-weight: 800; font-size: 1rem; }
+    .breakdown .final td { background: #d3f9d8; font-weight: 800; font-size: 1.05rem; color: #2f9e44; }
+
+    /* ── Form ──────────────────────────── */
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: .88rem; margin-bottom: .35rem; font-weight: 600; }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: .55rem .75rem; border: 1.5px solid #ced4da;
+      border-radius: 8px; font-family: inherit; font-size: .9rem;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none; border-color: #3b5bdb;
+    }
+    .form-hint { font-size: .75rem; color: #868e96; margin-top: .2rem; }
+
+    /* ── Buttons ────────────────────────── */
+    .actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    .btn {
+      padding: .55rem 1.3rem; border-radius: 8px; border: none;
+      cursor: pointer; font-family: inherit; font-size: .9rem;
+      font-weight: 600; text-decoration: none; transition: opacity .2s;
+      display: inline-flex; align-items: center; gap: .4rem;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary  { background: #3b5bdb; color: #fff; }
+    .btn-outline  { background: transparent; border: 2px solid #ced4da; color: #495057; }
+    .btn-warning  { background: #f08c00; color: #fff; }
+
+    /* ── Alert ──────────────────────────── */
+    .alert { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .alert-danger  { background: #ffe3e3; color: #c92a2a; border: 1px solid #ffa8a8; }
+    .alert-info    { background: #d0ebff; color: #1864ab; border: 1px solid #74c0fc; }
+
+    /* ── Month Nav ──────────────────────── */
+    .month-nav { display: flex; gap: .5rem; align-items: center; }
+    .month-nav a { padding: .35rem .8rem; border-radius: 6px; background: #e9ecef; text-decoration: none; color: #495057; font-size: .85rem; }
+    .month-nav .cur { background: #3b5bdb; color: #fff; font-weight: 700; padding: .35rem 1rem; border-radius: 6px; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  {# ── Header ────────────────────────────────────────────── #}
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+    <div>
+      <h1>📊 محاسبه حقوق مربی</h1>
+      <p class="meta">{{ coach }} | دسته: {{ category }}</p>
+    </div>
+    <div class="month-nav">
+      <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}">
+        &lsaquo; {{ prev_month.persian_name }}
+      </a>
+      <span class="cur">{{ month.persian_name }} {{ month.year }}</span>
+      <a href="?year={{ next_month.year }}&month={{ next_month.month }}">
+        {{ next_month.persian_name }} &rsaquo;
+      </a>
+    </div>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-danger">
+    <strong>خطا:</strong> {{ error }}
+  </div>
+  {% endif %}
+
+  {% if breakdown %}
+
+  {# ── Attendance Stats ─────────────────────────────────── #}
+  <div class="card">
+    <h2>📅 آمار حضور</h2>
+    <div class="stat-grid">
+      <div class="stat-box blue">
+        <div class="label">کل جلسات</div>
+        <div class="value">{{ breakdown.sessions_total }}</div>
+      </div>
+      <div class="stat-box green">
+        <div class="label">حاضر</div>
+        <div class="value">{{ breakdown.sessions_attended }}</div>
+      </div>
+      <div class="stat-box red">
+        <div class="label">غایب</div>
+        <div class="value">{{ breakdown.sessions_absent }}</div>
+      </div>
+      <div class="stat-box yellow">
+        <div class="label">غیبت موجه</div>
+        <div class="value">{{ breakdown.sessions_excused }}</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar-bg">
+        <div class="progress-bar" style="width:{{ breakdown.attendance_pct }}%"></div>
+      </div>
+      <div class="progress-label">
+        درصد حضور: <strong>{{ breakdown.attendance_pct }}٪</strong>
+      </div>
+    </div>
+  </div>
+
+  {# ── Salary Breakdown ─────────────────────────────────── #}
+  <div class="card">
+    <h2>💰 محاسبه حقوق</h2>
+    <table class="breakdown">
+      <tr>
+        <td>نرخ هر جلسه</td>
+        <td>{{ breakdown.session_rate|floatformat:"0" }} ریال</td>
+      </tr>
+      <tr>
+        <td>تعداد جلسات حاضر</td>
+        <td>{{ breakdown.sessions_attended }} جلسه</td>
+      </tr>
+      <tr class="total">
+        <td>حقوق پایه  ({{ breakdown.sessions_attended }} × {{ breakdown.session_rate|floatformat:"0" }})</td>
+        <td>{{ breakdown.base_amount|floatformat:"0" }} ریال</td>
+      </tr>
+      <tr>
+        <td>تعدیل دستی</td>
+        <td id="adj-preview">{{ breakdown.manual_adjustment|floatformat:"0" }} ریال</td>
+      </tr>
+      <tr class="final">
+        <td>حقوق نهایی</td>
+        <td id="final-preview">{{ breakdown.final_amount|floatformat:"0" }} ریال</td>
+      </tr>
+    </table>
+  </div>
+
+  {# ── Adjustment Form ──────────────────────────────────── #}
+  <div class="card">
+    <h2>✏️ تعدیل دستی و ذخیره</h2>
+
+    {% if breakdown.existing_salary %}
+    <div class="alert alert-info">
+      ⚠ رکورد حقوق برای این ماه قبلاً ذخیره شده است. ذخیره مجدد آن را به‌روزرسانی می‌کند.
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="year"  value="{{ month.year }}">
+      <input type="hidden" name="month" value="{{ month.month }}">
+
+      <div class="form-group">
+        <label for="manual_adjustment">تعدیل دستی (ریال)</label>
+        <input type="number" id="manual_adjustment" name="manual_adjustment"
+               value="{{ breakdown.manual_adjustment }}"
+               oninput="updatePreview()"
+               placeholder="مثال: 500000 یا -200000">
+        <div class="form-hint">مقدار مثبت = افزایش | مقدار منفی = کسر</div>
+      </div>
+
+      <div class="form-group">
+        <label for="adjustment_reason">دلیل تعدیل</label>
+        <textarea id="adjustment_reason" name="adjustment_reason" rows="2"
+                  placeholder="مثال: پاداش، کسر تأخیر ...">{{ breakdown.adjustment_reason }}</textarea>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">💾 ذخیره حقوق</button>
+        <a href="{% url 'payroll:salary-list' category_pk=category.pk %}"
+           class="btn btn-outline">انصراف</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+  const BASE_AMOUNT = {{ breakdown.base_amount }};
+
+  function updatePreview() {
+    const adj = parseFloat(document.getElementById("manual_adjustment").value) || 0;
+    const final = BASE_AMOUNT + adj;
+    document.getElementById("adj-preview").textContent   = adj.toLocaleString("fa") + " ریال";
+    document.getElementById("final-preview").textContent = final.toLocaleString("fa") + " ریال";
+  }
+  </script>
+
+  {% else %}
+  <div class="card">
+    <div class="alert alert-danger">
+      امکان محاسبه حقوق وجود ندارد. ابتدا لیست حضور این ماه را ایجاد و تأیید نمایید.
+    </div>
+    <div class="actions">
+      <a href="{% url 'attendance:matrix' category_pk=category.pk %}?year={{ month.year }}&month={{ month.month }}"
+         class="btn btn-warning">
+        رفتن به لیست حضور
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>

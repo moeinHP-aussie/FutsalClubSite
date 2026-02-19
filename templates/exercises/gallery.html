@@ -1,0 +1,295 @@
+{% comment %}templates/exercises/gallery.html{% endcomment %}
+{% extends "base.html" %}
+{% block title %}مخزن تمرین‌ها{% endblock %}
+{% block nav_exercises %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <span class="cur">مخزن تمرین‌ها</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Gallery Grid ─────────────────────────────────────────── */
+.exercise-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.1rem;
+}
+.exercise-card {
+  background: var(--white);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+  display: flex; flex-direction: column;
+}
+.exercise-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+/* ── Media Preview ────────────────────────────────────────── */
+.media-preview {
+  aspect-ratio: 16/9;
+  background: var(--navy);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.media-preview img  { width:100%; height:100%; object-fit:cover; }
+.media-preview video { width:100%; height:100%; object-fit:cover; }
+.media-type-icon {
+  font-size: 3rem; opacity: .7;
+}
+.media-overlay {
+  position: absolute; inset: 0;
+  background: rgba(13,27,42,.6);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+}
+.exercise-card:hover .media-overlay { opacity: 1; }
+.play-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,.9);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; cursor: pointer;
+  transition: transform .15s;
+}
+.play-btn:hover { transform: scale(1.1); }
+
+/* ── Card Body ────────────────────────────────────────────── */
+.ex-body { padding: .9rem; flex: 1; display: flex; flex-direction: column; }
+.ex-title {
+  font-size: .9rem; font-weight: 700;
+  margin-bottom: .3rem;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ex-desc  {
+  font-size: .78rem; color: var(--text-muted); flex: 1;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; margin-bottom: .65rem;
+}
+.ex-meta  { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; }
+.ex-footer {
+  padding: .65rem .9rem;
+  border-top: 1px solid var(--surface);
+  display: flex; gap: .35rem; justify-content: flex-end;
+}
+
+/* ── Filter Sidebar ───────────────────────────────────────── */
+.gallery-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+.filter-sidebar { position: sticky; top: calc(var(--header-h) + 1rem); }
+.filter-section { margin-bottom: 1.25rem; }
+.filter-section h4 { font-size: .78rem; font-weight: 700; color: var(--text-muted); margin-bottom: .5rem; text-transform: uppercase; letter-spacing: .05em; }
+.filter-option {
+  display: block; padding: .45rem .65rem;
+  border-radius: 6px; text-decoration: none;
+  font-size: .84rem; color: var(--text-muted);
+  transition: var(--transition);
+}
+.filter-option:hover { background: var(--surface); color: var(--text-main); }
+.filter-option.active { background: var(--navy); color: var(--white); font-weight: 600; }
+.filter-count-badge {
+  float: left; background: var(--surface-2);
+  font-size: .68rem; font-weight: 700;
+  padding: .1rem .35rem; border-radius: 99px;
+}
+
+/* ── Upload Zone ──────────────────────────────────────────── */
+.upload-cta {
+  display: flex; align-items: center; justify-content: center;
+  gap: .65rem;
+  padding: 1.5rem; border: 2px dashed var(--surface-2);
+  border-radius: var(--radius); cursor: pointer;
+  text-decoration: none; color: var(--text-muted);
+  transition: var(--transition); font-weight: 600;
+}
+.upload-cta:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+
+@media (max-width: 768px) {
+  .gallery-layout { grid-template-columns: 1fr; }
+  .filter-sidebar  { position: static; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🎯 مخزن تمرین‌ها</h1>
+    <p>{{ total_count }} تمرین ذخیره‌شده</p>
+  </div>
+  {% if can_upload %}
+  <a href="{% url 'exercises:upload' %}" class="btn btn-amber">
+    ⬆️ آپلود تمرین جدید
+  </a>
+  {% endif %}
+</div>
+
+<div class="gallery-layout">
+
+  <!-- ── Filter Sidebar ────────────────────────────────────── -->
+  <aside>
+    <div class="card" style="padding:1rem">
+
+      <!-- Search -->
+      <form method="get" style="margin-bottom:1rem">
+        <input type="text" name="q" value="{{ search_query }}"
+               class="form-control" placeholder="جستجو...">
+        <input type="hidden" name="type" value="{{ media_filter }}">
+        <input type="hidden" name="category" value="{{ cat_filter }}">
+        <button type="submit" class="btn btn-primary w-full" style="margin-top:.5rem">جستجو</button>
+      </form>
+
+      <!-- Media Type -->
+      <div class="filter-section">
+        <h4>نوع رسانه</h4>
+        <a href="?{% if search_query %}q={{ search_query }}&{% endif %}category={{ cat_filter }}"
+           class="filter-option {% if not media_filter %}active{% endif %}">همه</a>
+        {% for val, label in media_types %}
+        <a href="?type={{ val }}{% if search_query %}&q={{ search_query }}{% endif %}{% if cat_filter %}&category={{ cat_filter }}{% endif %}"
+           class="filter-option {% if media_filter == val %}active{% endif %}">
+          {{ label }}
+        </a>
+        {% endfor %}
+      </div>
+
+      <!-- Categories -->
+      <div class="filter-section">
+        <h4>دسته آموزشی</h4>
+        <a href="?{% if media_filter %}type={{ media_filter }}&{% endif %}{% if search_query %}q={{ search_query }}{% endif %}"
+           class="filter-option {% if not cat_filter %}active{% endif %}">همه</a>
+        {% for cat in categories %}
+        <a href="?category={{ cat.pk }}{% if media_filter %}&type={{ media_filter }}{% endif %}"
+           class="filter-option {% if cat_filter == cat.pk|stringformat:'s' %}active{% endif %}">
+          {{ cat.name }}
+        </a>
+        {% endfor %}
+      </div>
+
+      <!-- Tags -->
+      {% if tags %}
+      <div class="filter-section">
+        <h4>برچسب‌ها</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+          {% for tag in tags %}
+          <a href="?tag={{ tag.name }}{% if media_filter %}&type={{ media_filter }}{% endif %}"
+             class="badge badge-gray" style="text-decoration:none;cursor:pointer">
+            #{{ tag.name }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Upload CTA -->
+    {% if can_upload %}
+    <a href="{% url 'exercises:upload' %}" class="upload-cta" style="margin-top:1rem">
+      <span style="font-size:1.5rem">⬆️</span>
+      <span>آپلود تمرین جدید</span>
+    </a>
+    {% endif %}
+  </aside>
+
+  <!-- ── Gallery Grid ─────────────────────────────────────── -->
+  <div>
+    {% if exercises %}
+    <div class="exercise-grid">
+      {% for ex in exercises %}
+      <div class="exercise-card">
+
+        <!-- Media Preview -->
+        <div class="media-preview">
+          {% if ex.thumbnail %}
+            <img src="{{ ex.thumbnail.url }}" alt="{{ ex.title }}" loading="lazy">
+          {% elif ex.media_type == "video" %}
+            <span class="media-type-icon">🎬</span>
+          {% elif ex.media_type == "gif" %}
+            <img src="{{ ex.file.url }}" alt="{{ ex.title }}" loading="lazy">
+          {% elif ex.media_type == "image" %}
+            <img src="{{ ex.file.url }}" alt="{{ ex.title }}" loading="lazy">
+          {% else %}
+            <span class="media-type-icon">📄</span>
+          {% endif %}
+
+          <div class="media-overlay">
+            <a href="{% url 'exercises:detail' ex.pk %}" class="play-btn">
+              {% if ex.media_type == "video" %}▶{% elif ex.media_type == "document" %}📖{% else %}🔍{% endif %}
+            </a>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="ex-body">
+          <div class="ex-title">{{ ex.title }}</div>
+          {% if ex.description %}
+          <div class="ex-desc">{{ ex.description }}</div>
+          {% endif %}
+          <div class="ex-meta">
+            <span class="badge {% if ex.media_type == 'video' %}badge-navy{% elif ex.media_type == 'gif' %}badge-purple{% elif ex.media_type == 'image' %}badge-teal{% else %}badge-gray{% endif %}">
+              {% if ex.media_type == "video" %}🎬 ویدیو
+              {% elif ex.media_type == "gif" %}✨ گیف
+              {% elif ex.media_type == "image" %}🖼 تصویر
+              {% else %}📄 سند{% endif %}
+            </span>
+            {% if ex.duration_minutes %}
+              <span class="badge badge-gray">⏱ {{ ex.duration_minutes }} دقیقه</span>
+            {% endif %}
+            {% if ex.is_public %}
+              <span class="badge badge-green">🌐 عمومی</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="ex-footer">
+          <a href="{% url 'exercises:download' ex.pk %}"
+             class="btn btn-outline btn-sm" title="دانلود">⬇ دانلود</a>
+          <a href="{% url 'exercises:detail' ex.pk %}"
+             class="btn btn-primary btn-sm">مشاهده</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1.5rem">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if media_filter %}&type={{ media_filter }}{% endif %}{% if cat_filter %}&category={{ cat_filter }}{% endif %}" class="btn btn-outline">← قبلی</a>
+      {% endif %}
+      <span class="btn" style="background:var(--surface)">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if media_filter %}&type={{ media_filter }}{% endif %}{% if cat_filter %}&category={{ cat_filter }}{% endif %}" class="btn btn-outline">بعدی →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card" style="text-align:center;padding:4rem;color:var(--text-muted)">
+      <div style="font-size:3rem;margin-bottom:1rem">📭</div>
+      <h3>تمرینی یافت نشد</h3>
+      <p style="margin:.5rem 0 1.5rem;font-size:.875rem">
+        {% if search_query or media_filter or cat_filter %}
+          فیلترها را تغییر دهید یا جستجو را پاک کنید.
+        {% else %}
+          اولین تمرین را آپلود کنید!
+        {% endif %}
+      </p>
+      {% if can_upload %}
+      <a href="{% url 'exercises:upload' %}" class="btn btn-amber">⬆️ آپلود تمرین</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

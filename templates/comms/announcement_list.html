@@ -1,0 +1,143 @@
+{% comment %}templates/comms/announcement_list.html{% endcomment %}
+{% extends "base.html" %}
+{% block title %}اطلاعیه‌ها{% endblock %}
+{% block nav_announcements %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <span class="cur">اطلاعیه‌ها</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.ann-card {
+  background: var(--white);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  transition: box-shadow .2s, transform .15s;
+  position: relative;
+  overflow: hidden;
+}
+.ann-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.ann-card.pinned { border-right: 4px solid var(--amber); }
+.ann-card.pinned::before {
+  content: "📌";
+  position: absolute; top: .75rem; left: 1rem;
+  font-size: 1rem; opacity: .6;
+}
+.ann-meta {
+  display: flex; align-items: center; gap: .75rem;
+  flex-wrap: wrap; margin-bottom: .6rem;
+}
+.ann-author-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--navy));
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; color: var(--white);
+  flex-shrink: 0;
+}
+.ann-title { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+.ann-body  { font-size: .875rem; color: var(--text-muted); line-height: 1.65; }
+.ann-footer {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+  margin-top: .75rem; padding-top: .65rem;
+  border-top: 1px solid var(--surface);
+  font-size: .75rem; color: var(--text-light);
+}
+.ann-cats { display: flex; gap: .3rem; flex-wrap: wrap; margin-right: auto; }
+
+.empty-state {
+  text-align: center; padding: 4rem 2rem;
+  color: var(--text-muted);
+}
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>📣 اطلاعیه‌ها</h1>
+    <p>آخرین اطلاعیه‌های باشگاه</p>
+  </div>
+  {% if can_create %}
+  <a href="{% url 'comms:announcement-create' %}" class="btn btn-amber">
+    + ارسال اطلاعیه
+  </a>
+  {% endif %}
+</div>
+
+{% if announcements %}
+<div style="display:flex;flex-direction:column;gap:1rem">
+  {% for ann in announcements %}
+  <div class="ann-card {% if ann.is_pinned %}pinned{% endif %}">
+    <div class="ann-meta">
+      <div class="ann-author-avatar">
+        {{ ann.author.first_name|slice:":1" }}{{ ann.author.last_name|slice:":1" }}
+      </div>
+      <div>
+        <div style="font-size:.8rem;font-weight:600;color:var(--text-main)">
+          {{ ann.author.get_full_name }}
+        </div>
+        <div style="font-size:.7rem;color:var(--text-light)">
+          {{ ann.published_at|timesince }} پیش
+        </div>
+      </div>
+      {% if ann.is_pinned %}
+        <span class="badge badge-amber" style="margin-right:auto">📌 سنجاق‌شده</span>
+      {% endif %}
+    </div>
+
+    <div class="ann-title">{{ ann.title }}</div>
+    <div class="ann-body">{{ ann.body|linebreaksbr }}</div>
+
+    <div class="ann-footer">
+      <span>{{ ann.published_at|date:"Y/m/d — H:i" }}</span>
+      <div class="ann-cats">
+        {% for cat in ann.categories.all %}
+          <span class="badge badge-navy">{{ cat.name }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display:flex;justify-content:center;gap:.5rem;margin-top:2rem">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline btn-sm">← قبلی</a>
+  {% endif %}
+  <span class="btn btn-sm" style="background:var(--surface)">
+    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline btn-sm">بعدی →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <h3>هیچ اطلاعیه‌ای وجود ندارد</h3>
+    <p>در حال حاضر اطلاعیه‌ای برای نمایش نیست.</p>
+    {% if can_create %}
+    <a href="{% url 'comms:announcement-create' %}" class="btn btn-amber" style="margin-top:1rem">
+      + ارسال اولین اطلاعیه
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+
+{# ══════════════════════════════════════════════════════════════════
+   NOTIFICATION LIST  — templates/comms/notification_list.html
+══════════════════════════════════════════════════════════════════ #}
+{% comment %}NOTIFICATION LIST TEMPLATE — save as notification_list.html{% endcomment %}

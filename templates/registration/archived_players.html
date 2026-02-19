@@ -1,0 +1,125 @@
+{% comment %}templates/registration/archived_players.html{% endcomment %}
+{% extends "base.html" %}
+{% block title %}بازیکنان آرشیو‌شده{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="#" style="text-decoration:none;color:inherit">بازیکنان</a>
+  <span class="sep">›</span>
+  <span class="cur">آرشیو</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.archive-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 160px 160px 1fr 120px;
+  gap: .75rem; align-items: center;
+  padding: .8rem 1.25rem;
+  border-bottom: 1px solid var(--surface);
+  transition: background .12s;
+  opacity: .85;
+}
+.archive-row:hover { background: var(--surface); opacity: 1; }
+.archive-row:last-child { border-bottom: none; }
+.archive-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--surface-2); border: 2px dashed var(--text-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; color: var(--text-muted); font-weight: 700;
+}
+.reason-text { font-size: .78rem; color: var(--red); }
+.restore-btn { transition: transform .15s; }
+.restore-btn:hover { transform: scale(1.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🗄️ بازیکنان آرشیو‌شده</h1>
+    <p>{{ total_archived }} بازیکن آرشیو شده است — بدون حذف از سیستم</p>
+  </div>
+  <a href="#" class="btn btn-outline">← بازیکنان فعال</a>
+</div>
+
+<div class="card mb-2" style="padding:.75rem 1.25rem">
+  <form method="get" style="display:flex;gap:.5rem">
+    <input type="text" name="q" value="{{ search_query }}"
+           class="form-control" style="max-width:280px"
+           placeholder="جستجو نام / کد ملی ...">
+    <button type="submit" class="btn btn-primary">جستجو</button>
+    {% if search_query %}
+      <a href="?" class="btn btn-outline">✕ پاک کردن</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="card">
+  {% if players %}
+  <div class="archive-row" style="background:var(--surface);font-size:.72rem;color:var(--text-muted);font-weight:700">
+    <div></div>
+    <div>نام</div>
+    <div>تاریخ آرشیو</div>
+    <div>آرشیو شده توسط</div>
+    <div>دلیل</div>
+    <div>عملیات</div>
+  </div>
+
+  {% for player in players %}
+  <div class="archive-row">
+    <div class="archive-avatar">
+      {{ player.first_name|slice:":1" }}{{ player.last_name|slice:":1" }}
+    </div>
+
+    <div>
+      <div style="font-weight:700;font-size:.9rem">{{ player.first_name }} {{ player.last_name }}</div>
+      <div style="font-size:.75rem;color:var(--text-muted)">
+        کد ملی: {{ player.national_id }} | {{ player.player_id }}
+      </div>
+    </div>
+
+    <div style="font-size:.82rem;color:var(--text-muted)">
+      {% if player.archived_at %}{{ player.archived_at|date:"Y/m/d" }}{% else %}—{% endif %}
+    </div>
+
+    <div style="font-size:.82rem">
+      {% if player.approved_by %}{{ player.approved_by.get_full_name }}{% else %}—{% endif %}
+    </div>
+
+    <div class="reason-text">
+      {{ player.archive_reason|default:"—"|truncatechars:60 }}
+    </div>
+
+    <div>
+      <form method="post" action="{% url 'registration:restore-player' player.pk %}"
+            onsubmit="return confirm('از بازگردانی {{ player.first_name }} {{ player.last_name }} اطمینان دارید؟')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-green btn-sm restore-btn">
+          ♻️ بازگردانی
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if is_paginated %}
+  <div style="display:flex;justify-content:center;gap:.5rem;padding:1rem;border-top:1px solid var(--surface)">
+    {% if page_obj.has_previous %}
+      <a href="?q={{ search_query }}&page={{ page_obj.previous_page_number }}" class="btn btn-outline btn-sm">← قبلی</a>
+    {% endif %}
+    <span class="btn btn-sm" style="background:var(--surface)">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?q={{ search_query }}&page={{ page_obj.next_page_number }}" class="btn btn-outline btn-sm">بعدی →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align:center;padding:4rem;color:var(--text-muted)">
+    <div style="font-size:3rem;margin-bottom:1rem">🗄️</div>
+    <h3>هیچ بازیکن آرشیوشده‌ای یافت نشد</h3>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% comment %}templates/registration/success.html{% endcomment %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ثبت‌نام موفق</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Vazirmatn",Tahoma,sans-serif;background:#0d1b2a;min-height:100vh;display:flex;align-items:center;justify-content:center;direction:rtl;padding:1rem}
+    .card{background:#fff;border-radius:16px;padding:2.5rem;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+    .icon{font-size:4rem;margin-bottom:1rem;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both}
+    @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+    h1{font-size:1.4rem;font-weight:900;color:#0d1b2a;margin-bottom:.5rem}
+    p{color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:1.25rem}
+    .player-id{background:#f0f4f8;border:1px solid #e2e8f0;border-radius:10px;padding:1rem;font-size:1.1rem;font-weight:800;color:#0d1b2a;margin:1rem 0;letter-spacing:.05em}
+    .step-list{text-align:right;background:#eff6ff;border-radius:10px;padding:1rem 1.25rem;margin:1rem 0}
+    .step-list li{font-size:.85rem;color:#1e3a8a;margin:.35rem 0;list-style:none;display:flex;gap:.5rem;align-items:flex-start}
+    .btn{display:inline-flex;align-items:center;padding:.65rem 1.5rem;border-radius:8px;background:#f59e0b;color:#0d1b2a;font-weight:800;text-decoration:none;font-size:.9rem;transition:.2s}
+    .btn:hover{filter:brightness(1.1)}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">🎉</div>
+  <h1>ثبت‌نام شما با موفقیت انجام شد!</h1>
+  <p>اطلاعات شما دریافت شد و در صف بررسی قرار گرفت. مدیر فنی باشگاه به زودی پرونده شما را بررسی خواهد کرد.</p>
+
+  {% if player_id %}
+  <div class="player-id">
+    کد پیگیری: <span style="color:#3b5bdb">{{ player_id }}</span>
+  </div>
+  <p style="font-size:.78rem;color:#94a3b8">این کد را برای پیگیری ثبت‌نام خود نگه دارید.</p>
+  {% endif %}
+
+  <div class="step-list">
+    <li>✅ <span>فرم ثبت‌نام با موفقیت ارسال شد</span></li>
+    <li>⏳ <span>مدیر فنی پرونده شما را بررسی می‌کند</span></li>
+    <li>📱 <span>پس از تأیید، پیامک اطلاع‌رسانی دریافت خواهید کرد</span></li>
+    <li>🔑 <span>نام کاربری شما: کد ملی | رمز اولیه: کد ملی</span></li>
+  </div>
+
+  <a href="{% url 'auth:login' %}" class="btn">🔑 ورود به سیستم</a>
+</div>
+</body>
+</html>

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}داشبورد — باشگاه فوتسال{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="cur">داشبورد</span>
+{% endblock %}
+
+{% block content %}
+
+{% if user.is_technical_director %}
+{# ═══════════════════ داشبورد مدیر فنی ═══════════════════ #}
+<div class="page-header">
+  <div>
+    <h1>👋 خوش آمدید، {{ user.get_full_name|default:user.username }}</h1>
+    <p>داشبورد مدیریت فنی باشگاه فوتسال</p>
+  </div>
+</div>
+
+<div class="grid-auto" style="margin-bottom:1.5rem">
+  <div class="stat-card green">
+    <div class="stat-label">بازیکنان فعال</div>
+    <div class="stat-value">{{ total_players|default:0 }}</div>
+    <span class="stat-icon">⚽</span>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-label">در انتظار تأیید</div>
+    <div class="stat-value">{{ pending_players|default:0 }}</div>
+    <span class="stat-icon">⏳</span>
+  </div>
+  <div class="stat-card navy">
+    <div class="stat-label">دسته‌های آموزشی</div>
+    <div class="stat-value">{{ total_categories|default:0 }}</div>
+    <span class="stat-icon">📚</span>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-label">آرشیو‌شده</div>
+    <div class="stat-value">{{ archived_players|default:0 }}</div>
+    <span class="stat-icon">🗄️</span>
+  </div>
+</div>
+
+{% if pending_players > 0 %}
+<div class="alert alert-warning mb-2">
+  <span class="alert-icon">⏳</span>
+  <div>
+    <strong>{{ pending_players }} متقاضی در انتظار بررسی</strong>
+    <div style="margin-top:.25rem">
+      <a href="{% url 'registration:applicant-list' %}" class="btn btn-amber btn-sm">مشاهده و بررسی →</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if recent_players %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">آخرین بازیکنان ثبت‌نام شده</span>
+    <a href="{% url 'registration:applicant-list' %}" class="btn btn-outline btn-sm">همه ←</a>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>نام</th><th>کدملی</th><th>وضعیت</th><th>تاریخ</th></tr></thead>
+      <tbody>
+        {% for p in recent_players %}
+        <tr>
+          <td><strong>{{ p.first_name }} {{ p.last_name }}</strong></td>
+          <td style="font-family:monospace;font-size:.82rem">{{ p.national_id }}</td>
+          <td>
+            {% if p.status == 'pending' %}<span class="badge badge-amber">در انتظار</span>
+            {% elif p.status == 'approved' %}<span class="badge badge-green">تأیید</span>
+            {% else %}<span class="badge badge-red">رد</span>{% endif %}
+          </td>
+          <td style="font-size:.82rem;color:var(--text-muted)">{{ p.registration_date|date:"Y/m/d" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% elif user.is_finance_manager %}
+{# ═══════════════════ داشبورد مالی ═══════════════════ #}
+<div class="page-header">
+  <div>
+    <h1>💰 داشبورد مالی</h1>
+    <p>خوش آمدید {{ user.get_full_name|default:user.username }}</p>
+  </div>
+  <a href="{% url 'payroll:finance-dashboard' %}" class="btn btn-primary">داشبورد مالی کامل →</a>
+</div>
+
+<div class="grid-auto" style="margin-bottom:1.5rem">
+  <div class="stat-card amber">
+    <div class="stat-label">فاکتور در انتظار</div>
+    <div class="stat-value">{{ pending_invoices|default:0 }}</div>
+    <span class="stat-icon">🧾</span>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-label">بدهکاران</div>
+    <div class="stat-value">{{ total_debt|default:0 }}</div>
+    <span class="stat-icon">⚠️</span>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-label">حقوق در انتظار</div>
+    <div class="stat-value">{{ pending_salaries|default:0 }}</div>
+    <span class="stat-icon">💳</span>
+  </div>
+</div>
+
+{% elif user.is_coach %}
+{# ═══════════════════ داشبورد مربی ═══════════════════ #}
+<div class="page-header">
+  <div>
+    <h1>🎯 داشبورد مربی</h1>
+    <p>خوش آمدید {{ user.get_full_name|default:user.username }}</p>
+  </div>
+</div>
+
+<div class="grid-auto" style="margin-bottom:1.5rem">
+  <div class="stat-card green">
+    <div class="stat-label">بازیکنان تحت نظر</div>
+    <div class="stat-value">{{ total_players_coached|default:0 }}</div>
+    <span class="stat-icon">⚽</span>
+  </div>
+  <div class="stat-card navy">
+    <div class="stat-label">دسته‌های من</div>
+    <div class="stat-value">{{ my_categories.count|default:0 }}</div>
+    <span class="stat-icon">📚</span>
+  </div>
+</div>
+
+<div style="display:flex;gap:.75rem;flex-wrap:wrap">
+  <a href="{% url 'attendance:category-list' %}" class="btn btn-primary">📋 ثبت حضور</a>
+  <a href="{% url 'exercises:gallery' %}" class="btn btn-amber">🎯 مخزن تمرین‌ها</a>
+  <a href="{% url 'comms:announcement-list' %}" class="btn btn-outline">📢 اعلانات</a>
+</div>
+
+{% elif user.is_player %}
+{# ═══════════════════ داشبورد بازیکن ═══════════════════ #}
+<div class="page-header">
+  <div>
+    <h1>⚽ خوش آمدید، {{ user.first_name }}</h1>
+    <p>داشبورد شخصی شما</p>
+  </div>
+</div>
+
+{% if my_pending_invoices > 0 %}
+<div class="alert alert-warning mb-2">
+  <span class="alert-icon">🧾</span>
+  <div>
+    <strong>{{ my_pending_invoices }} فاکتور پرداخت‌نشده دارید</strong>
+    <div style="margin-top:.25rem">
+      <a href="{% url 'payroll:invoice-list-player' %}" class="btn btn-amber btn-sm">مشاهده فاکتورها</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div style="display:flex;gap:.75rem;flex-wrap:wrap">
+  <a href="{% url 'comms:notification-list' %}" class="btn btn-outline">🔔 اعلان‌های من</a>
+  <a href="{% url 'comms:announcement-list' %}" class="btn btn-outline">📢 اطلاعیه‌ها</a>
+</div>
+
+{% else %}
+{# ═══════════════════ متقاضی جدید ═══════════════════ #}
+<div style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:1rem">⏳</div>
+  <h2>ثبت‌نام شما در دست بررسی است</h2>
+  <p style="color:var(--text-muted);margin-top:.75rem">
+    مدیر فنی باشگاه به زودی پرونده شما را بررسی خواهد کرد.
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

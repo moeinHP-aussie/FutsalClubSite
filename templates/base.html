@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}باشگاه فوتسال اسپاد{% endblock %} | پنل مدیریت</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN SYSTEM  — Futsal Club Management
+       Theme: Deep navy + electric amber — refined & athletic
+    ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --navy:        #0d1b2a;
+      --navy-2:      #122236;
+      --navy-3:      #1a3150;
+      --navy-4:      #1e3a5f;
+      --amber:       #f59e0b;
+      --amber-light: #fcd34d;
+      --amber-dim:   #92400e;
+      --teal:        #0ea5e9;
+      --green:       #10b981;
+      --red:         #ef4444;
+      --purple:      #8b5cf6;
+      --surface:     #f0f4f8;
+      --surface-2:   #e2e8f0;
+      --text-main:   #0f172a;
+      --text-muted:  #64748b;
+      --text-light:  #94a3b8;
+      --white:       #ffffff;
+      --sidebar-w:   260px;
+      --header-h:    64px;
+      --radius:      12px;
+      --radius-sm:   8px;
+      --shadow:      0 4px 24px rgba(13,27,42,.12);
+      --shadow-lg:   0 8px 40px rgba(13,27,42,.18);
+      --transition:  all .2s cubic-bezier(.4,0,.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Vazirmatn", Tahoma, sans-serif;
+      background: var(--surface);
+      color: var(--text-main);
+      direction: rtl;
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────────── */
+    ::-webkit-scrollbar       { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 99px; }
+
+    /* ════════════════════════════════════════════════════════════
+       SIDEBAR
+    ════════════════════════════════════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      right: 0; top: 0;
+      z-index: 100;
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      box-shadow: -4px 0 32px rgba(0,0,0,.3);
+    }
+
+    /* ── Logo / Club Brand ─────────────────────────────────────── */
+    .sidebar-brand {
+      padding: 1.5rem 1.25rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      display: flex; align-items: center; gap: .85rem;
+    }
+    .brand-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--amber), var(--amber-light));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(245,158,11,.4);
+    }
+    .brand-text { line-height: 1.2; }
+    .brand-name  { font-size: .95rem; font-weight: 800; color: var(--white); }
+    .brand-sub   { font-size: .7rem; color: var(--amber-light); font-weight: 500; margin-top: .15rem; }
+
+    /* ── User Badge ─────────────────────────────────────────────── */
+    .user-badge {
+      margin: 1rem .75rem .25rem;
+      background: rgba(255,255,255,.05);
+      border-radius: var(--radius-sm);
+      padding: .75rem .9rem;
+      display: flex; align-items: center; gap: .75rem;
+    }
+    .user-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700; color: var(--white);
+      flex-shrink: 0;
+    }
+    .user-info { overflow: hidden; }
+    .user-name  { font-size: .82rem; font-weight: 700; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role  { font-size: .68rem; color: var(--amber-light); margin-top: .1rem; }
+
+    /* ── Nav ────────────────────────────────────────────────────── */
+    .sidebar-nav  { flex: 1; overflow-y: auto; padding: .5rem 0 1rem; }
+    .nav-section  { padding: .75rem .9rem .3rem; }
+    .nav-label    { font-size: .62rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .08em; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .65rem 1rem;
+      margin: .1rem .5rem;
+      border-radius: var(--radius-sm);
+      color: rgba(255,255,255,.65);
+      text-decoration: none;
+      font-size: .84rem; font-weight: 500;
+      transition: var(--transition);
+      position: relative;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,.07);
+      color: var(--white);
+    }
+    .nav-item.active {
+      background: rgba(245,158,11,.15);
+      color: var(--amber-light);
+      font-weight: 600;
+    }
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      right: 0; top: 25%; bottom: 25%;
+      width: 3px;
+      background: var(--amber);
+      border-radius: 99px 0 0 99px;
+    }
+    .nav-icon {
+      width: 18px; text-align: center;
+      font-size: .95rem; flex-shrink: 0;
+    }
+    .nav-badge {
+      margin-right: auto;
+      background: var(--red);
+      color: var(--white);
+      font-size: .62rem; font-weight: 700;
+      padding: .15rem .45rem;
+      border-radius: 99px;
+      min-width: 18px; text-align: center;
+    }
+
+    /* ── Sidebar Footer ─────────────────────────────────────────── */
+    .sidebar-footer {
+      padding: .75rem;
+      border-top: 1px solid rgba(255,255,255,.07);
+    }
+    .sidebar-footer a {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .6rem .9rem;
+      border-radius: var(--radius-sm);
+      color: rgba(255,255,255,.5);
+      text-decoration: none; font-size: .82rem;
+      transition: var(--transition);
+    }
+    .sidebar-footer a:hover { background: rgba(255,255,255,.07); color: var(--red); }
+
+    /* ════════════════════════════════════════════════════════════
+       MAIN LAYOUT
+    ════════════════════════════════════════════════════════════ */
+    .main-wrapper {
+      margin-right: var(--sidebar-w);
+      flex: 1;
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+      transition: margin-right .3s;
+    }
+
+    /* ── Top Header ─────────────────────────────────────────────── */
+    .topbar {
+      height: var(--header-h);
+      background: var(--white);
+      border-bottom: 1px solid var(--surface-2);
+      display: flex; align-items: center;
+      padding: 0 1.5rem;
+      gap: 1rem;
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .topbar-toggle {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      font-size: 1.3rem; color: var(--text-muted);
+      padding: .3rem;
+    }
+    .topbar-breadcrumb {
+      display: flex; align-items: center; gap: .5rem;
+      font-size: .85rem; color: var(--text-muted);
+      flex: 1;
+    }
+    .topbar-breadcrumb .sep  { color: var(--surface-2); }
+    .topbar-breadcrumb .cur  { color: var(--text-main); font-weight: 600; }
+
+    .topbar-actions { display: flex; align-items: center; gap: .5rem; margin-right: auto; }
+
+    /* ── Notification Bell ──────────────────────────────────────── */
+    .notif-btn {
+      position: relative;
+      width: 38px; height: 38px;
+      border-radius: var(--radius-sm);
+      background: none; border: 1px solid var(--surface-2);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: var(--text-muted);
+      transition: var(--transition);
+    }
+    .notif-btn:hover { background: var(--surface); color: var(--navy); }
+    .notif-count {
+      position: absolute; top: -4px; left: -4px;
+      background: var(--red); color: var(--white);
+      font-size: .6rem; font-weight: 700;
+      min-width: 16px; height: 16px;
+      border-radius: 99px; display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--white);
+    }
+
+    /* ── Notification Dropdown ─────────────────────────────────── */
+    .notif-dropdown {
+      position: absolute; top: calc(var(--header-h) + .5rem); left: 1rem;
+      width: 340px;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--surface-2);
+      z-index: 200;
+      opacity: 0; pointer-events: none; transform: translateY(-8px);
+      transition: var(--transition);
+      overflow: hidden;
+    }
+    .notif-dropdown.open { opacity: 1; pointer-events: all; transform: translateY(0); }
+    .notif-header {
+      padding: .9rem 1rem;
+      border-bottom: 1px solid var(--surface-2);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .notif-header h3 { font-size: .9rem; font-weight: 700; }
+    .notif-mark-all {
+      font-size: .75rem; color: var(--teal); text-decoration: none;
+      font-weight: 600;
+    }
+    .notif-list { max-height: 340px; overflow-y: auto; }
+    .notif-item {
+      display: flex; gap: .75rem;
+      padding: .85rem 1rem;
+      border-bottom: 1px solid var(--surface);
+      text-decoration: none; color: inherit;
+      transition: background .15s;
+    }
+    .notif-item:hover { background: var(--surface); }
+    .notif-item.unread { background: #eff6ff; }
+    .notif-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--teal); flex-shrink: 0; margin-top: .35rem;
+    }
+    .notif-item.read .notif-dot { background: transparent; border: 1.5px solid var(--surface-2); }
+    .notif-content { font-size: .82rem; line-height: 1.5; }
+    .notif-title   { font-weight: 600; color: var(--text-main); }
+    .notif-msg     { color: var(--text-muted); margin-top: .15rem; }
+    .notif-time    { font-size: .7rem; color: var(--text-light); margin-top: .25rem; }
+    .notif-empty   { padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: .85rem; }
+
+    /* ── Page Content ───────────────────────────────────────────── */
+    .page-content { flex: 1; padding: 1.75rem; }
+
+    /* ── Page Header ────────────────────────────────────────────── */
+    .page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+    .page-header h1 { font-size: 1.45rem; font-weight: 800; color: var(--text-main); }
+    .page-header p  { font-size: .875rem; color: var(--text-muted); margin-top: .2rem; }
+
+    /* ════════════════════════════════════════════════════════════
+       COMPONENT LIBRARY
+    ════════════════════════════════════════════════════════════ */
+
+    /* ── Card ───────────────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 6px rgba(0,0,0,.07);
+      border: 1px solid var(--surface-2);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--surface);
+      display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+    }
+    .card-title { font-size: .95rem; font-weight: 700; }
+    .card-body  { padding: 1.25rem; }
+
+    /* ── Stat Card ──────────────────────────────────────────────── */
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      border: 1px solid var(--surface-2);
+      position: relative; overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .stat-card::after {
+      content: "";
+      position: absolute; top: 0; right: 0;
+      width: 4px; height: 100%;
+    }
+    .stat-card.navy::after   { background: var(--navy); }
+    .stat-card.amber::after  { background: var(--amber); }
+    .stat-card.green::after  { background: var(--green); }
+    .stat-card.red::after    { background: var(--red); }
+    .stat-card.teal::after   { background: var(--teal); }
+    .stat-card.purple::after { background: var(--purple); }
+    .stat-label  { font-size: .78rem; color: var(--text-muted); font-weight: 500; margin-bottom: .4rem; }
+    .stat-value  { font-size: 2rem; font-weight: 900; line-height: 1; }
+    .stat-sub    { font-size: .75rem; color: var(--text-muted); margin-top: .3rem; }
+    .stat-icon   {
+      position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+      font-size: 2.2rem; opacity: .08;
+    }
+
+    /* ── Button ─────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+      padding: .55rem 1.2rem;
+      border-radius: var(--radius-sm);
+      border: none; cursor: pointer;
+      font-family: inherit; font-size: .875rem; font-weight: 600;
+      text-decoration: none; line-height: 1;
+      transition: var(--transition); white-space: nowrap;
+    }
+    .btn:disabled { opacity: .5; pointer-events: none; }
+    .btn-sm    { padding: .35rem .85rem; font-size: .8rem; }
+    .btn-lg    { padding: .75rem 1.6rem; font-size: .95rem; }
+    .btn-icon  { padding: .5rem; width: 36px; height: 36px; }
+
+    .btn-primary   { background: var(--navy); color: var(--white); }
+    .btn-primary:hover { background: var(--navy-3); }
+    .btn-amber     { background: var(--amber); color: var(--navy); }
+    .btn-amber:hover { background: var(--amber-light); }
+    .btn-green     { background: var(--green); color: var(--white); }
+    .btn-green:hover { filter: brightness(1.1); }
+    .btn-red       { background: var(--red); color: var(--white); }
+    .btn-red:hover { filter: brightness(1.1); }
+    .btn-teal      { background: var(--teal); color: var(--white); }
+    .btn-teal:hover { filter: brightness(1.1); }
+    .btn-outline   { background: transparent; border: 1.5px solid var(--surface-2); color: var(--text-main); }
+    .btn-outline:hover { background: var(--surface); }
+    .btn-ghost     { background: transparent; color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--surface); color: var(--text-main); }
+
+    /* ── Badge ──────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: .2rem .6rem;
+      border-radius: 99px;
+      font-size: .72rem; font-weight: 700; line-height: 1;
+    }
+    .badge-green  { background: #d1fae5; color: #065f46; }
+    .badge-red    { background: #fee2e2; color: #991b1b; }
+    .badge-amber  { background: #fef3c7; color: #92400e; }
+    .badge-teal   { background: #cffafe; color: #164e63; }
+    .badge-navy   { background: #dbeafe; color: #1e3a8a; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-gray   { background: var(--surface-2); color: var(--text-muted); }
+
+    /* ── Form Controls ──────────────────────────────────────────── */
+    .form-group { margin-bottom: 1.1rem; }
+    .form-label {
+      display: block; font-size: .825rem; font-weight: 600;
+      margin-bottom: .4rem; color: var(--text-main);
+    }
+    .form-label .req { color: var(--red); margin-right: .15rem; }
+    .form-control {
+      width: 100%; padding: .6rem .85rem;
+      border: 1.5px solid var(--surface-2);
+      border-radius: var(--radius-sm);
+      font-family: inherit; font-size: .875rem; color: var(--text-main);
+      background: var(--white);
+      transition: border-color .15s, box-shadow .15s;
+      appearance: none;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(13,27,42,.1);
+    }
+    .form-control::placeholder { color: var(--text-light); }
+    .form-hint { font-size: .75rem; color: var(--text-muted); margin-top: .3rem; }
+
+    /* ── Alert ──────────────────────────────────────────────────── */
+    .alert {
+      padding: .85rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: .875rem;
+      display: flex; align-items: flex-start; gap: .65rem;
+      border: 1px solid transparent;
+    }
+    .alert-icon { flex-shrink: 0; margin-top: .05rem; }
+    .alert-success { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+    .alert-warning { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .alert-danger  { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .alert-info    { background: #cffafe; color: #164e63; border-color: #a5f3fc; }
+
+    /* ── Table ──────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    table.data-table th {
+      padding: .75rem 1rem;
+      background: var(--surface);
+      border-bottom: 2px solid var(--surface-2);
+      font-weight: 700; text-align: right; font-size: .78rem;
+      color: var(--text-muted); white-space: nowrap;
+    }
+    table.data-table td {
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--surface);
+      vertical-align: middle;
+    }
+    table.data-table tr:hover td { background: var(--surface); }
+    table.data-table tr:last-child td { border-bottom: none; }
+
+    /* ── Toast ──────────────────────────────────────────────────── */
+    .toast-container {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; gap: .5rem;
+      z-index: 9999; pointer-events: none;
+      width: min(400px, 90vw);
+    }
+    .toast {
+      background: var(--navy);
+      color: var(--white);
+      padding: .85rem 1.2rem;
+      border-radius: var(--radius);
+      font-size: .875rem; font-weight: 500;
+      display: flex; align-items: center; gap: .75rem;
+      box-shadow: var(--shadow-lg);
+      pointer-events: all;
+      animation: toastIn .35s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .toast.out { animation: toastOut .25s ease forwards; }
+    .toast.success { border-right: 4px solid var(--green); }
+    .toast.error   { border-right: 4px solid var(--red); }
+    .toast.warning { border-right: 4px solid var(--amber); }
+    @keyframes toastIn  { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; transform:translateY(0); }   to { opacity:0; transform:translateY(10px); } }
+
+    /* ── Loading Overlay ────────────────────────────────────────── */
+    .loading-overlay {
+      position: fixed; inset: 0;
+      background: rgba(13,27,42,.4);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9000; opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .loading-overlay.show { opacity: 1; pointer-events: all; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(255,255,255,.2);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Django Messages ────────────────────────────────────────── */
+    .django-messages { padding: 0 1.75rem; margin-bottom: -.75rem; margin-top: .75rem; }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrapper { margin-right: 0; }
+      .topbar-toggle { display: flex; }
+      .page-content { padding: 1rem; }
+      .notif-dropdown { width: calc(100vw - 2rem); left: 1rem; right: 1rem; }
+    }
+
+    /* ── Utility ────────────────────────────────────────────────── */
+    .flex    { display: flex; }
+    .gap-1   { gap: .5rem; }
+    .gap-2   { gap: 1rem; }
+    .gap-3   { gap: 1.5rem; }
+    .wrap    { flex-wrap: wrap; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .mt-1  { margin-top: .5rem; }  .mt-2  { margin-top: 1rem; }    .mt-3  { margin-top: 1.5rem; }
+    .mb-1  { margin-bottom: .5rem; }.mb-2  { margin-bottom: 1rem; } .mb-3  { margin-bottom: 1.5rem; }
+    .text-muted  { color: var(--text-muted); }
+    .text-sm     { font-size: .8rem; }
+    .fw-bold     { font-weight: 700; }
+    .text-center { text-align: center; }
+    .w-full      { width: 100%; }
+    .hidden      { display: none !important; }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar">
+
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <div class="brand-icon">⚽</div>
+    <div class="brand-text">
+      <div class="brand-name">باشگاه اسپاد</div>
+      <div class="brand-sub">سیستم مدیریت جامع</div>
+    </div>
+  </div>
+
+  <!-- User Badge -->
+  {% if request.user.is_authenticated %}
+  <div class="user-badge">
+    <div class="user-avatar">
+      {{ request.user.first_name|slice:":1" }}{{ request.user.last_name|slice:":1" }}
+    </div>
+    <div class="user-info">
+      <div class="user-name">{{ request.user.get_full_name }}</div>
+      <div class="user-role">
+        {% if request.user.is_technical_director %}مدیر فنی
+        {% elif request.user.is_finance_manager %}مدیر مالی
+        {% elif request.user.is_coach %}مربی
+        {% elif request.user.is_player %}بازیکن
+        {% else %}کاربر{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Navigation -->
+  <div class="sidebar-nav">
+
+    <!-- ─── همه نقش‌ها ──────────────────────────────────── -->
+    <div class="nav-section">
+      <div class="nav-label">عمومی</div>
+    </div>
+    <a href="{% url 'dashboard' %}"
+       class="nav-item {% block nav_dashboard %}{% endblock %}">
+      <span class="nav-icon">🏠</span> داشبورد
+    </a>
+
+    <!-- ─── مدیر فنی ────────────────────────────────────── -->
+    {% if request.user.is_technical_director or request.user.is_superuser %}
+    <div class="nav-section">
+      <div class="nav-label">مدیریت فنی</div>
+    </div>
+    <a href="#" class="nav-item {% block nav_players %}{% endblock %}">
+      <span class="nav-icon">👥</span> بازیکنان
+    </a>
+    <a href="#" class="nav-item {% block nav_applicants %}{% endblock %}">
+      <span class="nav-icon">📋</span> متقاضیان جدید
+    </a>
+    <a href="#" class="nav-item {% block nav_categories %}{% endblock %}">
+      <span class="nav-icon">🗂️</span> رده های آموزشی
+    </a>
+    <a href="#" class="nav-item {% block nav_coaches %}{% endblock %}">
+      <span class="nav-icon">🏃</span> مربیان
+    </a>
+    <a href="#" class="nav-item {% block nav_exercises %}{% endblock %}">
+      <span class="nav-icon">🎯</span> مخزن تمرین‌ها
+    </a>
+    {% endif %}
+
+    <!-- ─── مربی ─────────────────────────────────────────── -->
+    {% if request.user.is_coach or request.user.is_technical_director or request.user.is_superuser %}
+    <div class="nav-section">
+      <div class="nav-label">تمرین‌ها</div>
+    </div>
+    <a href="#" class="nav-item {% block nav_attendance %}{% endblock %}">
+      <span class="nav-icon">📅</span> حضور و غیاب
+    </a>
+    <a href="{% url 'comms:announcement-create' %}"
+       class="nav-item {% block nav_announcements %}{% endblock %}">
+      <span class="nav-icon">📣</span> اطلاعیه‌ها
+    </a>
+    {% endif %}
+
+    <!-- ─── مدیر مالی ────────────────────────────────────── -->
+    {% if request.user.is_finance_manager or request.user.is_technical_director or request.user.is_superuser %}
+    <div class="nav-section">
+      <div class="nav-label">مالی</div>
+    </div>
+    <a href="{% url 'payroll:dashboard' %}"
+       class="nav-item {% block nav_finance %}{% endblock %}">
+      <span class="nav-icon">💰</span> داشبورد مالی
+    </a>
+    <a href="#" class="nav-item {% block nav_invoices %}{% endblock %}">
+      <span class="nav-icon">🧾</span> فاکتورها
+    </a>
+    <a href="#" class="nav-item {% block nav_salaries %}{% endblock %}">
+      <span class="nav-icon">💳</span> حقوق مربیان
+    </a>
+    <a href="#" class="nav-item {% block nav_expenses %}{% endblock %}">
+      <span class="nav-icon">📊</span> هزینه‌ها
+    </a>
+    {% endif %}
+
+    <!-- ─── بازیکن ────────────────────────────────────────── -->
+    {% if request.user.is_player %}
+    <div class="nav-section">
+      <div class="nav-label">پروفایل من</div>
+    </div>
+    <a href="#" class="nav-item {% block nav_my_profile %}{% endblock %}">
+      <span class="nav-icon">👤</span> پروفایل من
+    </a>
+    <a href="#" class="nav-item {% block nav_my_invoices %}{% endblock %}">
+      <span class="nav-icon">🧾</span> فاکتورهای من
+    </a>
+    <a href="#" class="nav-item {% block nav_my_attendance %}{% endblock %}">
+      <span class="nav-icon">📅</span> حضور من
+    </a>
+    {% endif %}
+
+    <!-- ─── اعلان‌ها ──────────────────────────────────────── -->
+    <div class="nav-section" style="margin-top:.5rem">
+      <div class="nav-label">اعلان‌ها</div>
+    </div>
+    <a href="{% url 'comms:notification-list' %}"
+       class="nav-item {% block nav_notifications %}{% endblock %}">
+      <span class="nav-icon">🔔</span> اعلان‌های من
+      {% if unread_notif_count %}
+        <span class="nav-badge">{{ unread_notif_count }}</span>
+      {% endif %}
+    </a>
+
+  </div><!-- /sidebar-nav -->
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <a href="{% url 'auth:password_change' %}">
+      <span>🔑</span> تغییر رمز عبور
+    </a>
+    <a href="{% url 'auth:logout' %}" style="margin-top:.1rem">
+      <span>🚪</span> خروج از سیستم
+    </a>
+  </div>
+</nav>
+
+<!-- ── Sidebar Overlay (mobile) ──────────────────────────────── -->
+<div id="sidebar-overlay"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99"
+     onclick="closeSidebar()"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN WRAPPER
+═══════════════════════════════════════════════════════════════ -->
+<div class="main-wrapper" id="main-wrapper">
+
+  <!-- ── Topbar ─────────────────────────────────────────────── -->
+  <header class="topbar">
+    <button class="topbar-toggle" onclick="toggleSidebar()" aria-label="منو">☰</button>
+
+    <nav class="topbar-breadcrumb">
+      <a href="{% url 'dashboard' %}" style="text-decoration:none;color:inherit">خانه</a>
+      {% block breadcrumb %}{% endblock %}
+    </nav>
+
+    <div class="topbar-actions">
+      <!-- Notification Bell -->
+      <button class="notif-btn" id="notif-btn" onclick="toggleNotifDropdown()"
+              aria-label="اعلان‌ها">
+        🔔
+        {% if unread_notif_count %}
+          <span class="notif-count">{{ unread_notif_count }}</span>
+        {% endif %}
+      </button>
+
+      <!-- Notification Dropdown -->
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-header">
+          <h3>🔔 اعلان‌ها</h3>
+          <a href="{% url 'comms:notification-read-all' %}"
+             class="notif-mark-all"
+             onclick="event.preventDefault();markAllRead(this)">
+            همه را خواندم
+          </a>
+        </div>
+        <div class="notif-list" id="notif-list">
+          {% if recent_notifications %}
+            {% for n in recent_notifications %}
+            <a href="{% url 'comms:notification-read' n.pk %}"
+               class="notif-item {% if not n.is_read %}unread{% else %}read{% endif %}"
+               data-id="{{ n.pk }}">
+              <div class="notif-dot"></div>
+              <div class="notif-content">
+                <div class="notif-title">{{ n.title }}</div>
+                <div class="notif-msg">{{ n.message|truncatechars:80 }}</div>
+                <div class="notif-time">{{ n.created_at|timesince }} پیش</div>
+              </div>
+            </a>
+            {% endfor %}
+          {% else %}
+            <div class="notif-empty">هیچ اعلانی ندارید 🎉</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Django Messages ──────────────────────────────────── -->
+  {% if messages %}
+  <div class="django-messages">
+    {% for msg in messages %}
+    <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} mb-1"
+         style="margin-bottom:.5rem">
+      <span class="alert-icon">
+        {% if msg.tags == 'success' %}✅{% elif msg.tags == 'error' or msg.tags == 'danger' %}❌{% elif msg.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+      </span>
+      {{ msg }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Page Content ──────────────────────────────────────── -->
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer style="padding:1rem 1.75rem;border-top:1px solid var(--surface-2);font-size:.75rem;color:var(--text-light);text-align:center">
+    سیستم مدیریت باشگاه فوتسال &copy; ۱۴۰۳
+  </footer>
+
+</div><!-- /main-wrapper -->
+
+<!-- ── Loading Overlay ──────────────────────────────────── -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+</div>
+
+<!-- ── Toast Container ──────────────────────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ════════════════════════════════════════════════════════════
+     GLOBAL JS
+════════════════════════════════════════════════════════════ -->
+<script>
+/* ── Sidebar ───────────────────────────────────────────────── */
+function toggleSidebar() {
+  const s = document.getElementById("sidebar");
+  const o = document.getElementById("sidebar-overlay");
+  s.classList.toggle("open");
+  o.style.display = s.classList.contains("open") ? "block" : "none";
+}
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebar-overlay").style.display = "none";
+}
+
+/* ── Notification Dropdown ──────────────────────────────────── */
+function toggleNotifDropdown() {
+  document.getElementById("notif-dropdown").classList.toggle("open");
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest("#notif-btn") && !e.target.closest("#notif-dropdown")) {
+    document.getElementById("notif-dropdown")?.classList.remove("open");
+  }
+});
+
+async function markAllRead(anchor) {
+  try {
+    await fetch("{% url 'comms:notification-read-all' %}", {
+      method: "POST",
+      headers: { "X-CSRFToken": getCookie("csrftoken") },
+    });
+    document.querySelectorAll(".notif-item.unread").forEach(el => {
+      el.classList.replace("unread", "read");
+    });
+    document.querySelectorAll(".notif-count, .nav-badge").forEach(el => el.remove());
+    toast("همه اعلان‌ها خوانده شدند ✓", "success");
+  } catch { toast("خطا در ارتباط با سرور", "error"); }
+}
+
+/* ── Toast ──────────────────────────────────────────────────── */
+function toast(message, type = "success", duration = 3500) {
+  const container = document.getElementById("toast-container");
+  const el = document.createElement("div");
+  const icons = { success: "✅", error: "❌", warning: "⚠️", info: "ℹ️" };
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type] || "ℹ️"}</span><span>${message}</span>`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.add("out");
+    setTimeout(() => el.remove(), 300);
+  }, duration);
+}
+
+/* ── Loading ────────────────────────────────────────────────── */
+function showLoading()  { document.getElementById("loading-overlay").classList.add("show"); }
+function hideLoading()  { document.getElementById("loading-overlay").classList.remove("show"); }
+
+/* ── CSRF Helper ────────────────────────────────────────────── */
+function getCookie(name) {
+  const m = document.cookie.match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
+  return m ? m.pop() : "";
+}
+
+/* ── Fetch wrapper with CSRF ────────────────────────────────── */
+async function apiPost(url, data = {}) {
+  const res = await fetch(url, {
+    method:  "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken":  getCookie("csrftoken"),
+    },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+/* ── Confirm Dialog ─────────────────────────────────────────── */
+function confirmAction(message, onConfirm) {
+  if (window.confirm(message)) onConfirm();
+}
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

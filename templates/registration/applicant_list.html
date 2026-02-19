@@ -1,0 +1,265 @@
+{% comment %}templates/registration/applicant_list.html{% endcomment %}
+{% extends "base.html" %}
+{% block title %}متقاضیان ثبت‌نام{% endblock %}
+{% block nav_applicants %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <span class="cur">متقاضیان ثبت‌نام</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.applicant-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 1fr 120px 100px 140px;
+  gap: .75rem; align-items: center;
+  padding: .85rem 1.25rem;
+  border-bottom: 1px solid var(--surface);
+  transition: background .12s;
+}
+.applicant-row:hover { background: var(--surface); }
+.applicant-row:last-child { border-bottom: none; }
+.applicant-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--navy-3), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 700; color: var(--white);
+  flex-shrink: 0;
+}
+.name-block .name { font-weight: 700; font-size: .9rem; }
+.name-block .nid  { font-size: .75rem; color: var(--text-muted); margin-top: .1rem; }
+.info-block { font-size: .82rem; color: var(--text-muted); }
+.info-block .val { color: var(--text-main); font-weight: 500; }
+.quick-actions { display: flex; gap: .35rem; }
+.tab-filters {
+  display: flex; gap: .35rem; flex-wrap: wrap;
+}
+.tab-filter {
+  padding: .4rem .9rem;
+  border-radius: 99px;
+  text-decoration: none; font-size: .82rem; font-weight: 600;
+  border: 1.5px solid var(--surface-2);
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+.tab-filter:hover { border-color: var(--navy); color: var(--navy); }
+.tab-filter.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+.reject-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.reject-modal.open { opacity: 1; pointer-events: all; }
+.reject-box {
+  background: var(--white); border-radius: var(--radius);
+  padding: 1.5rem; max-width: 440px; width: 100%;
+  box-shadow: var(--shadow-lg);
+  transform: scale(.95); transition: transform .2s;
+}
+.reject-modal.open .reject-box { transform: scale(1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>📋 متقاضیان ثبت‌نام</h1>
+    <p>بررسی و تأیید/رد متقاضیان جدید</p>
+  </div>
+  {% if pending_count %}
+  <span class="badge badge-amber" style="font-size:.9rem;padding:.4rem 1rem">
+    {{ pending_count }} در انتظار بررسی
+  </span>
+  {% endif %}
+</div>
+
+<!-- ── Filter + Search ─────────────────────────────────────── -->
+<div class="card mb-2" style="padding:1rem 1.25rem">
+  <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+    <div class="tab-filters">
+      <a href="?status=pending" class="tab-filter {% if status_filter == 'pending' %}active{% endif %}">⏳ در انتظار</a>
+      <a href="?status=approved" class="tab-filter {% if status_filter == 'approved' %}active{% endif %}">✅ تأیید شده</a>
+      <a href="?status=rejected" class="tab-filter {% if status_filter == 'rejected' %}active{% endif %}">❌ رد شده</a>
+      <a href="?status=all" class="tab-filter {% if status_filter == 'all' %}active{% endif %}">همه</a>
+    </div>
+    <form method="get" style="margin-right:auto;display:flex;gap:.5rem">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <input type="text" name="q" value="{{ search_query }}"
+             class="form-control" style="width:220px"
+             placeholder="جستجو نام / کد ملی ...">
+      <button type="submit" class="btn btn-primary">جستجو</button>
+      {% if search_query %}<a href="?status={{ status_filter }}" class="btn btn-outline">✕</a>{% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- ── List ───────────────────────────────────────────────── -->
+<div class="card">
+  {% if applicants %}
+  <!-- Header -->
+  <div class="applicant-row" style="background:var(--surface);font-size:.72rem;color:var(--text-muted);font-weight:700">
+    <div></div>
+    <div>نام بازیکن</div>
+    <div>تماس</div>
+    <div>رده سنی</div>
+    <div>وضعیت</div>
+    <div>عملیات</div>
+  </div>
+
+  {% for player in applicants %}
+  <div class="applicant-row">
+    <!-- Avatar -->
+    <div class="applicant-avatar">
+      {{ player.first_name|slice:":1" }}{{ player.last_name|slice:":1" }}
+    </div>
+
+    <!-- Name & ID -->
+    <div class="name-block">
+      <div class="name">{{ player.first_name }} {{ player.last_name }}</div>
+      <div class="nid">کد ملی: {{ player.national_id }} | {{ player.player_id }}</div>
+    </div>
+
+    <!-- Contact -->
+    <div class="info-block">
+      <div>📱 <span class="val">{{ player.phone }}</span></div>
+      <div>👴 <span class="val">{{ player.father_name }}</span></div>
+    </div>
+
+    <!-- Age Category -->
+    <div>
+      <span class="badge badge-navy" style="font-size:.75rem">{{ player.get_age_category }}</span>
+    </div>
+
+    <!-- Status -->
+    <div>
+      {% if player.status == 'pending' %}
+        <span class="badge badge-amber">⏳ در انتظار</span>
+      {% elif player.status == 'approved' %}
+        <span class="badge badge-green">✅ تأیید</span>
+      {% elif player.status == 'rejected' %}
+        <span class="badge badge-red">❌ رد</span>
+      {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div class="quick-actions">
+      <a href="{% url 'registration:applicant-detail' player.pk %}"
+         class="btn btn-outline btn-sm">مشاهده</a>
+      {% if player.status == 'pending' %}
+        <button class="btn btn-green btn-sm"
+                onclick="quickApprove({{ player.pk }}, '{{ player.first_name }} {{ player.last_name }}')">
+          ✓ تأیید
+        </button>
+        <button class="btn btn-red btn-sm"
+                onclick="openRejectModal({{ player.pk }}, '{{ player.first_name }} {{ player.last_name }}')">
+          ✕
+        </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <div style="display:flex;justify-content:center;gap:.5rem;padding:1rem;border-top:1px solid var(--surface)">
+    {% if page_obj.has_previous %}
+      <a href="?status={{ status_filter }}&q={{ search_query }}&page={{ page_obj.previous_page_number }}"
+         class="btn btn-outline btn-sm">← قبلی</a>
+    {% endif %}
+    <span class="btn btn-sm" style="background:var(--surface)">
+      {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+      <a href="?status={{ status_filter }}&q={{ search_query }}&page={{ page_obj.next_page_number }}"
+         class="btn btn-outline btn-sm">بعدی →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align:center;padding:4rem;color:var(--text-muted)">
+    <div style="font-size:3rem;margin-bottom:1rem">
+      {% if status_filter == 'pending' %}🎉{% else %}📭{% endif %}
+    </div>
+    <h3>هیچ متقاضی‌ای یافت نشد</h3>
+    <p style="margin-top:.5rem;font-size:.875rem">
+      {% if status_filter == 'pending' %}در حال حاضر متقاضی در انتظار بررسی وجود ندارد.{% endif %}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Quick Approve Modal ──────────────────────────────────── -->
+<div id="approve-modal" class="reject-modal">
+  <div class="reject-box">
+    <h3 style="margin-bottom:1rem">✅ تأیید سریع متقاضی</h3>
+    <p id="approve-name" style="color:var(--text-muted);margin-bottom:1rem;font-size:.9rem"></p>
+
+    <form id="approve-form" method="post" action="">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">اختصاص به دسته آموزشی</label>
+        <div style="display:flex;flex-direction:column;gap:.4rem;max-height:200px;overflow-y:auto">
+          {% for cat in categories %}
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.875rem;cursor:pointer">
+            <input type="checkbox" name="category_ids" value="{{ cat.pk }}">
+            {{ cat.name }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+        <button type="button" class="btn btn-outline" onclick="closeModals()">انصراف</button>
+        <button type="submit" class="btn btn-green">✅ تأیید و ذخیره</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Reject Modal ─────────────────────────────────────────── -->
+<div id="reject-modal" class="reject-modal">
+  <div class="reject-box">
+    <h3 style="margin-bottom:.5rem">❌ رد ثبت‌نام</h3>
+    <p id="reject-name" style="color:var(--text-muted);margin-bottom:1rem;font-size:.9rem"></p>
+    <form id="reject-form" method="post" action="">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">دلیل رد (اختیاری)</label>
+        <textarea name="rejection_reason" class="form-control" rows="3"
+                  placeholder="دلیل رد ثبت‌نام را وارد کنید..."></textarea>
+      </div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closeModals()">انصراف</button>
+        <button type="submit" class="btn btn-red">❌ رد ثبت‌نام</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function quickApprove(pk, name) {
+  document.getElementById("approve-name").textContent = `بازیکن: ${name}`;
+  document.getElementById("approve-form").action = `/registration/applicants/${pk}/approve/`;
+  document.getElementById("approve-modal").classList.add("open");
+}
+
+function openRejectModal(pk, name) {
+  document.getElementById("reject-name").textContent = `بازیکن: ${name}`;
+  document.getElementById("reject-form").action = `/registration/applicants/${pk}/reject/`;
+  document.getElementById("reject-modal").classList.add("open");
+}
+
+function closeModals() {
+  document.querySelectorAll(".reject-modal").forEach(m => m.classList.remove("open"));
+}
+
+document.querySelectorAll(".reject-modal").forEach(m => {
+  m.addEventListener("click", e => { if (e.target === m) closeModals(); });
+});
+</script>
+{% endblock %}

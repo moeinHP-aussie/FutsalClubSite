@@ -1,0 +1,751 @@
+{% extends "base.html" %}
+{% load i18n attendance_extras %}
+
+{% block title %}حضور و غیاب — {{ category.name }}{% endblock %}
+{% block nav_attendance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <span>حضور و غیاب</span>
+  <span class="sep">›</span>
+  <span class="cur">{{ category.name }}</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   ATTENDANCE MATRIX  —  scoped styles
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Month Navigator ─────────────────────────────────────────── */
+.month-nav {
+  display: flex; align-items: center; gap: .5rem;
+  background: var(--white);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: .4rem .6rem;
+}
+.month-nav a {
+  padding: .35rem .75rem; border-radius: 6px;
+  text-decoration: none; font-size: .85rem; font-weight: 600;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+.month-nav a:hover    { background: var(--surface); color: var(--text-main); }
+.month-nav .cur-month {
+  padding: .35rem 1rem;
+  background: var(--navy); color: var(--white);
+  border-radius: 6px; font-size: .875rem; font-weight: 700;
+}
+
+/* ── Search / Filter Bar ─────────────────────────────────────── */
+.filter-bar {
+  background: var(--white);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: .85rem 1rem;
+  display: flex; gap: .75rem; align-items: center; flex-wrap: wrap;
+}
+.search-input-wrap { position: relative; flex: 1; min-width: 200px; }
+.search-input-wrap svg {
+  position: absolute; right: .7rem; top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px; color: var(--text-light);
+  pointer-events: none;
+}
+.search-input {
+  width: 100%; padding: .55rem .75rem .55rem 2.2rem;
+  padding-right: 2.2rem; padding-left: .75rem;
+  border: 1.5px solid var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-family: inherit; font-size: .875rem;
+  transition: border-color .15s;
+}
+.search-input:focus { outline: none; border-color: var(--navy); }
+.filter-tag {
+  display: flex; align-items: center; gap: .35rem;
+  padding: .35rem .85rem;
+  border: 1.5px solid var(--surface-2);
+  border-radius: 99px; font-size: .78rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition);
+  background: var(--white); color: var(--text-muted);
+  user-select: none;
+}
+.filter-tag:hover, .filter-tag.active {
+  border-color: var(--navy); background: var(--navy); color: var(--white);
+}
+.filter-count {
+  display: flex; gap: .5rem; align-items: center;
+  font-size: .8rem; color: var(--text-muted); margin-right: auto;
+}
+#row-count { font-weight: 700; color: var(--text-main); }
+
+/* ── Matrix Table ────────────────────────────────────────────── */
+.matrix-scroll { overflow-x: auto; overflow-y: visible; }
+.matrix-table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  font-size: .825rem;
+  min-width: 600px;
+}
+
+/* Header */
+.matrix-table thead th {
+  background: var(--surface);
+  border-bottom: 2px solid var(--surface-2);
+  padding: .6rem .5rem;
+  font-size: .72rem; font-weight: 700; color: var(--text-muted);
+  text-align: center; white-space: nowrap;
+  position: sticky; top: 0; z-index: 5;
+}
+.matrix-table thead th.col-name {
+  text-align: right; min-width: 160px;
+  position: sticky; right: 0; z-index: 6;
+  background: var(--surface);
+  border-left: 2px solid var(--surface-2);
+}
+.matrix-table thead th.col-num {
+  width: 36px; min-width: 36px;
+  position: sticky; right: 160px; z-index: 6;
+  background: var(--surface);
+}
+
+/* Body */
+.matrix-table tbody tr { transition: background .12s; }
+.matrix-table tbody tr.hidden-row { display: none; }
+.matrix-table tbody tr:hover td  { background: #fafbfc; }
+.matrix-table tbody td {
+  border-bottom: 1px solid var(--surface);
+  padding: .4rem .35rem;
+  text-align: center; vertical-align: middle;
+}
+.matrix-table tbody td.col-name {
+  text-align: right; padding: .6rem 1rem;
+  font-weight: 600; font-size: .875rem;
+  position: sticky; right: 0; background: var(--white);
+  border-left: 2px solid var(--surface);
+  z-index: 3;
+}
+.matrix-table tbody tr:hover td.col-name { background: #fafbfc; }
+.matrix-table tbody td.col-num {
+  font-size: .72rem; color: var(--text-light);
+  position: sticky; right: 160px; background: var(--white);
+  z-index: 3;
+}
+.matrix-table tbody tr:hover td.col-num { background: #fafbfc; }
+
+/* Status cell colours */
+.cell-present { background: #d1fae5 !important; }
+.cell-absent  { background: #fee2e2 !important; }
+.cell-excused { background: #fef3c7 !important; }
+
+/* Status select */
+.status-sel {
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  padding: .2rem .35rem;
+  font-size: .75rem; font-family: inherit;
+  cursor: pointer; width: 82px;
+  background: rgba(255,255,255,.7);
+  appearance: none; text-align: center;
+  transition: border-color .15s;
+}
+.status-sel:focus { outline: none; border-color: var(--navy); }
+.cell-present .status-sel { background: rgba(209,250,229,.8); }
+.cell-absent  .status-sel { background: rgba(254,226,226,.8); }
+.cell-excused .status-sel { background: rgba(254,243,199,.8); }
+
+/* Stat columns */
+.col-stat {
+  font-weight: 700; font-size: .82rem;
+  background: var(--surface) !important;
+  border-right: 1px solid var(--surface-2);
+}
+.col-pct {
+  font-weight: 700; font-size: .82rem;
+  background: var(--surface) !important;
+}
+.pct-high  { color: var(--green); }
+.pct-mid   { color: var(--amber-dim); }
+.pct-low   { color: var(--red); }
+
+/* Footer / column totals */
+.matrix-table tfoot td {
+  background: var(--surface-2) !important;
+  font-weight: 700; font-size: .78rem;
+  padding: .55rem .35rem;
+  border-top: 2px solid var(--surface-2);
+  text-align: center;
+}
+.matrix-table tfoot td.col-name { text-align: right; padding-right: 1rem; }
+
+/* Changed-indicator dot */
+.changed-dot {
+  display: inline-block; width: 7px; height: 7px;
+  background: var(--amber); border-radius: 50%;
+  vertical-align: middle; margin-right: .2rem;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.5; transform:scale(.8); }
+}
+
+/* ── Save Bar ────────────────────────────────────────────────── */
+.save-bar {
+  position: fixed; bottom: 0; right: var(--sidebar-w); left: 0;
+  background: var(--navy-2);
+  border-top: 1px solid var(--navy-3);
+  padding: .75rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  z-index: 80;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 -4px 20px rgba(0,0,0,.2);
+}
+.save-bar.visible { transform: translateY(0); }
+.save-bar-msg { font-size: .85rem; color: rgba(255,255,255,.7); }
+.save-bar-msg strong { color: var(--amber-light); }
+
+/* ── Session Card (mobile alternative) ─────────────────────── */
+@media (max-width: 768px) {
+  .save-bar { right: 0; }
+}
+
+/* ── Tab Pills ───────────────────────────────────────────────── */
+.tab-pills {
+  display: flex; gap: .35rem;
+  background: var(--surface);
+  padding: .3rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--surface-2);
+}
+.tab-pill {
+  padding: .45rem 1.1rem;
+  border-radius: 6px;
+  font-size: .85rem; font-weight: 600;
+  cursor: pointer; border: none; background: none;
+  font-family: inherit; color: var(--text-muted);
+  transition: var(--transition);
+}
+.tab-pill.active { background: var(--white); color: var(--navy); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+/* ── Session Links ───────────────────────────────────────────── */
+.session-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.session-chip {
+  padding: .3rem .75rem;
+  border-radius: 99px;
+  font-size: .75rem; font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  color: var(--text-muted);
+  text-decoration: none; transition: var(--transition);
+}
+.session-chip:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<!-- ── Page Header ─────────────────────────────────────────── -->
+<div class="page-header">
+  <div>
+    <h1>📋 ماتریس حضور و غیاب</h1>
+    <p>دسته آموزشی: <strong>{{ category.name }}</strong>
+      {% if matrix.sheet.is_finalized %}
+        <span class="badge badge-green" style="margin-right:.5rem">✓ نهایی شده</span>
+      {% else %}
+        <span class="badge badge-amber" style="margin-right:.5rem">✏ پیش‌نویس</span>
+      {% endif %}
+    </p>
+  </div>
+
+  <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+
+    <!-- Month Navigator -->
+    <div class="month-nav">
+      <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}">&#8250; {{ prev_month.persian_name }}</a>
+      <span class="cur-month">{{ jalali_month.persian_name }} {{ jalali_month.year }}</span>
+      <a href="?year={{ next_month.year }}&month={{ next_month.month }}">{{ next_month.persian_name }} &#8249;</a>
+    </div>
+
+    <!-- Actions -->
+    {% if not matrix.sheet.is_finalized %}
+    <form method="post" action="{% url 'attendance:sheet-finalize' matrix.sheet.pk %}"
+          onsubmit="return confirm('پس از نهایی شدن، امکان ویرایش وجود ندارد. آیا مطمئن هستید؟')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-green">✅ نهایی کردن</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Summary Stats ──────────────────────────────────────── -->
+<div class="grid-auto mb-2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+  <div class="stat-card navy">
+    <div class="stat-label">کل جلسات</div>
+    <div class="stat-value">{{ session_dates|length }}</div>
+    <span class="stat-icon">📅</span>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-label">بازیکنان فعال</div>
+    <div class="stat-value">{{ matrix.player_rows|length }}</div>
+    <span class="stat-icon">👥</span>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-label">مربیان</div>
+    <div class="stat-value">{{ matrix.coach_rows|length }}</div>
+    <span class="stat-icon">🏃</span>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">وضعیت لیست</div>
+    <div class="stat-value" style="font-size:1.1rem;padding-top:.3rem">
+      {% if matrix.sheet.is_finalized %}نهایی ✓{% else %}پیش‌نویس{% endif %}
+    </div>
+    <span class="stat-icon">📊</span>
+  </div>
+</div>
+
+<!-- ── Filter Bar ─────────────────────────────────────────── -->
+<div class="filter-bar mb-2">
+  <div class="search-input-wrap">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    </svg>
+    <input type="text" id="player-search"
+           class="search-input"
+           placeholder="جستجوی بازیکن/مربی..."
+           oninput="filterRows(this.value)">
+  </div>
+
+  <button class="filter-tag active" data-filter="all" onclick="setFilter('all',this)">همه</button>
+  <button class="filter-tag" data-filter="present" onclick="setFilter('present',this)">
+    <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block"></span>
+    حاضر
+  </button>
+  <button class="filter-tag" data-filter="absent" onclick="setFilter('absent',this)">
+    <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block"></span>
+    کم‌حضور (زیر ۵۰٪)
+  </button>
+
+  <div class="filter-count">
+    <span id="row-count">{{ matrix.player_rows|length }}</span> نفر
+  </div>
+
+  {% if not matrix.sheet.is_finalized %}
+  <button class="btn btn-sm btn-outline" onclick="markAllPresent()">
+    ✓ همه حاضر
+  </button>
+  {% endif %}
+</div>
+
+<!-- ── Main Card ──────────────────────────────────────────── -->
+<div class="card">
+  <!-- Tabs -->
+  <div class="card-header">
+    <div class="tab-pills">
+      <button class="tab-pill active" onclick="switchTab('players',this)">👤 بازیکنان</button>
+      <button class="tab-pill" onclick="switchTab('coaches',this)">🏃 مربیان</button>
+    </div>
+
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <span id="unsaved-indicator" style="display:none" class="text-sm text-muted">
+        <span class="changed-dot"></span> تغییرات ذخیره‌نشده
+      </span>
+    </div>
+  </div>
+
+  <!-- ──────────── PLAYERS TAB ──────────── -->
+  <div id="tab-players" class="tab-panel">
+    <div class="matrix-scroll">
+      <table class="matrix-table" id="player-matrix">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-name">نام بازیکن</th>
+            {% for sd in session_dates %}
+            <th title="{{ sd.date }}">
+              ج{{ sd.session_number }}<br>
+              <span style="font-weight:400;opacity:.7;font-size:.68rem">{{ sd.date|date:"j/n" }}</span>
+            </th>
+            {% endfor %}
+            <th class="col-stat" title="حضور">✅</th>
+            <th class="col-stat" title="غیاب">❌</th>
+            <th class="col-pct" title="درصد حضور">٪</th>
+          </tr>
+        </thead>
+        <tbody id="player-tbody">
+          {% for row in matrix.player_rows %}
+          <tr data-name="{{ row.entity_name|lower }}"
+              data-present="{{ row.present_count }}"
+              data-total="{{ session_dates|length }}">
+            <td class="col-num">{{ forloop.counter }}</td>
+            <td class="col-name">
+              <a href="{% url 'attendance:player-history' row.entity_id %}"
+                 style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:.4rem">
+                <span style="width:28px;height:28px;border-radius:50%;background:var(--surface-2);display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">
+                  {{ row.entity_name|slice:":1" }}
+                </span>
+                {{ row.entity_name }}
+              </a>
+            </td>
+            {% for sd in session_dates %}
+              {% with status=row.sessions|get_item:sd.pk %}
+              <td class="cell-{{ status }} status-cell"
+                  data-session="{{ sd.pk }}"
+                  data-player="{{ row.entity_id }}"
+                  id="pcell-{{ sd.pk }}-{{ row.entity_id }}">
+                {% if can_edit %}
+                <select class="status-sel"
+                        onchange="onStatusChange(this,'player')"
+                        data-session="{{ sd.pk }}"
+                        data-entity="{{ row.entity_id }}"
+                        data-orig="{{ status }}">
+                  <option value="present" {% if status == "present" %}selected{% endif %}>✅ حاضر</option>
+                  <option value="absent"  {% if status == "absent"  %}selected{% endif %}>❌ غایب</option>
+                  <option value="excused" {% if status == "excused" %}selected{% endif %}>⚠ موجه</option>
+                </select>
+                {% else %}
+                  <span class="badge
+                    {% if status == 'present' %}badge-green
+                    {% elif status == 'absent' %}badge-red
+                    {% else %}badge-amber{% endif %}">
+                    {{ status|capfirst }}
+                  </span>
+                {% endif %}
+              </td>
+              {% endwith %}
+            {% endfor %}
+            <td class="col-stat" style="color:var(--green)" id="pres-{{ row.entity_id }}">{{ row.present_count }}</td>
+            <td class="col-stat" style="color:var(--red)"   id="abs-{{ row.entity_id }}">{{ row.absent_count }}</td>
+            <td class="col-pct">
+              <span class="{% if row.attendance_pct >= 75 %}pct-high{% elif row.attendance_pct >= 50 %}pct-mid{% else %}pct-low{% endif %}"
+                    id="pct-{{ row.entity_id }}">
+                {{ row.attendance_pct }}٪
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="100" style="text-align:center;padding:3rem;color:var(--text-muted)">
+              هیچ بازیکنی یافت نشد
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td class="col-num"></td>
+            <td class="col-name">جمع حاضران</td>
+            {% for sd in session_dates %}
+            <td id="col-total-{{ sd.pk }}">—</td>
+            {% endfor %}
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div><!-- /tab-players -->
+
+  <!-- ──────────── COACHES TAB ──────────── -->
+  <div id="tab-coaches" class="tab-panel hidden">
+    <div class="matrix-scroll">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-name">نام مربی</th>
+            {% for sd in session_dates %}
+            <th title="{{ sd.date }}">
+              ج{{ sd.session_number }}<br>
+              <span style="font-weight:400;opacity:.7;font-size:.68rem">{{ sd.date|date:"j/n" }}</span>
+            </th>
+            {% endfor %}
+            <th class="col-stat">✅</th>
+            <th class="col-pct">٪</th>
+          </tr>
+        </thead>
+        <tbody id="coach-tbody">
+          {% for row in matrix.coach_rows %}
+          <tr data-name="{{ row.entity_name|lower }}">
+            <td class="col-num">{{ forloop.counter }}</td>
+            <td class="col-name">{{ row.entity_name }}</td>
+            {% for sd in session_dates %}
+              {% with status=row.sessions|get_item:sd.pk %}
+              <td class="cell-{{ status }}"
+                  id="ccell-{{ sd.pk }}-{{ row.entity_id }}">
+                {% if can_edit %}
+                <select class="status-sel"
+                        onchange="onStatusChange(this,'coach')"
+                        data-session="{{ sd.pk }}"
+                        data-entity="{{ row.entity_id }}"
+                        data-orig="{{ status }}">
+                  <option value="present" {% if status == "present" %}selected{% endif %}>✅ حاضر</option>
+                  <option value="absent"  {% if status == "absent"  %}selected{% endif %}>❌ غایب</option>
+                  <option value="excused" {% if status == "excused" %}selected{% endif %}>⚠ موجه</option>
+                </select>
+                {% else %}
+                  <span class="badge {% if status == 'present' %}badge-green{% elif status == 'absent' %}badge-red{% else %}badge-amber{% endif %}">
+                    {{ status|capfirst }}
+                  </span>
+                {% endif %}
+              </td>
+              {% endwith %}
+            {% endfor %}
+            <td class="col-stat" style="color:var(--green)">{{ row.present_count }}</td>
+            <td class="col-pct">
+              <span class="{% if row.attendance_pct >= 75 %}pct-high{% elif row.attendance_pct >= 50 %}pct-mid{% else %}pct-low{% endif %}">
+                {{ row.attendance_pct }}٪
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="100" style="text-align:center;padding:3rem;color:var(--text-muted)">
+              هیچ مربی‌ای یافت نشد
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div><!-- /tab-coaches -->
+
+</div><!-- /card -->
+
+<!-- ── Session Links ──────────────────────────────────────── -->
+{% if session_dates %}
+<div class="card mt-2">
+  <div class="card-header">
+    <span class="card-title">🗓️ جلسات این ماه</span>
+  </div>
+  <div class="card-body">
+    <div class="session-chips">
+      {% for sd in session_dates %}
+      <a href="{% url 'attendance:session-detail' sd.pk %}" class="session-chip">
+        جلسه {{ sd.session_number }} — {{ sd.date|date:"j/n" }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Save Bar (sticky) ──────────────────────────────────── -->
+{% if can_edit %}
+<div class="save-bar" id="save-bar">
+  <span class="save-bar-msg">
+    <strong id="pending-count">0</strong> تغییر ذخیره‌نشده دارید
+  </span>
+  <div style="display:flex;gap:.5rem">
+    <button class="btn btn-outline" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2)"
+            onclick="discardChanges()">انصراف</button>
+    <button class="btn btn-amber" id="save-btn" onclick="saveAll()">
+      💾 ذخیره همه
+    </button>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ════════════════════════════════════════════════════════════
+   ATTENDANCE MATRIX — JavaScript
+════════════════════════════════════════════════════════════ */
+
+// ── State ───────────────────────────────────────────────────
+// { sessionPk: { players: [{player_id, status, note}], coaches: [...] } }
+const pending = {};
+
+// ── Session URLs map (built from Django context) ─────────────
+const SESSION_URLS = {
+  {% for sd in session_dates %}
+  {{ sd.pk }}: "{% url 'attendance:session-record' sd.pk %}",
+  {% endfor %}
+};
+
+// ── On status change ─────────────────────────────────────────
+function onStatusChange(sel, type) {
+  const sid    = parseInt(sel.dataset.session);
+  const eid    = parseInt(sel.dataset.entity);
+  const status = sel.value;
+
+  // Update cell class
+  const cell = sel.closest("td");
+  cell.className = cell.className.replace(/cell-\w+/g, "") + ` cell-${status}`;
+
+  // Track pending
+  if (!pending[sid]) pending[sid] = { players: [], coaches: [] };
+  const list = type === "player" ? pending[sid].players : pending[sid].coaches;
+  const key  = type === "player" ? "player_id" : "coach_id";
+
+  const existing = list.find(r => r[key] === eid);
+  if (existing) existing.status = status;
+  else          list.push({ [key]: eid, status, note: "" });
+
+  updatePendingUI();
+  recalcRowStats(eid, type);
+}
+
+function updatePendingUI() {
+  const total = Object.values(pending)
+    .reduce((acc, v) => acc + v.players.length + v.coaches.length, 0);
+
+  const saveBar = document.getElementById("save-bar");
+  const indicator = document.getElementById("unsaved-indicator");
+  if (saveBar) {
+    if (total > 0) {
+      saveBar.classList.add("visible");
+      document.getElementById("pending-count").textContent = total;
+    } else {
+      saveBar.classList.remove("visible");
+    }
+  }
+  if (indicator) indicator.style.display = total > 0 ? "flex" : "none";
+}
+
+// ── Save All ─────────────────────────────────────────────────
+async function saveAll() {
+  const btn = document.getElementById("save-btn");
+  if (!btn || Object.keys(pending).length === 0) return;
+
+  btn.disabled = true;
+  btn.textContent = "⏳ در حال ذخیره...";
+  showLoading();
+
+  let ok = 0, fail = 0;
+  const promises = Object.entries(pending).map(async ([sid, data]) => {
+    try {
+      const url = SESSION_URLS[sid];
+      const res = await apiPost(url, data);
+      if (res.success) { ok++; delete pending[sid]; }
+      else             fail++;
+    } catch { fail++; }
+  });
+
+  await Promise.all(promises);
+  hideLoading();
+
+  btn.disabled = false;
+  btn.textContent = "💾 ذخیره همه";
+
+  if (fail === 0) {
+    toast(`✅ ${ok} جلسه با موفقیت ذخیره شد.`, "success");
+    updatePendingUI();
+    updateColumnTotals();
+  } else {
+    toast(`⚠️ ${ok} موفق، ${fail} ناموفق. مجدداً تلاش کنید.`, "warning");
+  }
+}
+
+// ── Discard ──────────────────────────────────────────────────
+function discardChanges() {
+  if (!confirm("آیا از انصراف تغییرات مطمئن هستید؟")) return;
+  location.reload();
+}
+
+// ── Mark All Present ─────────────────────────────────────────
+function markAllPresent() {
+  document.querySelectorAll("#player-tbody select.status-sel").forEach(sel => {
+    if (sel.value !== "present") {
+      sel.value = "present";
+      onStatusChange(sel, "player");
+    }
+  });
+  toast("همه بازیکنان حاضر علامت‌گذاری شدند.", "success");
+}
+
+// ── Row Stat Recalculation ───────────────────────────────────
+function recalcRowStats(playerId, type) {
+  if (type !== "player") return;
+  const total    = {{ session_dates|length }};
+  let presCount  = 0, absCount = 0;
+
+  document.querySelectorAll(`select[data-entity="${playerId}"]`).forEach(sel => {
+    if (sel.value === "present") presCount++;
+    else if (sel.value === "absent") absCount++;
+  });
+
+  const presEl = document.getElementById(`pres-${playerId}`);
+  const absEl  = document.getElementById(`abs-${playerId}`);
+  const pctEl  = document.getElementById(`pct-${playerId}`);
+  if (presEl) presEl.textContent = presCount;
+  if (absEl)  absEl.textContent  = absCount;
+  if (pctEl && total > 0) {
+    const pct = Math.round(presCount / total * 100);
+    pctEl.textContent = `${pct}٪`;
+    pctEl.className = pct >= 75 ? "pct-high" : pct >= 50 ? "pct-mid" : "pct-low";
+  }
+}
+
+// ── Column Totals ─────────────────────────────────────────────
+function updateColumnTotals() {
+  {% for sd in session_dates %}
+  (function() {
+    const sid   = {{ sd.pk }};
+    const cells = document.querySelectorAll(`td[data-session="${sid}"]`);
+    let count = 0;
+    cells.forEach(c => {
+      const sel = c.querySelector("select");
+      if (sel && sel.value === "present") count++;
+      else if (!sel && c.classList.contains("cell-present")) count++;
+    });
+    const el = document.getElementById(`col-total-${sid}`);
+    if (el) el.textContent = count;
+  })();
+  {% endfor %}
+}
+
+// ── Search / Filter ───────────────────────────────────────────
+let currentFilter = "all";
+
+function filterRows(query) {
+  const q = query.trim().toLowerCase();
+  applyFilters(q, currentFilter);
+}
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll(".filter-tag").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  applyFilters(document.getElementById("player-search").value.trim().toLowerCase(), filter);
+}
+
+function applyFilters(query, filter) {
+  let visible = 0;
+  document.querySelectorAll("#player-tbody tr").forEach(row => {
+    const name    = row.dataset.name || "";
+    const present = parseInt(row.dataset.present || "0");
+    const total   = parseInt(row.dataset.total   || "1");
+    const pct     = total > 0 ? present / total : 0;
+
+    const matchQuery  = !query || name.includes(query);
+    const matchFilter = filter === "all"
+      || (filter === "present" && pct >= 0.75)
+      || (filter === "absent"  && pct < 0.5);
+
+    if (matchQuery && matchFilter) {
+      row.classList.remove("hidden-row");
+      visible++;
+    } else {
+      row.classList.add("hidden-row");
+    }
+  });
+  const el = document.getElementById("row-count");
+  if (el) el.textContent = visible;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+  document.querySelectorAll(".tab-pill").forEach(b => b.classList.remove("active"));
+  document.getElementById(`tab-${name}`)?.classList.remove("hidden");
+  btn.classList.add("active");
+}
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", updateColumnTotals);
+</script>
+{% endblock %}

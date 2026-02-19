@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}پرداخت موفق{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;margin:3rem auto;text-align:center">
+
+  <!-- Icon -->
+  <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);
+              margin:0 auto 1.5rem;display:flex;align-items:center;justify-content:center;
+              font-size:2.5rem;box-shadow:0 8px 25px rgba(16,185,129,.35);
+              animation:pop .5s cubic-bezier(.34,1.56,.64,1) both">
+    ✅
+  </div>
+
+  <h1 style="font-size:1.6rem;font-weight:900;color:#065f46;margin-bottom:.5rem">
+    پرداخت با موفقیت انجام شد
+  </h1>
+  <p style="color:#64748b;font-size:.95rem;margin-bottom:2rem">
+    تراکنش شما تأیید شده و فاکتور پرداخت‌شده ثبت گردید.
+  </p>
+
+  <!-- Receipt box -->
+  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;
+              padding:1.5rem;margin-bottom:1.75rem;text-align:right">
+
+    {% if ref_id %}
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                padding:.6rem 0;border-bottom:1px solid #bbf7d0">
+      <span style="font-size:.85rem;color:#64748b">کد رهگیری زرین‌پال</span>
+      <span style="font-weight:800;font-family:monospace;color:#065f46;font-size:1.05rem">
+        {{ ref_id }}
+      </span>
+    </div>
+    {% endif %}
+
+    {% if invoice %}
+    <div style="display:flex;justify-content:space-between;
+                padding:.6rem 0;border-bottom:1px solid #bbf7d0">
+      <span style="font-size:.85rem;color:#64748b">بازیکن</span>
+      <span style="font-weight:600;color:#1a1a1a">
+        {{ invoice.player.first_name }} {{ invoice.player.last_name }}
+      </span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                padding:.6rem 0;border-bottom:1px solid #bbf7d0">
+      <span style="font-size:.85rem;color:#64748b">دسته آموزشی</span>
+      <span style="font-weight:600;color:#1a1a1a">{{ invoice.category.name }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                padding:.6rem 0;border-bottom:1px solid #bbf7d0">
+      <span style="font-size:.85rem;color:#64748b">دوره</span>
+      <span style="font-weight:600;color:#1a1a1a">
+        {{ invoice.jalali_year }}/{{ invoice.jalali_month|stringformat:"02d" }}
+      </span>
+    </div>
+    {% endif %}
+
+    {% if amount %}
+    <div style="display:flex;justify-content:space-between;
+                padding:.6rem 0;margin-top:.25rem">
+      <span style="font-size:.85rem;color:#64748b">مبلغ پرداختی</span>
+      <span style="font-weight:900;color:#065f46;font-size:1.1rem">
+        {{ amount|floatformat:0 }} ریال
+      </span>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+    {% if category %}
+    <a href="{% url 'payroll:invoice-list' category_pk=category.pk %}"
+       class="btn btn-primary">
+      🧾 بازگشت به لیست فاکتورها
+    </a>
+    {% endif %}
+    <a href="{% url 'auth:dashboard' %}" class="btn btn-outline">
+      🏠 داشبورد
+    </a>
+  </div>
+
+  <p style="margin-top:1.5rem;font-size:.8rem;color:#94a3b8">
+    این رسید را برای پیگیری‌های بعدی نگه دارید.
+  </p>
+</div>
+
+<style>
+@keyframes pop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+</style>
+{% endblock %}

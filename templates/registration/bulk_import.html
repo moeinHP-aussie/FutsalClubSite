@@ -1,0 +1,529 @@
+{% extends "base.html" %}
+{% block title %}ایمپورت دسته‌جمعی بازیکنان{% endblock %}
+{% block nav_players %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="#" style="text-decoration:none;color:inherit">بازیکنان</a>
+  <span class="sep">›</span>
+  <span class="cur">ایمپورت دسته‌جمعی</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ══════════════════════════════════════════════════════════════
+   BULK IMPORT — scoped styles
+══════════════════════════════════════════════════════════════ */
+
+/* ── Drop Zone ────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--surface-2);
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--amber);
+  background: #fffbeb;
+}
+.drop-zone input[type=file] {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.drop-icon { font-size: 3rem; margin-bottom: .75rem; }
+.drop-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
+.drop-sub   { font-size: .82rem; color: var(--text-muted); margin-top: .35rem; }
+.file-chosen {
+  display: none;
+  align-items: center; gap: .75rem;
+  padding: .85rem 1rem;
+  background: #d1fae5; border: 1px solid #a7f3d0;
+  border-radius: var(--radius-sm);
+  font-size: .875rem; color: #065f46; font-weight: 600;
+  margin-top: .75rem;
+}
+.file-chosen.show { display: flex; }
+
+/* ── Sheet Selector ───────────────────────────────────────── */
+.sheet-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+.sheet-chip  {
+  padding: .35rem .85rem;
+  border-radius: 99px;
+  border: 1.5px solid var(--surface-2);
+  font-size: .8rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition); color: var(--text-muted);
+  user-select: none;
+}
+.sheet-chip:hover { border-color: var(--navy); color: var(--navy); }
+.sheet-chip.selected { background: var(--navy); border-color: var(--navy); color: var(--white); }
+.sheet-loading { font-size: .82rem; color: var(--text-muted); display: none; }
+
+/* ── Column Map Table ─────────────────────────────────────── */
+.col-map-table { font-size: .8rem; width: 100%; border-collapse: collapse; }
+.col-map-table th {
+  background: var(--surface); padding: .5rem .85rem;
+  text-align: right; font-size: .72rem; color: var(--text-muted); font-weight: 700;
+  border-bottom: 2px solid var(--surface-2);
+}
+.col-map-table td { padding: .5rem .85rem; border-bottom: 1px solid var(--surface); }
+.col-map-table tr:last-child td { border-bottom: none; }
+.col-letter {
+  font-weight: 800; font-size: .85rem; font-family: monospace;
+  color: var(--navy);
+}
+.col-required { color: var(--red); font-weight: 700; }
+
+/* ── Progress / Result ────────────────────────────────────── */
+.result-header {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.result-stat {
+  display: flex; flex-direction: column; align-items: center;
+  padding: .85rem 1.25rem;
+  border-radius: var(--radius-sm);
+  min-width: 100px;
+}
+.result-stat.green { background: #d1fae5; color: #065f46; }
+.result-stat.blue  { background: #dbeafe; color: #1e3a8a; }
+.result-stat.amber { background: #fef3c7; color: #92400e; }
+.result-stat.red   { background: #fee2e2; color: #991b1b; }
+.result-stat .num  { font-size: 2rem; font-weight: 900; line-height: 1; }
+.result-stat .lbl  { font-size: .72rem; font-weight: 600; margin-top: .2rem; }
+
+/* ── Row Result Table ─────────────────────────────────────── */
+.result-table { font-size: .8rem; }
+.action-created { color: var(--green); font-weight: 700; }
+.action-updated { color: var(--teal); font-weight: 700; }
+.action-skipped { color: var(--text-muted); }
+.action-error   { color: var(--red); font-weight: 700; }
+.filter-btns { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.filt-btn {
+  padding: .3rem .75rem; border-radius: 99px;
+  font-size: .77rem; font-weight: 700;
+  border: 1.5px solid var(--surface-2);
+  cursor: pointer; transition: var(--transition);
+  background: none; color: var(--text-muted); font-family: inherit;
+}
+.filt-btn.on { background: var(--navy); border-color: var(--navy); color: var(--white); }
+.progress-bar-outer {
+  height: 8px; border-radius: 99px;
+  background: var(--surface-2); margin-top: .4rem;
+}
+.progress-bar-inner {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--green), var(--teal));
+  transition: width .5s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>📥 ایمپورت دسته‌جمعی بازیکنان</h1>
+    <p>بارگذاری فایل اکسل باشگاه — کدملی به عنوان کلید یکتا استفاده می‌شود</p>
+  </div>
+  {% if result %}
+  <a href="{% url 'registration:bulk-import' %}" class="btn btn-outline">← ایمپورت جدید</a>
+  {% endif %}
+</div>
+
+{% if not result %}
+{# ═══════════════════════════════════ UPLOAD FORM ═══════════════════════════════════ #}
+<div style="display:grid;grid-template-columns:1fr 360px;gap:1.5rem;align-items:start">
+
+  <!-- Left: Upload Form -->
+  <div>
+    <form method="post" enctype="multipart/form-data" id="import-form">
+      {% csrf_token %}
+
+      <!-- Drop Zone -->
+      <div class="card mb-2">
+        <div class="card-header"><span class="card-title">📎 انتخاب فایل اکسل</span></div>
+        <div class="card-body">
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" name="excel_file" id="excel-file"
+                   accept=".xlsx,.xls" required
+                   onchange="onFileChosen(this)">
+            <div class="drop-icon">📊</div>
+            <div class="drop-title">فایل اکسل را اینجا رها کنید یا کلیک کنید</div>
+            <div class="drop-sub">{{ allowed_formats }} | حداکثر {{ max_upload_mb }} مگابایت</div>
+          </div>
+          <div class="file-chosen" id="file-chosen">
+            <span style="font-size:1.5rem">✅</span>
+            <div>
+              <div id="chosen-name" style="font-weight:700">—</div>
+              <div id="chosen-size" style="font-size:.75rem;color:#065f46">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sheet Selection -->
+      <div class="card mb-2">
+        <div class="card-header">
+          <span class="card-title">🗂️ انتخاب شیت‌ها</span>
+          <span class="text-sm text-muted">پیش‌فرض: همه شیت‌ها</span>
+        </div>
+        <div class="card-body">
+          <div id="sheet-loading" class="sheet-loading">⏳ در حال خواندن شیت‌ها...</div>
+          <div class="sheet-chips" id="sheet-chips">
+            <span style="font-size:.82rem;color:var(--text-muted)">ابتدا فایل را انتخاب کنید</span>
+          </div>
+          <input type="hidden" name="sheet_names" id="sheet-names-input" value="">
+          <div class="form-hint" style="margin-top:.5rem">
+            اگر هیچ شیتی انتخاب نشود، همه شیت‌ها پردازش می‌شوند
+          </div>
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="card mb-2">
+        <div class="card-header"><span class="card-title">⚙️ تنظیمات</span></div>
+        <div class="card-body">
+          <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--surface-2);border-radius:var(--radius-sm);transition:var(--transition)"
+                 id="dry-run-label">
+            <input type="checkbox" name="dry_run" value="1" id="dry-run-cb"
+                   onchange="toggleDryRun(this)"
+                   style="width:18px;height:18px;accent-color:var(--amber)">
+            <div>
+              <div style="font-weight:700;font-size:.9rem">🔍 حالت پیش‌نمایش (Dry Run)</div>
+              <div style="font-size:.78rem;color:var(--text-muted);margin-top:.15rem">
+                فایل تحلیل می‌شود اما هیچ چیزی در دیتابیس ذخیره نمی‌شود
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div style="display:flex;gap:.75rem;justify-content:flex-end">
+        <button type="submit" class="btn btn-amber btn-lg" id="import-btn"
+                onclick="onSubmit(this)">
+          📥 شروع ایمپورت
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Right: Column Map Sidebar -->
+  <div>
+    <div class="card" style="position:sticky;top:calc(var(--header-h) + 1rem)">
+      <div class="card-header">
+        <span class="card-title">🗺️ نگاشت ستون‌ها</span>
+      </div>
+      <div style="max-height:520px;overflow-y:auto">
+        <table class="col-map-table">
+          <thead>
+            <tr>
+              <th>ستون</th>
+              <th>عنوان فایل</th>
+              <th>فیلد سیستم</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for col, persian, field, required in column_map %}
+            <tr>
+              <td class="col-letter">{{ col }}</td>
+              <td>{{ persian }}</td>
+              <td>
+                {% if field == "—" %}
+                  <span style="color:var(--text-light)">—</span>
+                {% else %}
+                  <code style="font-size:.75rem;background:var(--surface);padding:.1rem .35rem;border-radius:4px">
+                    {{ field }}
+                  </code>
+                {% endif %}
+                {% if required %}
+                  <span class="col-required" title="الزامی">✱</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:.75rem 1rem;border-top:1px solid var(--surface);font-size:.72rem;color:var(--text-muted)">
+        <span class="col-required">✱</span> فیلد الزامی
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+{% if result %}
+{# ═══════════════════════════════════ RESULTS ═══════════════════════════════════ #}
+
+{% if dry_run %}
+<div class="alert alert-warning mb-2">
+  <span class="alert-icon">🔍</span>
+  <div>
+    <strong>حالت پیش‌نمایش — هیچ تغییری در دیتابیس اعمال نشد</strong>
+    <div style="margin-top:.3rem;font-size:.85rem">برای ذخیره واقعی، فایل را مجدداً بدون تیک Dry Run آپلود کنید.</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Result Stats -->
+<div style="display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:1.5rem">
+  <div class="result-stat green">
+    <div class="num">{{ result.created }}</div>
+    <div class="lbl">ایجاد شده</div>
+  </div>
+  <div class="result-stat blue">
+    <div class="num">{{ result.updated }}</div>
+    <div class="lbl">به‌روز شده</div>
+  </div>
+  <div class="result-stat amber">
+    <div class="num">{{ result.skipped }}</div>
+    <div class="lbl">رد شده</div>
+  </div>
+  <div class="result-stat red">
+    <div class="num">{{ result.errors }}</div>
+    <div class="lbl">خطا</div>
+  </div>
+  <div class="result-stat" style="background:var(--surface-2);color:var(--text-muted)">
+    <div class="num">{{ result.total_rows }}</div>
+    <div class="lbl">کل ردیف</div>
+  </div>
+  <div class="result-stat" style="background:#ede9fe;color:#5b21b6">
+    <div class="num">{{ result.categories_created }}</div>
+    <div class="lbl">دسته جدید</div>
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div style="margin-bottom:1.5rem">
+  <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-muted);margin-bottom:.35rem">
+    <span>نرخ موفقیت</span>
+    <strong style="color:var(--text-main)">%{{ result.success_rate }}</strong>
+  </div>
+  <div class="progress-bar-outer">
+    <div class="progress-bar-inner" style="width:{{ result.success_rate }}%"></div>
+  </div>
+</div>
+
+<!-- Warnings -->
+{% if result.warnings %}
+<div class="card mb-2">
+  <div class="card-header">
+    <span class="card-title">⚠️ هشدارها ({{ result.warnings|length }})</span>
+  </div>
+  <div class="card-body" style="padding:.75rem">
+    {% for w in result.warnings %}
+    <div style="font-size:.82rem;padding:.35rem 0;border-bottom:1px solid var(--surface);color:var(--amber-dim)">
+      ⚠ {{ w }}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Row Results Table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">📋 جزئیات ردیف‌ها</span>
+    <span class="text-sm text-muted">{{ result.rows|length }} ردیف</span>
+  </div>
+  <div class="card-body" style="padding:.75rem 1rem .5rem">
+    <div class="filter-btns">
+      <button class="filt-btn on" onclick="filterRows('all',this)">همه</button>
+      <button class="filt-btn" onclick="filterRows('created',this)" style="color:var(--green)">✅ ایجاد</button>
+      <button class="filt-btn" onclick="filterRows('updated',this)" style="color:var(--teal)">🔄 به‌روز</button>
+      <button class="filt-btn" onclick="filterRows('skipped',this)">⏩ رد</button>
+      <button class="filt-btn" onclick="filterRows('error',this)" style="color:var(--red)">❌ خطا</button>
+    </div>
+    <input type="text" id="row-search" class="form-control" style="max-width:280px;margin-bottom:.75rem"
+           placeholder="جستجو نام / کدملی..." oninput="searchRows(this.value)">
+  </div>
+  <div class="table-wrap">
+    <table class="data-table result-table" id="result-table">
+      <thead>
+        <tr>
+          <th>شیت</th>
+          <th>ردیف</th>
+          <th>نام</th>
+          <th>کدملی</th>
+          <th>وضعیت</th>
+          <th>پیام</th>
+        </tr>
+      </thead>
+      <tbody id="result-tbody">
+        {% for row in result.rows %}
+        <tr data-action="{{ row.action }}"
+            data-name="{{ row.name|lower }}"
+            data-nid="{{ row.national_id }}">
+          <td style="font-size:.75rem;color:var(--text-muted)">{{ row.sheet }}</td>
+          <td>{{ row.row_num }}</td>
+          <td style="font-weight:600">{{ row.name }}</td>
+          <td style="font-family:monospace;font-size:.8rem">{{ row.national_id }}</td>
+          <td>
+            <span class="action-{{ row.action }}">
+              {% if row.action == 'created' %}✅ ایجاد
+              {% elif row.action == 'updated' %}🔄 به‌روز
+              {% elif row.action == 'skipped' %}⏩ رد
+              {% elif row.action == 'error' %}❌ خطا
+              {% else %}{{ row.action }}{% endif %}
+            </span>
+          </td>
+          <td style="font-size:.78rem;color:var(--text-muted);max-width:280px">
+            {{ row.message|truncatechars:120 }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">هیچ ردیفی پردازش نشد</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── File Selection ──────────────────────────────────────── */
+function onFileChosen(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const el = document.getElementById("file-chosen");
+  document.getElementById("chosen-name").textContent = file.name;
+  document.getElementById("chosen-size").textContent = (file.size / 1024 / 1024).toFixed(2) + " MB";
+  el.classList.add("show");
+
+  // Try to load sheet names via AJAX
+  loadSheetNames(input.files[0]);
+}
+
+/* ── Drag & Drop ─────────────────────────────────────────── */
+const dz = document.getElementById("drop-zone");
+if (dz) {
+  dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("drag-over"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+  dz.addEventListener("drop",      e => {
+    e.preventDefault(); dz.classList.remove("drag-over");
+    const fi = document.getElementById("excel-file");
+    fi.files = e.dataTransfer.files;
+    onFileChosen(fi);
+  });
+}
+
+/* ── Sheet Loader (AJAX) ─────────────────────────────────── */
+let selectedSheets = new Set();
+
+async function loadSheetNames(file) {
+  const loading = document.getElementById("sheet-loading");
+  const chips   = document.getElementById("sheet-chips");
+  if (!loading || !chips) return;
+
+  loading.style.display = "block";
+  chips.innerHTML = "";
+  selectedSheets.clear();
+
+  const fd = new FormData();
+  fd.append("excel_file", file);
+  fd.append("csrfmiddlewaretoken", getCookie("csrftoken"));
+
+  try {
+    const res  = await fetch("{% url 'registration:import-preview' %}", { method: "POST", body: fd });
+    const data = await res.json();
+    loading.style.display = "none";
+
+    if (data.sheets && data.sheets.length) {
+      chips.innerHTML = "";
+      data.sheets.forEach(name => {
+        const chip = document.createElement("div");
+        chip.className   = "sheet-chip selected";
+        chip.textContent = name;
+        chip.dataset.name = name;
+        selectedSheets.add(name);
+        chip.onclick = () => toggleSheet(chip, name);
+        chips.appendChild(chip);
+      });
+      updateSheetInput();
+    } else {
+      chips.innerHTML = '<span style="color:var(--text-muted);font-size:.82rem">هیچ شیتی یافت نشد</span>';
+    }
+  } catch (e) {
+    loading.style.display = "none";
+    chips.innerHTML = '<span style="color:var(--red);font-size:.82rem">خطا در خواندن شیت‌ها</span>';
+  }
+}
+
+function toggleSheet(chip, name) {
+  if (selectedSheets.has(name)) {
+    selectedSheets.delete(name);
+    chip.classList.remove("selected");
+  } else {
+    selectedSheets.add(name);
+    chip.classList.add("selected");
+  }
+  updateSheetInput();
+}
+
+function updateSheetInput() {
+  const inp = document.getElementById("sheet-names-input");
+  if (inp) inp.value = Array.from(selectedSheets).join(",");
+}
+
+/* ── Dry Run Toggle ──────────────────────────────────────── */
+function toggleDryRun(cb) {
+  const lbl = document.getElementById("dry-run-label");
+  const btn = document.getElementById("import-btn");
+  if (cb.checked) {
+    lbl.style.borderColor = "var(--amber)";
+    lbl.style.background  = "#fffbeb";
+    btn.textContent = "🔍 پیش‌نمایش";
+    btn.className = "btn btn-outline btn-lg";
+  } else {
+    lbl.style.borderColor = "";
+    lbl.style.background  = "";
+    btn.textContent = "📥 شروع ایمپورت";
+    btn.className = "btn btn-amber btn-lg";
+  }
+}
+
+/* ── Submit ──────────────────────────────────────────────── */
+function onSubmit(btn) {
+  btn.disabled    = true;
+  btn.textContent = "⏳ در حال پردازش...";
+  showLoading();
+}
+
+/* ── Result Filters ──────────────────────────────────────── */
+let currentFilter = "all";
+
+function filterRows(action, btn) {
+  currentFilter = action;
+  document.querySelectorAll(".filt-btn").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+  applyFilters();
+}
+
+function searchRows(q) {
+  applyFilters(q.trim().toLowerCase());
+}
+
+function applyFilters(q = "") {
+  document.querySelectorAll("#result-tbody tr").forEach(row => {
+    const action = row.dataset.action  || "";
+    const name   = row.dataset.name    || "";
+    const nid    = row.dataset.nid     || "";
+
+    const matchAction = currentFilter === "all" || action === currentFilter;
+    const matchSearch = !q || name.includes(q) || nid.includes(q);
+
+    row.style.display = matchAction && matchSearch ? "" : "none";
+  });
+}
+</script>
+{% endblock %}

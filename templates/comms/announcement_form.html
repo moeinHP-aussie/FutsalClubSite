@@ -1,0 +1,266 @@
+{% comment %}
+templates/comms/announcement_form.html
+Coach / Technical Director announcement creation widget
+{% endcomment %}
+{% extends "base.html" %}
+{% block title %}ارسال اطلاعیه{% endblock %}
+{% block nav_announcements %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'comms:announcement-list' %}" style="text-decoration:none;color:inherit">اطلاعیه‌ها</a>
+  <span class="sep">›</span>
+  <span class="cur">ارسال اطلاعیه جدید</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.form-card    { max-width: 700px; }
+.cat-grid     { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: .6rem; margin-top: .4rem; }
+.cat-checkbox { display: none; }
+.cat-label {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .65rem .9rem;
+  border: 1.5px solid var(--surface-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer; font-size: .875rem;
+  transition: var(--transition);
+  user-select: none;
+}
+.cat-label:hover { border-color: var(--navy); background: var(--surface); }
+.cat-checkbox:checked + .cat-label {
+  border-color: var(--navy);
+  background: rgba(13,27,42,.05);
+  color: var(--navy); font-weight: 600;
+}
+.cat-checkbox:checked + .cat-label::before {
+  content: "✓";
+  width: 18px; height: 18px;
+  background: var(--navy); color: var(--white);
+  border-radius: 4px; font-size: .7rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.cat-checkbox:not(:checked) + .cat-label::before {
+  content: "";
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--surface-2);
+  border-radius: 4px; flex-shrink: 0;
+}
+.pin-toggle {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .85rem 1rem;
+  border: 1.5px solid var(--surface-2);
+  border-radius: var(--radius-sm); cursor: pointer;
+  transition: var(--transition);
+}
+.pin-toggle:hover { border-color: var(--amber); background: #fffbeb; }
+.toggle-switch {
+  width: 42px; height: 22px; border-radius: 99px;
+  background: var(--surface-2); position: relative;
+  transition: background .2s; flex-shrink: 0;
+}
+.toggle-switch::after {
+  content: ""; position: absolute;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--white); top: 3px; right: 3px;
+  transition: transform .2s, right .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+#is_pinned:checked ~ .pin-toggle .toggle-switch { background: var(--amber); }
+#is_pinned:checked ~ .pin-toggle .toggle-switch::after { right: 23px; }
+.char-counter { font-size: .75rem; color: var(--text-light); float: left; }
+.preview-box {
+  background: var(--surface);
+  border: 1px dashed var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  min-height: 60px;
+  font-size: .875rem; line-height: 1.7;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  display: none;
+}
+.preview-box.has-content { display: block; color: var(--text-main); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>📣 ارسال اطلاعیه</h1>
+    <p>اطلاعیه برای دسته‌های آموزشی انتخاب‌شده ارسال می‌شود</p>
+  </div>
+  <a href="{% url 'comms:announcement-list' %}" class="btn btn-outline">← برگشت</a>
+</div>
+
+<div class="form-card">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">✍️ محتوای اطلاعیه</span>
+    </div>
+    <div class="card-body">
+      <form method="post" id="ann-form">
+        {% csrf_token %}
+
+        <!-- Error messages -->
+        {% if form.errors %}
+        <div class="alert alert-danger mb-2">
+          <span class="alert-icon">❌</span>
+          <div>
+            {% for field, errors in form.errors.items %}
+              {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Title -->
+        <div class="form-group">
+          <label class="form-label" for="id_title">
+            عنوان اطلاعیه <span class="req">*</span>
+          </label>
+          <input type="text" name="title" id="id_title"
+                 class="form-control"
+                 value="{{ form.title.value|default:'' }}"
+                 maxlength="255"
+                 placeholder="مثال: تغییر ساعت تمرین شنبه"
+                 oninput="updateTitle(this)">
+        </div>
+
+        <!-- Body -->
+        <div class="form-group">
+          <label class="form-label" for="id_body">
+            متن اطلاعیه <span class="req">*</span>
+            <span class="char-counter" id="char-count">0 / 1000</span>
+          </label>
+          <textarea name="body" id="id_body"
+                    class="form-control"
+                    rows="5"
+                    maxlength="1000"
+                    placeholder="متن اطلاعیه را اینجا بنویسید..."
+                    oninput="updatePreview(this)">{{ form.body.value|default:'' }}</textarea>
+          <!-- Live Preview -->
+          <div class="preview-box mt-1" id="body-preview"></div>
+        </div>
+
+        <!-- Categories -->
+        <div class="form-group">
+          <label class="form-label">
+            دسته‌های هدف <span class="req">*</span>
+          </label>
+          <div class="cat-grid">
+            {% for cat in form.categories.field.queryset %}
+            <div>
+              <input type="checkbox"
+                     name="categories"
+                     value="{{ cat.pk }}"
+                     id="cat_{{ cat.pk }}"
+                     class="cat-checkbox"
+                     {% if cat in form.categories.value %}checked{% endif %}
+                     onchange="updateTargetCount()">
+              <label for="cat_{{ cat.pk }}" class="cat-label">
+                {{ cat.name }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="form-hint" id="target-hint">هیچ دسته‌ای انتخاب نشده</div>
+        </div>
+
+        <!-- Pin toggle -->
+        <div class="form-group">
+          <input type="checkbox" name="is_pinned" id="is_pinned"
+                 class="cat-checkbox" style="display:none"
+                 {% if form.is_pinned.value %}checked{% endif %}>
+          <label for="is_pinned" class="pin-toggle">
+            <div class="toggle-switch"></div>
+            <div>
+              <div style="font-weight:600;font-size:.9rem">📌 سنجاق کردن اطلاعیه</div>
+              <div class="form-hint" style="margin-top:.15rem">
+                اطلاعیه‌های سنجاق‌شده در بالای لیست نمایش داده می‌شوند
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Preview Card -->
+        <div id="preview-card" style="display:none" class="mb-2">
+          <div class="alert alert-info">
+            <span class="alert-icon">👁</span>
+            <div>
+              <div style="font-weight:700" id="prev-title">—</div>
+              <div style="margin-top:.3rem" id="prev-body">—</div>
+              <div class="text-sm text-muted mt-1" id="prev-cats">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.75rem;justify-content:flex-end">
+          <a href="{% url 'comms:announcement-list' %}" class="btn btn-outline">انصراف</a>
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            📣 ارسال اطلاعیه
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updatePreview(textarea) {
+  const val = textarea.value.trim();
+  const counter = document.getElementById("char-count");
+  const preview = document.getElementById("body-preview");
+  counter.textContent = `${textarea.value.length} / 1000`;
+  if (val) {
+    preview.textContent = val;
+    preview.classList.add("has-content");
+  } else {
+    preview.classList.remove("has-content");
+  }
+  refreshPreviewCard();
+}
+
+function updateTitle(input) { refreshPreviewCard(); }
+
+function updateTargetCount() {
+  const checked = document.querySelectorAll(".cat-checkbox:checked:not(#is_pinned)");
+  const hint = document.getElementById("target-hint");
+  const names = Array.from(checked).map(cb => {
+    return document.querySelector(`label[for="${cb.id}"]`)?.textContent.trim() || "";
+  });
+  hint.textContent = checked.length === 0
+    ? "هیچ دسته‌ای انتخاب نشده"
+    : `ارسال به: ${names.join("، ")}`;
+  refreshPreviewCard();
+}
+
+function refreshPreviewCard() {
+  const card    = document.getElementById("preview-card");
+  const title   = document.getElementById("id_title")?.value.trim();
+  const body    = document.getElementById("id_body")?.value.trim();
+  const checked = document.querySelectorAll(".cat-checkbox:checked:not(#is_pinned)");
+
+  if (!title && !body) { card.style.display = "none"; return; }
+  card.style.display = "block";
+
+  const names = Array.from(checked).map(cb =>
+    document.querySelector(`label[for="${cb.id}"]`)?.textContent.trim() || ""
+  );
+
+  document.getElementById("prev-title").textContent = title || "(بدون عنوان)";
+  document.getElementById("prev-body").textContent  = body  || "(بدون متن)";
+  document.getElementById("prev-cats").textContent  = names.length ? `دسته‌ها: ${names.join(" | ")}` : "";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  updateTargetCount();
+  const bodyEl = document.getElementById("id_body");
+  if (bodyEl && bodyEl.value) updatePreview(bodyEl);
+});
+</script>
+{% endblock %}

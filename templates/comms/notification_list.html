@@ -1,0 +1,118 @@
+{% comment %}templates/comms/notification_list.html{% endcomment %}
+{% extends "base.html" %}
+{% block title %}اعلان‌های من{% endblock %}
+{% block nav_notifications %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <span class="cur">اعلان‌های من</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.notif-list-item {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--surface);
+  text-decoration: none; color: inherit;
+  transition: background .12s;
+  cursor: pointer;
+}
+.notif-list-item:hover { background: var(--surface); }
+.notif-list-item.unread { background: #eff6ff; }
+.notif-list-item:last-child { border-bottom: none; }
+.notif-type-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+.type-insurance_expiry { background: #fee2e2; }
+.type-invoice_due      { background: #fef3c7; }
+.type-salary_ready     { background: #d1fae5; }
+.type-general          { background: #dbeafe; }
+.notif-item-title    { font-weight: 600; font-size: .9rem; }
+.notif-item-msg      { font-size: .825rem; color: var(--text-muted); margin-top: .25rem; line-height: 1.5; }
+.notif-item-time     { font-size: .72rem; color: var(--text-light); margin-top: .4rem; }
+.unread-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--teal); flex-shrink: 0; margin-top: .55rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🔔 اعلان‌های من</h1>
+    {% if unread_count %}
+    <p><span class="badge badge-teal">{{ unread_count }} خوانده‌نشده</span></p>
+    {% endif %}
+  </div>
+  {% if unread_count %}
+  <form method="post" action="{% url 'comms:notification-read-all' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-outline btn-sm">✅ همه را خوانده‌ام</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="card">
+  {% if notifications %}
+  {% for n in notifications %}
+  <a href="{% url 'comms:notification-read' n.pk %}?next={{ request.path }}"
+     class="notif-list-item {% if not n.is_read %}unread{% endif %}">
+    <!-- Unread dot -->
+    {% if not n.is_read %}
+      <div class="unread-dot"></div>
+    {% else %}
+      <div style="width:8px;flex-shrink:0"></div>
+    {% endif %}
+
+    <!-- Type icon -->
+    <div class="notif-type-icon type-{{ n.type }}">
+      {% if n.type == "insurance_expiry" %}🛡️
+      {% elif n.type == "invoice_due" %}🧾
+      {% elif n.type == "salary_ready" %}💰
+      {% else %}📢
+      {% endif %}
+    </div>
+
+    <!-- Content -->
+    <div style="flex:1;min-width:0">
+      <div class="notif-item-title">{{ n.title }}</div>
+      <div class="notif-item-msg">{{ n.message }}</div>
+      <div class="notif-item-time">
+        {{ n.created_at|timesince }} پیش
+        {% if n.is_read and n.read_at %}· خوانده شد: {{ n.read_at|timesince }} پیش{% endif %}
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div style="color:var(--text-light);font-size:.9rem;flex-shrink:0;margin-top:.35rem">›</div>
+  </a>
+  {% endfor %}
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <div style="display:flex;justify-content:center;gap:.5rem;padding:1rem">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline btn-sm">← قبلی</a>
+    {% endif %}
+    <span style="font-size:.85rem;color:var(--text-muted);padding:.4rem .75rem">
+      {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline btn-sm">بعدی →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align:center;padding:4rem 2rem;color:var(--text-muted)">
+    <div style="font-size:3rem;margin-bottom:1rem">🔕</div>
+    <h3 style="margin-bottom:.5rem">هیچ اعلانی ندارید</h3>
+    <p style="font-size:.875rem">وقتی اعلان جدیدی داشتید، اینجا نمایش داده می‌شود.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

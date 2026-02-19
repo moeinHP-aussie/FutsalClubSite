@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ورود به سیستم — باشگاه فوتسال</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Vazirmatn", Tahoma, sans-serif;
+      background: linear-gradient(135deg, #0d1b2a 0%, #1a3150 50%, #0d1b2a 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      direction: rtl;
+    }
+
+    .login-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 60px rgba(0,0,0,.4);
+      animation: slideUp .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .logo-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, #f59e0b, #fcd34d);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: 0 4px 16px rgba(245,158,11,.35);
+      flex-shrink: 0;
+    }
+
+    .logo-text h1 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #0d1b2a;
+    }
+
+    .logo-text p {
+      font-size: .78rem;
+      color: #64748b;
+      margin-top: .1rem;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: .35rem;
+    }
+
+    .subtitle {
+      font-size: .85rem;
+      color: #64748b;
+      margin-bottom: 1.75rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    label {
+      display: block;
+      font-size: .83rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: .4rem;
+    }
+
+    input {
+      width: 100%;
+      padding: .7rem 1rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: .9rem;
+      color: #0f172a;
+      transition: border-color .15s, box-shadow .15s;
+      background: #f8fafc;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #0d1b2a;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(13,27,42,.1);
+    }
+
+    .error-box {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: .85rem 1rem;
+      font-size: .85rem;
+      color: #991b1b;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: .8rem;
+      background: linear-gradient(135deg, #0d1b2a, #1a3150);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      margin-top: .5rem;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(13,27,42,.35);
+    }
+
+    .btn-login:active { transform: translateY(0); }
+
+    .register-link {
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: .84rem;
+      color: #64748b;
+    }
+
+    .register-link a {
+      color: #f59e0b;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .register-link a:hover { text-decoration: underline; }
+
+    .messages {
+      margin-bottom: 1rem;
+    }
+
+    .message-item {
+      padding: .7rem 1rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      margin-bottom: .4rem;
+    }
+
+    .message-success { background: #d1fae5; color: #065f46; }
+    .message-info    { background: #dbeafe; color: #1e3a8a; }
+    .message-warning { background: #fef3c7; color: #92400e; }
+    .message-error   { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+<div class="login-card">
+
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-icon">⚽</div>
+    <div class="logo-text">
+      <h1>باشگاه فوتسال</h1>
+      <p>سیستم جامع مدیریت</p>
+    </div>
+  </div>
+
+  <h2>ورود به سیستم</h2>
+  <p class="subtitle">نام کاربری و رمز عبور خود را وارد کنید</p>
+
+  <!-- Django Messages -->
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="message-item message-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Error -->
+  {% if error %}
+  <div class="error-box">
+    <span>⚠️</span>
+    <span>{{ error }}</span>
+  </div>
+  {% endif %}
+
+  <!-- Form -->
+  <form method="post" action="{% url 'auth:login' %}">
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+    <div class="form-group">
+      <label for="username">نام کاربری</label>
+      <input type="text" id="username" name="username"
+             value="{{ username|default:'' }}"
+             placeholder="نام کاربری خود را وارد کنید"
+             autocomplete="username"
+             required autofocus>
+    </div>
+
+    <div class="form-group">
+      <label for="password">رمز عبور</label>
+      <input type="password" id="password" name="password"
+             placeholder="رمز عبور"
+             autocomplete="current-password"
+             required>
+    </div>
+
+    <button type="submit" class="btn-login">🔑 ورود به سیستم</button>
+  </form>
+
+  <div class="register-link">
+    بازیکن جدید هستید؟
+    <a href="{% url 'registration:apply' %}">ثبت‌نام کنید ←</a>
+  </div>
+
+</div>
+</body>
+</html>

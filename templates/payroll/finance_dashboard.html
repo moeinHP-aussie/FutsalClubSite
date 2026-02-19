@@ -1,0 +1,166 @@
+{% comment %}templates/payroll/finance_dashboard.html{% endcomment %}
+{% extends "base.html" %}
+{% load attendance_extras %}
+{% block title %}داشبورد مالی{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <span class="cur">داشبورد مالی</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.progress-ring { position: relative; display: inline-flex; align-items:center; justify-content:center; }
+.donut-label { position: absolute; text-align: center; line-height: 1.2; }
+.donut-val   { font-size: 1.3rem; font-weight: 800; }
+.donut-sub   { font-size: .68rem; color: var(--text-muted); }
+.status-row  {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .65rem 0; border-bottom: 1px solid var(--surface);
+  font-size: .875rem;
+}
+.status-row:last-child { border-bottom: none; }
+.status-bar-bg { flex: 1; height: 6px; border-radius:99px; background:var(--surface-2); margin: 0 .75rem; }
+.status-bar    { height: 100%; border-radius:99px; }
+.cat-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: .65rem 0; border-bottom: 1px solid var(--surface);
+  font-size: .875rem;
+}
+.cat-row:last-child { border-bottom: none; }
+.month-switch { display: flex; align-items:center; gap:.5rem; }
+.month-switch a {
+  padding:.3rem .7rem; border-radius:6px; font-size:.82rem;
+  background:var(--surface); text-decoration:none; color:var(--text-muted);
+  border:1px solid var(--surface-2); transition:var(--transition);
+}
+.month-switch a:hover { background:var(--navy); color:var(--white); border-color:var(--navy); }
+.month-switch .cur {
+  padding:.3rem .9rem; border-radius:6px; font-size:.82rem;
+  background:var(--navy); color:var(--white); font-weight:700;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>💰 داشبورد مالی</h1>
+    <p>خلاصه وضعیت مالی باشگاه</p>
+  </div>
+  <div class="month-switch">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}">
+      ‹ {{ prev_month.persian_name }}
+    </a>
+    <span class="cur">{{ month.persian_name }} {{ month.year }}</span>
+    <a href="?year={{ month.next_month.year }}&month={{ month.next_month.month }}">
+      {{ month.next_month.persian_name }} ›
+    </a>
+  </div>
+</div>
+
+<!-- ── Top Stats ──────────────────────────────────────────── -->
+<div class="grid-auto mb-3" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+  <div class="stat-card green">
+    <div class="stat-label">فاکتورهای پرداخت‌شده</div>
+    <div class="stat-value">{{ invoice_summary.paid }}</div>
+    <div class="stat-sub">{{ invoice_summary.amount_paid|rial_format }}</div>
+    <span class="stat-icon">✅</span>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-label">بدهکاران</div>
+    <div class="stat-value">{{ invoice_summary.debtor }}</div>
+    <span class="stat-icon">⚠️</span>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-label">در انتظار پرداخت</div>
+    <div class="stat-value">{{ invoice_summary.pending }}</div>
+    <div class="stat-sub">{{ invoice_summary.amount_pending|rial_format }}</div>
+    <span class="stat-icon">⏳</span>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-label">در انتظار تأیید رسید</div>
+    <div class="stat-value">{{ invoice_summary.confirm }}</div>
+    <span class="stat-icon">📎</span>
+  </div>
+  <div class="stat-card navy">
+    <div class="stat-label">حقوق‌های پرداخت‌شده</div>
+    <div class="stat-value">{{ salary_summary.paid }}</div>
+    <div class="stat-sub">از {{ salary_summary.total }} محاسبه‌شده</div>
+    <span class="stat-icon">💳</span>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-label">مجموع حقوق</div>
+    <div class="stat-value" style="font-size:1.3rem;padding-top:.3rem">
+      {{ salary_summary.total_amount|rial_format }}
+    </div>
+    <span class="stat-icon">📊</span>
+  </div>
+</div>
+
+<!-- ── Two Columns ─────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+  <!-- Invoice Status Breakdown -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🧾 وضعیت فاکتورها</span>
+      <span class="badge badge-gray">{{ invoice_summary.total }} فاکتور</span>
+    </div>
+    <div class="card-body">
+      {% with total=invoice_summary.total %}
+      {% if total > 0 %}
+        {% for label,count,color in invoice_status_rows %}
+        <div class="status-row">
+          <span>{{ label }}</span>
+          <div class="status-bar-bg">
+            <div class="status-bar" style="width:{% widthratio count total 100 %}%;background:{{ color }}"></div>
+          </div>
+          <span style="font-weight:700;min-width:28px;text-align:left">{{ count }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:2rem;color:var(--text-muted)">داده‌ای وجود ندارد</div>
+      {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+
+  <!-- Categories Quick Actions -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🗂️ دسته‌های آموزشی</span>
+      <form method="post" action="{% url 'payroll:invoice-generate-all' %}">
+        {% csrf_token %}
+        <input type="hidden" name="year"  value="{{ month.year }}">
+        <input type="hidden" name="month" value="{{ month.month }}">
+        <button type="submit" class="btn btn-amber btn-sm"
+                onclick="return confirm('صدور فاکتور برای همه دسته‌ها؟')">
+          🧾 صدور همه
+        </button>
+      </form>
+    </div>
+    <div class="card-body" style="padding:0">
+      {% for cat in categories %}
+      <div class="cat-row" style="padding-right:1.25rem;padding-left:1rem">
+        <span style="font-weight:600">{{ cat.name }}</span>
+        <div style="display:flex;gap:.4rem">
+          <a href="{% url 'payroll:invoice-list' cat.pk %}?year={{ month.year }}&month={{ month.month }}"
+             class="btn btn-outline btn-sm">فاکتورها</a>
+          <a href="{% url 'payroll:salary-list' cat.pk %}?year={{ month.year }}&month={{ month.month }}"
+             class="btn btn-outline btn-sm">حقوق</a>
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align:center;padding:2rem;color:var(--text-muted)">دسته‌ای یافت نشد</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Build status rows from context for the dashboard (fallback JS approach)
+</script>
+{% endblock %}

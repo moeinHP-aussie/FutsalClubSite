@@ -1,0 +1,107 @@
+{% comment %}templates/payroll/payment_confirm.html{% endcomment %}
+{% extends "base.html" %}
+{% block title %}تأیید پرداخت{% endblock %}
+
+{% block extra_head %}
+<style>
+.payment-card { max-width: 480px; margin: 0 auto; }
+.zp-logo {
+  background: linear-gradient(135deg,#6b21a8,#9333ea);
+  color:#fff; border-radius: var(--radius);
+  padding: .5rem 1.1rem; font-size: .875rem; font-weight: 700;
+  display: inline-block; margin-bottom: 1.5rem;
+}
+.amount-display {
+  font-size: 2.4rem; font-weight: 900;
+  color: var(--navy);
+  text-align: center; padding: 1.5rem 0;
+  border-top: 1px dashed var(--surface-2);
+  border-bottom: 1px dashed var(--surface-2);
+  margin: 1rem 0;
+}
+.amount-unit { font-size: 1rem; color: var(--text-muted); font-weight: 500; }
+.detail-row {
+  display: flex; justify-content: space-between;
+  padding: .55rem 0;
+  border-bottom: 1px solid var(--surface);
+  font-size: .875rem;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-row .label { color: var(--text-muted); }
+.detail-row .value { font-weight: 600; }
+.security-badge {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .65rem 1rem;
+  background: #f0fdf4; border: 1px solid #bbf7d0;
+  border-radius: var(--radius-sm);
+  font-size: .78rem; color: #166534;
+  margin-top: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-card">
+  <div class="page-header" style="flex-direction:column;align-items:center;text-align:center">
+    <div>
+      <h1>💳 تأیید و پرداخت</h1>
+      <p>قبل از انتقال به درگاه، اطلاعات را بررسی کنید</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="zp-logo">⚡ زرین‌پال</div>
+
+      <div class="amount-display">
+        {{ amount_toman|floatformat:"0" }}
+        <span class="amount-unit">تومان</span>
+      </div>
+
+      <div style="margin:1rem 0">
+        <div class="detail-row">
+          <span class="label">بازیکن</span>
+          <span class="value">{{ invoice.player }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">دسته آموزشی</span>
+          <span class="value">{{ invoice.category }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">دوره</span>
+          <span class="value">{{ invoice.jalali_year }}/{{ invoice.jalali_month|stringformat:"02d" }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">مبلغ به ریال</span>
+          <span class="value">{{ invoice.final_amount|floatformat:"0" }} ریال</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">شماره فاکتور</span>
+          <span class="value" style="font-size:.78rem;color:var(--text-muted)">#{{ invoice.pk }}</span>
+        </div>
+      </div>
+
+      <div class="security-badge">
+        🔒 اتصال امن — پرداخت از طریق درگاه رسمی زرین‌پال
+      </div>
+
+      <form method="post" style="margin-top:1.25rem">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary w-full btn-lg"
+                onclick="this.disabled=true;this.textContent='⏳ در حال انتقال...';this.form.submit()">
+          🚀 رفتن به درگاه پرداخت
+        </button>
+        <a href="javascript:history.back()"
+           class="btn btn-ghost w-full" style="margin-top:.5rem;justify-content:center">
+          انصراف
+        </a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{# ────────────────────────────────────────────────────────────────
+   PAYMENT SUCCESS  — templates/payroll/payment_success.html
+──────────────────────────────────────────────────────────────── #}
