@@ -207,7 +207,7 @@
   {% endif %}
 
   <!-- Form -->
-  <form method="post" action="{% url 'auth:login' %}">
+  <form method="post" action="{% url 'accounts:login' %}">
     {% csrf_token %}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}باشگاه فوتسال اسپاد{% endblock %} | پنل مدیریت</title>
+  <title>{% block title %}باشگاه فوتسال{% endblock %} | پنل مدیریت</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -529,7 +529,7 @@
   <div class="sidebar-brand">
     <div class="brand-icon">⚽</div>
     <div class="brand-text">
-      <div class="brand-name">باشگاه اسپاد</div>
+      <div class="brand-name">باشگاه فوتسال</div>
       <div class="brand-sub">سیستم مدیریت جامع</div>
     </div>
   </div>
@@ -577,7 +577,7 @@
       <span class="nav-icon">📋</span> متقاضیان جدید
     </a>
     <a href="#" class="nav-item {% block nav_categories %}{% endblock %}">
-      <span class="nav-icon">🗂️</span> رده های آموزشی
+      <span class="nav-icon">🗂️</span> دسته‌های آموزشی
     </a>
     <a href="#" class="nav-item {% block nav_coaches %}{% endblock %}">
       <span class="nav-icon">🏃</span> مربیان
@@ -653,10 +653,10 @@
 
   <!-- Footer -->
   <div class="sidebar-footer">
-    <a href="{% url 'auth:password_change' %}">
+    <a href="{% url 'accounts:password-change' %}">
       <span>🔑</span> تغییر رمز عبور
     </a>
-    <a href="{% url 'auth:logout' %}" style="margin-top:.1rem">
+    <a href="{% url 'accounts:logout' %}" style="margin-top:.1rem">
       <span>🚪</span> خروج از سیستم
     </a>
   </div>

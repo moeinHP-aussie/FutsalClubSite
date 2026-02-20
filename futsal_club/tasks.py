@@ -152,3 +152,4 @@ def calculate_all_salaries_for_month_task(category_pk: int, year: int, month: in
 def check_insurance_task():
     from .signals import run_insurance_expiry_check
     return run_insurance_expiry_check(warn_days=30)
+

@@ -6,7 +6,7 @@ Add to TEMPLATES[0]['OPTIONS']['context_processors'] in settings.py:
     "futsal_club.context_processors.global_context"
 """
 from __future__ import annotations
-from ..models import Notification
+from futsal_club.models import Notification
 
 
 def global_context(request):

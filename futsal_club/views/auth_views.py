@@ -20,7 +20,7 @@ class CustomLoginView(View):
 
     def get(self, request):
         if request.user.is_authenticated:
-            return redirect("auth:dashboard")
+            return redirect("accounts:dashboard")
         return render(request, self.template_name, {"next": request.GET.get("next", "")})
 
     def post(self, request):
@@ -45,18 +45,18 @@ class CustomLoginView(View):
 
         if next_url:
             return redirect(next_url)
-        return redirect("auth:dashboard")
+        return redirect("accounts:dashboard")
 
 
 class CustomLogoutView(View):
     """خروج از سیستم."""
     def post(self, request):
         logout(request)
-        return redirect("auth:login")
+        return redirect("accounts:login")
 
     def get(self, request):
         logout(request)
-        return redirect("auth:login")
+        return redirect("accounts:login")
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -152,4 +152,4 @@ class ChangePasswordView(LoginRequiredMixin, View):
         request.user.set_password(new_pw)
         request.user.save()
         logout(request)
-        return redirect("auth:login")
+        return redirect("accounts:login")

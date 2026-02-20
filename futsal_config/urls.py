@@ -8,6 +8,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.views.generic import RedirectView
 
 
 def health_check(request):
@@ -23,7 +24,7 @@ urlpatterns = [
     path("health/", health_check, name="health"),
 
     # ── Auth ──────────────────────────────────────────────────────────
-    path("auth/", include("futsal_club.urls.auth_urls", namespace="auth")),
+    path("auth/", include("futsal_club.urls.auth_urls", namespace="accounts")),
 
     # ── ثبت‌نام + مدیریت بازیکنان ─────────────────────────────────────
     path("registration/", include("futsal_club.urls.registration_urls", namespace="registration")),
@@ -40,8 +41,8 @@ urlpatterns = [
     # ── مخزن تمرین‌ها ─────────────────────────────────────────────────
     path("exercises/", include("futsal_club.urls.exercise_urls", namespace="exercises")),
 
-    # ── ریدایرکت صفحه اصلی به داشبورد ───────────────────────────────
-    path("", include("futsal_club.urls.auth_urls")),
+    # ── ریدایرکت صفحه اصلی به لاگین ─────────────────────────────────
+    path("", RedirectView.as_view(url="/auth/login/", permanent=False)),
 ]
 
 # در Development فایل‌های media را Django سرو می‌کند
