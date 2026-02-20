@@ -160,13 +160,12 @@ class ApplicantListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
 
         search = self.request.GET.get("q", "").strip()
         if search:
+            from django.db.models import Q
             qs = qs.filter(
-                first_name__icontains=search
-            ) | qs.filter(
-                last_name__icontains=search
-            ) | qs.filter(
-                national_id__icontains=search
-            )
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(national_id__icontains=search)
+            ).distinct()  # ✅ اصلاح: distinct() برای جلوگیری از نتایج تکراری
 
         return qs.order_by("-registration_date")
 
@@ -316,7 +315,9 @@ class ArchivePlayerView(LoginRequiredMixin, RoleRequiredMixin, View):
             player.user.save(update_fields=["is_active", "is_player"])
 
         messages.success(request, f"بازیکن {player} آرشیو شد.")
-        return redirect(request.POST.get("next", "registration:player-list"))
+        # ✅ اصلاح: "registration:player-list" وجود ندارد
+        next_url = request.POST.get("next", "")
+        return redirect(next_url if next_url else "registration:applicant-list")
 
 
 class ArchivedPlayerListView(LoginRequiredMixin, RoleRequiredMixin, ListView):

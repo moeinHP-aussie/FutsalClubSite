@@ -346,7 +346,7 @@ class GenerateAllCategoryInvoicesView(FinanceOnlyMixin, View):
             request,
             f"{total_created} فاکتور برای {month} در تمام دسته‌ها صادر شد.",
         )
-        return redirect("payroll:invoice-dashboard")
+        return redirect("payroll:finance-dashboard")
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -436,12 +436,12 @@ class UploadReceiptView(LoginRequiredMixin, View):
             and not request.user.is_finance_manager
         ):
             messages.error(request, "دسترسی غیرمجاز.")
-            return redirect("player:my-invoices")
+            return redirect("accounts:dashboard")
 
         receipt = request.FILES.get("receipt_image")
         if not receipt:
             messages.error(request, "فایل رسید انتخاب نشده است.")
-            return redirect("player:invoice-detail", invoice_pk=invoice_pk)
+            return redirect("payroll:invoice-list", category_pk=invoice.category_id)
 
         try:
             PayrollService.upload_receipt(invoice, receipt)
@@ -449,7 +449,7 @@ class UploadReceiptView(LoginRequiredMixin, View):
         except ValueError as e:
             messages.error(request, str(e))
 
-        return redirect("player:invoice-detail", invoice_pk=invoice_pk)
+        return redirect("payroll:invoice-list", category_pk=invoice.category_id)
 
 
 # ────────────────────────────────────────────────────────────────────

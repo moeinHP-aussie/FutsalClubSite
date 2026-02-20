@@ -29,15 +29,21 @@ from ..models import PaymentLog, PlayerInvoice
 logger = logging.getLogger(__name__)
 
 # ── Zarinpal API endpoints ────────────────────────────────────────
-# Sandbox (آزمایشی)
-ZP_REQUEST_URL  = "https://sandbox.zarinpal.com/pg/v4/payment/request.json"
-ZP_VERIFY_URL   = "https://sandbox.zarinpal.com/pg/v4/payment/verify.json"
-ZP_STARTPAY_URL = "https://sandbox.zarinpal.com/pg/StartPay/{authority}"
+# ✅ اصلاح: بر اساس تنظیمات ZARINPAL_SANDBOX انتخاب می‌شود
+def _get_zarinpal_urls():
+    if getattr(settings, "ZARINPAL_SANDBOX", True):
+        return (
+            "https://sandbox.zarinpal.com/pg/v4/payment/request.json",
+            "https://sandbox.zarinpal.com/pg/v4/payment/verify.json",
+            "https://sandbox.zarinpal.com/pg/StartPay/{authority}",
+        )
+    return (
+        "https://api.zarinpal.com/pg/v4/payment/request.json",
+        "https://api.zarinpal.com/pg/v4/payment/verify.json",
+        "https://www.zarinpal.com/pg/StartPay/{authority}",
+    )
 
-# Production (واقعی) — فعال‌سازی در تنظیمات production
-# ZP_REQUEST_URL  = "https://api.zarinpal.com/pg/v4/payment/request.json"
-# ZP_VERIFY_URL   = "https://api.zarinpal.com/pg/v4/payment/verify.json"
-# ZP_STARTPAY_URL = "https://www.zarinpal.com/pg/StartPay/{authority}"
+ZP_REQUEST_URL, ZP_VERIFY_URL, ZP_STARTPAY_URL = _get_zarinpal_urls()
 
 ZP_MERCHANT_ID  = getattr(settings, "ZARINPAL_MERCHANT_ID", "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX")
 ZP_CURRENCY     = "IRT"   # تومان
@@ -90,7 +96,7 @@ class InvoicePaymentInitView(LoginRequiredMixin, View):
             "amount":        amount_toman,
             "currency":      ZP_CURRENCY,
             "callback_url":  callback_url,
-            "description":   f"شهریه {invoice.jalali_month_display()} — {invoice.player}",
+            "description":   f"شهریه {invoice.jalali_year}/{invoice.jalali_month:02d} — {invoice.player}",
             "metadata": {
                 "invoice_id":  str(invoice.pk),
                 "player_name": str(invoice.player),
@@ -196,7 +202,7 @@ class ZarinpalCallbackView(View):
         if not log:
             logger.warning("Zarinpal callback: authority not found: %s", authority)
             messages.error(request, "تراکنش یافت نشد.")
-            return redirect("dashboard")
+            return redirect("accounts:dashboard")
 
         invoice = log.invoice
 
@@ -292,9 +298,12 @@ class ZarinpalCallbackView(View):
 from django.views.generic import TemplateView
 
 
-class PaymentSuccessView(LoginRequiredMixin, TemplateView):
+class PaymentSuccessView(TemplateView):
+    """
+    ✅ اصلاح: LoginRequiredMixin حذف شد — session کاربر ممکن است حین پرداخت منقضی شده باشد.
+    اطلاعات از query params خوانده می‌شود، نه session.
+    """
     template_name = "payroll/payment_success.html"
-    login_url     = "/auth/login/"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -317,5 +326,6 @@ class PaymentSuccessView(LoginRequiredMixin, TemplateView):
 
         ctx["invoice"] = invoice
         ctx["ref_id"]  = ref_id
-        ctx["amount"]  = invoice.amount if invoice else None
+        # ✅ اصلاح: final_amount (بعد از تخفیف) — نه amount (قبل از تخفیف)
+        ctx["amount"]  = invoice.final_amount if invoice else None
         return ctx

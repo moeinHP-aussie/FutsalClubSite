@@ -88,7 +88,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if user.is_finance_manager:
             from ..models import PlayerInvoice, CoachSalary
             ctx["pending_invoices"] = PlayerInvoice.objects.filter(status="pending").count()
-            ctx["pending_salaries"] = CoachSalary.objects.filter(status="pending").count()
+            # ✅ اصلاح: status="pending" در CoachSalary وجود ندارد — مقدار صحیح "calculated" است
+            ctx["pending_salaries"] = CoachSalary.objects.filter(status="calculated").count()
             ctx["total_debt"]       = (
                 PlayerInvoice.objects
                 .filter(status="debtor")

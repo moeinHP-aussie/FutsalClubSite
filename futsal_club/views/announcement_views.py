@@ -99,8 +99,11 @@ class NotificationListView(LoginRequiredMixin, ListView):
 class NotificationMarkReadView(LoginRequiredMixin, View):
     def get(self, request, pk: int):
         notif = Notification.objects.filter(pk=pk, recipient=request.user).first()
-        if notif: notif.mark_as_read()
-        next_url = request.GET.get("next", "comms:notification-list")
+        if notif:
+            notif.mark_as_read()
+        # ✅ اصلاح: next باید URL path باشد نه URL name — از reverse استفاده می‌کنیم
+        from django.urls import reverse
+        next_url = request.GET.get("next") or reverse("comms:notification-list")
         return redirect(next_url)
 
 
