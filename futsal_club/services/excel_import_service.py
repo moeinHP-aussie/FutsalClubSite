@@ -330,7 +330,9 @@ def map_education(raw) -> str:
     if not raw or (isinstance(raw, float) and pd.isna(raw)):
         return ""
     s = str(raw).strip()
-    return EDUCATION_MAP.get(s, "other" if s else "")
+    # ✅ اصلاح: اگر مقدار شناخته‌نشده بود، "" برمی‌گردانیم نه "other"
+    # چون "other" در EducationLevel choices وجود ندارد و field از blank=True پشتیبانی می‌کند
+    return EDUCATION_MAP.get(s, "")
 
 
 def map_hand_foot(raw) -> str:
@@ -370,28 +372,32 @@ def _extract_cell_fills(filepath: str, sheet_name: str, col_idx: int) -> Dict[in
     """
     wb = load_workbook(filepath, read_only=False, data_only=True)
     if sheet_name not in wb.sheetnames:
+        wb.close()
         return {}
 
     ws = wb[sheet_name]
     colours: Dict[int, Optional[str]] = {}
 
-    for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):  # skip header
-        cell = row[col_idx - 1] if len(row) >= col_idx else None
-        if cell is None:
-            colours[row_idx] = None
-            continue
-        try:
-            fill = cell.fill
-            if fill and fill.fgColor and fill.fgColor.type == "rgb":
-                colours[row_idx] = fill.fgColor.rgb
-            elif fill and fill.fgColor and fill.fgColor.type == "theme":
-                colours[row_idx] = None  # theme colour — treat as none
-            else:
+    try:
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):  # skip header
+            cell = row[col_idx - 1] if len(row) >= col_idx else None
+            if cell is None:
                 colours[row_idx] = None
-        except Exception:
-            colours[row_idx] = None
+                continue
+            try:
+                fill = cell.fill
+                if fill and fill.fgColor and fill.fgColor.type == "rgb":
+                    colours[row_idx] = fill.fgColor.rgb
+                elif fill and fill.fgColor and fill.fgColor.type == "theme":
+                    colours[row_idx] = None  # theme colour — treat as none
+                else:
+                    colours[row_idx] = None
+            except Exception:
+                colours[row_idx] = None
+    finally:
+        # ✅ اصلاح: همیشه workbook بسته می‌شود — حتی در صورت exception
+        wb.close()
 
-    wb.close()
     return colours
 
 
@@ -573,10 +579,12 @@ class ExcelImportService:
         # ── 3. Insurance ───────────────────────────────────────────
         insurance_raw  = cell(COL["insurance"])
         ins_info       = detect_insurance(insurance_raw, insurance_fill)
+        # ✅ اصلاح: InsuranceStatus فقط "none" و "active" دارد
+        # "expired" مقدار معتبری نیست — بیمه منقضی‌شده = بدون بیمه فعال
         insurance_status = {
             "active":      "active",
-            "expired":     "expired",
-            "near_expiry": "active",   # still active, just soon-to-expire
+            "expired":     "none",    # ← بیمه منقضی شده = بدون بیمه فعال
+            "near_expiry": "active",  # ← هنوز فعال است
             "none":        "none",
         }.get(ins_info.status, "none")
 

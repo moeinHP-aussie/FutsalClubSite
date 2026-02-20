@@ -401,13 +401,23 @@ class PayrollService:
 
             # اعلان به بازیکن
             if player.user:
-                Notification.objects.get_or_create(
+                # ✅ اصلاح: get_or_create با فیلدهای غیریکتا ممکن است MultipleObjectsReturned بدهد
+                # از filter().exists() استفاده می‌کنیم
+                already_notified = Notification.objects.filter(
                     recipient=player.user,
                     type=Notification.NotificationType.INSURANCE_EXPIRY,
-                    title="هشدار انقضای بیمه",
-                    defaults={"message": msg, "related_player": player},
-                )
-                count += 1
+                    is_read=False,
+                    related_player=player,
+                ).exists()
+                if not already_notified:
+                    Notification.objects.create(
+                        recipient=player.user,
+                        type=Notification.NotificationType.INSURANCE_EXPIRY,
+                        title="هشدار انقضای بیمه",
+                        message=msg,
+                        related_player=player,
+                    )
+                    count += 1
 
             # اعلان به مربیان دسته‌های بازیکن
             for cat in player.categories.filter(is_active=True):
@@ -415,23 +425,39 @@ class PayrollService:
                     category=cat, is_active=True
                 ).select_related("coach__user"):
                     if rate.coach.user:
-                        Notification.objects.get_or_create(
+                        already = Notification.objects.filter(
                             recipient=rate.coach.user,
                             type=Notification.NotificationType.INSURANCE_EXPIRY,
-                            title=f"هشدار بیمه بازیکن {player.first_name} {player.last_name}",
-                            defaults={"message": msg, "related_player": player},
-                        )
-                        count += 1
+                            is_read=False,
+                            related_player=player,
+                        ).exists()
+                        if not already:
+                            Notification.objects.create(
+                                recipient=rate.coach.user,
+                                type=Notification.NotificationType.INSURANCE_EXPIRY,
+                                title=f"هشدار بیمه بازیکن {player.first_name} {player.last_name}",
+                                message=msg,
+                                related_player=player,
+                            )
+                            count += 1
 
             # اعلان به مدیران فنی
             for td in technical_directors:
-                Notification.objects.get_or_create(
+                already = Notification.objects.filter(
                     recipient=td,
                     type=Notification.NotificationType.INSURANCE_EXPIRY,
-                    title=f"هشدار بیمه: {player.first_name} {player.last_name}",
-                    defaults={"message": msg, "related_player": player},
-                )
-                count += 1
+                    is_read=False,
+                    related_player=player,
+                ).exists()
+                if not already:
+                    Notification.objects.create(
+                        recipient=td,
+                        type=Notification.NotificationType.INSURANCE_EXPIRY,
+                        title=f"هشدار بیمه: {player.first_name} {player.last_name}",
+                        message=msg,
+                        related_player=player,
+                    )
+                    count += 1
 
         logger.info("%d اعلان انقضای بیمه ارسال شد.", count)
         return count
