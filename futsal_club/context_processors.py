@@ -21,11 +21,16 @@ def global_context(request):
     }
 
     if request.user.is_authenticated:
-        qs = Notification.objects.filter(
-            recipient=request.user
-        ).order_by("-created_at")
-
-        ctx["unread_notif_count"]   = qs.filter(is_read=False).count()
-        ctx["recent_notifications"] = list(qs[:8])
+        # ✅ اصلاح: یک query به جای دو query — اعلان‌ها رو یکبار می‌گیریم
+        notifications = list(
+            Notification.objects
+            .filter(recipient=request.user)
+            .order_by("-created_at")[:8]
+        )
+        ctx["recent_notifications"] = notifications
+        # count از دیتابیس بگیر (ارزان‌تر از شمارش لیست که max 8 تاست)
+        ctx["unread_notif_count"] = Notification.objects.filter(
+            recipient=request.user, is_read=False
+        ).count()
 
     return ctx

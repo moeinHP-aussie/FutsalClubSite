@@ -60,19 +60,25 @@ def on_player_status_change(sender, instance: Player, created: bool, **kwargs):
     # ── تأیید شد ────────────────────────────────────────────────
     if new == Player.Status.APPROVED and old != Player.Status.APPROVED:
         if instance.user:
-            Notification.objects.get_or_create(
-                recipient      = instance.user,
-                type           = Notification.NotificationType.GENERAL,
-                title          = "✅ ثبت‌نام تأیید شد",
-                defaults={
-                    "message": (
+            # ✅ اصلاح: get_or_create با فیلدهای غیریکتا ممکن است MultipleObjectsReturned بدهد
+            already = Notification.objects.filter(
+                recipient=instance.user,
+                type=Notification.NotificationType.GENERAL,
+                related_player=instance,
+                is_read=False,
+            ).filter(title__contains="تأیید").exists()
+            if not already:
+                Notification.objects.create(
+                    recipient      = instance.user,
+                    type           = Notification.NotificationType.GENERAL,
+                    title          = "✅ ثبت‌نام تأیید شد",
+                    message        = (
                         f"عزیز {instance.first_name}، "
                         "ثبت‌نام شما در باشگاه فوتسال تأیید شد. "
                         "می‌توانید اکنون وارد سیستم شوید."
                     ),
-                    "related_player": instance,
-                }
-            )
+                    related_player = instance,
+                )
 
     # ── بیمه به‌روز شد → بررسی انقضا ─────────────────────────
     if instance.insurance_status == "active" and instance.insurance_expiry_date:
@@ -132,14 +138,15 @@ def _send_insurance_notifications(player: Player, days_left: int):
     # ── اعلان به بازیکن ──────────────────────────────────────────
     if player.user:
         recipients.add(player.user.pk)
+        # ✅ اصلاح: related_player باید در lookup key باشد نه در defaults
         Notification.objects.update_or_create(
             recipient      = player.user,
             type           = Notification.NotificationType.INSURANCE_EXPIRY,
+            related_player = player,   # ← کلید یکتا
             defaults={
-                "title":          f"بیمه شما: {urgency}",
-                "message":        f"بیمه‌نامه شما ظرف {days_left} روز منقضی می‌شود. لطفاً اقدام کنید.",
-                "is_read":        False,
-                "related_player": player,
+                "title":   f"بیمه شما: {urgency}",
+                "message": f"بیمه‌نامه شما ظرف {days_left} روز منقضی می‌شود. لطفاً اقدام کنید.",
+                "is_read": False,
             }
         )
 
@@ -157,10 +164,11 @@ def _send_insurance_notifications(player: Player, days_left: int):
             recipients.add(uid)
             try:
                 user = CustomUser.objects.get(pk=uid, is_active=True)
+                # ✅ اصلاح: related_player در lookup key
                 Notification.objects.update_or_create(
                     recipient      = user,
                     type           = Notification.NotificationType.INSURANCE_EXPIRY,
-                    related_player = player,
+                    related_player = player,   # ← کلید یکتا
                     defaults={
                         "title":   urgency,
                         "message": full_msg,
@@ -174,10 +182,11 @@ def _send_insurance_notifications(player: Player, days_left: int):
     directors = CustomUser.objects.filter(is_technical_director=True, is_active=True)
     for td in directors:
         if td.pk not in recipients:
+            # ✅ اصلاح: related_player در lookup key
             Notification.objects.update_or_create(
                 recipient      = td,
                 type           = Notification.NotificationType.INSURANCE_EXPIRY,
-                related_player = player,
+                related_player = player,   # ← کلید یکتا
                 defaults={
                     "title":   urgency,
                     "message": full_msg,

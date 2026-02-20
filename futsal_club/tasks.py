@@ -146,10 +146,4 @@ def calculate_all_salaries_for_month_task(category_pk: int, year: int, month: in
     except Exception as exc:
         logger.exception("خطا در تسک محاسبه حقوق: %s", exc)
         raise
-
-# در tasks.py اضافه کنید:
-@shared_task
-def check_insurance_task():
-    from .signals import run_insurance_expiry_check
-    return run_insurance_expiry_check(warn_days=30)
-
+# ✅ اصلاح: check_insurance_task تکراری حذف شد — از check_insurance_expiry_task بالا استفاده کنید
