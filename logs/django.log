@@ -214,3 +214,674 @@ Traceback (most recent call last):
     from ..models import Notification
 ImportError: attempted relative import beyond top-level package
 ERROR 2026-02-19 21:23:23,978 basehttp "GET /admin/login/?next=/admin/ HTTP/1.1" 500 154576
+ERROR 2026-02-19 21:46:12,470 log Internal Server Error: /auth/login/
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 328, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: futsal_club_customuser
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\futsal_club\views\auth_views.py", line 31, in post
+    user = authenticate(request, username=username, password=password)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\debug.py", line 42, in sensitive_variables_wrapper
+    return func(*func_args, **func_kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\__init__.py", line 77, in authenticate
+    user = backend.authenticate(request, **credentials)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\backends.py", line 46, in authenticate
+    user = UserModel._default_manager.get_by_natural_key(username)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\base_user.py", line 54, in get_by_natural_key
+    return self.get(**{self.model.USERNAME_FIELD: username})
+           ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 633, in get
+    num = len(clone)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 380, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 1881, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 102, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 67, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 80, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 84, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 328, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+django.db.utils.OperationalError: no such table: futsal_club_customuser
+ERROR 2026-02-19 21:46:12,478 basehttp "POST /auth/login/ HTTP/1.1" 500 180980
+ERROR 2026-02-19 21:48:23,660 log Internal Server Error: /registration/apply/
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 328, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: futsal_club_player
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\edit.py", line 152, in post
+    if form.is_valid():
+       ~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\forms\forms.py", line 201, in is_valid
+    return self.is_bound and not self.errors
+                                 ^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\forms\forms.py", line 196, in errors
+    self.full_clean()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\forms\forms.py", line 433, in full_clean
+    self._clean_fields()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\forms\forms.py", line 448, in _clean_fields
+    value = getattr(self, "clean_%s" % name)()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\futsal_club\forms\registration_forms.py", line 160, in clean_national_id
+    if Player.objects.filter(national_id=nid).exists():
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 1241, in exists
+    return self.query.has_results(using=self.db)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\sql\query.py", line 598, in has_results
+    return compiler.has_results()
+           ~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1530, in has_results
+    return bool(self.execute_sql(SINGLE))
+                ~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 102, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 67, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 80, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 84, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 328, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+django.db.utils.OperationalError: no such table: futsal_club_player
+ERROR 2026-02-19 21:48:23,667 basehttp "POST /registration/apply/ HTTP/1.1" 500 167630
+WARNING 2026-02-19 21:49:43,088 log Not Found: /registration/admin
+WARNING 2026-02-19 21:49:43,089 basehttp "GET /registration/admin HTTP/1.1" 404 5361
+WARNING 2026-02-19 21:49:54,015 log Not Found: /registration/dashboard
+WARNING 2026-02-19 21:49:54,016 basehttp "GET /registration/dashboard HTTP/1.1" 404 5373
+ERROR 2026-02-19 21:50:09,881 log Internal Server Error: /admin/login/
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 328, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: futsal_club_customuser
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\cache.py", line 62, in _wrapper_view_func
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\admin\sites.py", line 441, in login
+    return LoginView.as_view(**defaults)(request)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\debug.py", line 92, in sensitive_post_parameters_wrapper
+    return view(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 134, in _wrapper_view
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\cache.py", line 62, in _wrapper_view_func
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\views.py", line 90, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\edit.py", line 152, in post
+    if form.is_valid():
+       ~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\forms\forms.py", line 201, in is_valid
+    return self.is_bound and not self.errors
+                                 ^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\forms\forms.py", line 196, in errors
+    self.full_clean()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\forms\forms.py", line 434, in full_clean
+    self._clean_form()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\forms\forms.py", line 455, in _clean_form
+    cleaned_data = self.clean()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\forms.py", line 252, in clean
+    self.user_cache = authenticate(
+                      ~~~~~~~~~~~~^
+        self.request, username=username, password=password
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\debug.py", line 42, in sensitive_variables_wrapper
+    return func(*func_args, **func_kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\__init__.py", line 77, in authenticate
+    user = backend.authenticate(request, **credentials)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\backends.py", line 46, in authenticate
+    user = UserModel._default_manager.get_by_natural_key(username)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\base_user.py", line 54, in get_by_natural_key
+    return self.get(**{self.model.USERNAME_FIELD: username})
+           ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 633, in get
+    num = len(clone)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 380, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 1881, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 102, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 67, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 80, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 84, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 328, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+django.db.utils.OperationalError: no such table: futsal_club_customuser
+ERROR 2026-02-19 21:50:09,890 basehttp "POST /admin/login/?next=/admin/ HTTP/1.1" 500 251390
+ERROR 2026-02-19 21:58:11,994 log Internal Server Error: /auth/login/
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 998, in connect_check_health
+    sock = self._connect()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1512, in _connect
+    raise err
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1496, in _connect
+    sock.connect(socket_address)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\futsal_club\views\auth_views.py", line 44, in post
+    login(request, user)
+    ~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\__init__.py", line 118, in login
+    request.session.cycle_key()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 304, in cycle_key
+    self.create()
+    ~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 42, in create
+    self._session_key = self._get_new_session_key()
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 150, in _get_new_session_key
+    if not self.exists(session_key):
+           ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 73, in exists
+    bool(session_key) and (self.cache_key_prefix + session_key) in self._cache
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\base.py", line 299, in __contains__
+    return self.has_key(key)
+           ~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\redis.py", line 210, in has_key
+    return self._cache.has_key(key)
+           ~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\redis.py", line 130, in has_key
+    return bool(client.exists(key))
+                ~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\commands\core.py", line 1912, in exists
+    return self.execute_command("EXISTS", *names, keys=names)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\client.py", line 716, in execute_command
+    return self._execute_command(*args, **options)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\client.py", line 722, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\utils.py", line 236, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 2958, in get_connection
+    connection.connect()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 976, in connect
+    self.retry.call_with_retry(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        lambda: self.connect_check_health(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        lambda error: self.disconnect(error),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 977, in <lambda>
+    lambda: self.connect_check_health(
+            ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        check_health=True, retry_socket_connect=False
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ),
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1022, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+ERROR 2026-02-19 21:58:12,003 basehttp "POST /auth/login/ HTTP/1.1" 500 174493
+ERROR 2026-02-19 22:01:26,741 log Internal Server Error: /registration/apply/
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 998, in connect_check_health
+    sock = self._connect()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1512, in _connect
+    raise err
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1496, in _connect
+    sock.connect(socket_address)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\deprecation.py", line 136, in __call__
+    response = self.process_response(request, response)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\middleware.py", line 59, in process_response
+    request.session.save()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 56, in save
+    return self.create()
+           ~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 42, in create
+    self._session_key = self._get_new_session_key()
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 150, in _get_new_session_key
+    if not self.exists(session_key):
+           ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 73, in exists
+    bool(session_key) and (self.cache_key_prefix + session_key) in self._cache
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\base.py", line 299, in __contains__
+    return self.has_key(key)
+           ~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\redis.py", line 210, in has_key
+    return self._cache.has_key(key)
+           ~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\redis.py", line 130, in has_key
+    return bool(client.exists(key))
+                ~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\commands\core.py", line 1912, in exists
+    return self.execute_command("EXISTS", *names, keys=names)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\client.py", line 716, in execute_command
+    return self._execute_command(*args, **options)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\client.py", line 722, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\utils.py", line 236, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 2958, in get_connection
+    connection.connect()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 976, in connect
+    self.retry.call_with_retry(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        lambda: self.connect_check_health(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        lambda error: self.disconnect(error),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 977, in <lambda>
+    lambda: self.connect_check_health(
+            ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        check_health=True, retry_socket_connect=False
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ),
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1022, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+ERROR 2026-02-19 22:01:26,744 basehttp "POST /registration/apply/ HTTP/1.1" 500 163710
+ERROR 2026-02-19 22:02:08,354 log Internal Server Error: /admin/login/
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 998, in connect_check_health
+    sock = self._connect()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1512, in _connect
+    raise err
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1496, in _connect
+    sock.connect(socket_address)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\cache.py", line 62, in _wrapper_view_func
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\admin\sites.py", line 441, in login
+    return LoginView.as_view(**defaults)(request)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\debug.py", line 92, in sensitive_post_parameters_wrapper
+    return view(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 134, in _wrapper_view
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\cache.py", line 62, in _wrapper_view_func
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\views.py", line 90, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\edit.py", line 153, in post
+    return self.form_valid(form)
+           ~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\views.py", line 109, in form_valid
+    auth_login(self.request, form.get_user())
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\__init__.py", line 118, in login
+    request.session.cycle_key()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 304, in cycle_key
+    self.create()
+    ~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 42, in create
+    self._session_key = self._get_new_session_key()
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 150, in _get_new_session_key
+    if not self.exists(session_key):
+           ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 73, in exists
+    bool(session_key) and (self.cache_key_prefix + session_key) in self._cache
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\base.py", line 299, in __contains__
+    return self.has_key(key)
+           ~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\redis.py", line 210, in has_key
+    return self._cache.has_key(key)
+           ~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\redis.py", line 130, in has_key
+    return bool(client.exists(key))
+                ~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\commands\core.py", line 1912, in exists
+    return self.execute_command("EXISTS", *names, keys=names)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\client.py", line 716, in execute_command
+    return self._execute_command(*args, **options)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\client.py", line 722, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\utils.py", line 236, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 2958, in get_connection
+    connection.connect()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 976, in connect
+    self.retry.call_with_retry(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        lambda: self.connect_check_health(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        lambda error: self.disconnect(error),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 977, in <lambda>
+    lambda: self.connect_check_health(
+            ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        check_health=True, retry_socket_connect=False
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ),
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1022, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+ERROR 2026-02-19 22:02:08,360 basehttp "POST /admin/login/?next=/admin/ HTTP/1.1" 500 230137
+ERROR 2026-02-19 22:02:28,733 log Internal Server Error: /admin/login/
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 998, in connect_check_health
+    sock = self._connect()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1512, in _connect
+    raise err
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1496, in _connect
+    sock.connect(socket_address)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\cache.py", line 62, in _wrapper_view_func
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\admin\sites.py", line 441, in login
+    return LoginView.as_view(**defaults)(request)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\debug.py", line 92, in sensitive_post_parameters_wrapper
+    return view(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 134, in _wrapper_view
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\utils\decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\decorators\cache.py", line 62, in _wrapper_view_func
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\views.py", line 90, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\base.py", line 143, in dispatch
+    return handler(request, *args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\views\generic\edit.py", line 153, in post
+    return self.form_valid(form)
+           ~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\views.py", line 109, in form_valid
+    auth_login(self.request, form.get_user())
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\auth\__init__.py", line 118, in login
+    request.session.cycle_key()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 304, in cycle_key
+    self.create()
+    ~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 42, in create
+    self._session_key = self._get_new_session_key()
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\base.py", line 150, in _get_new_session_key
+    if not self.exists(session_key):
+           ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\contrib\sessions\backends\cache.py", line 73, in exists
+    bool(session_key) and (self.cache_key_prefix + session_key) in self._cache
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\base.py", line 299, in __contains__
+    return self.has_key(key)
+           ~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\redis.py", line 210, in has_key
+    return self._cache.has_key(key)
+           ~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\django\core\cache\backends\redis.py", line 130, in has_key
+    return bool(client.exists(key))
+                ~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\commands\core.py", line 1912, in exists
+    return self.execute_command("EXISTS", *names, keys=names)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\client.py", line 716, in execute_command
+    return self._execute_command(*args, **options)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\client.py", line 722, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\utils.py", line 236, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 2958, in get_connection
+    connection.connect()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 976, in connect
+    self.retry.call_with_retry(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        lambda: self.connect_check_health(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        lambda error: self.disconnect(error),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 977, in <lambda>
+    lambda: self.connect_check_health(
+            ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        check_health=True, retry_socket_connect=False
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ),
+    ^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\venv\Lib\site-packages\redis\connection.py", line 1022, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+ERROR 2026-02-19 22:02:28,738 basehttp "POST /admin/login/?next=/admin/ HTTP/1.1" 500 229961

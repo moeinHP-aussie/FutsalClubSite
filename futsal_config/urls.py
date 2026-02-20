@@ -45,7 +45,7 @@ urlpatterns = [
     path("", RedirectView.as_view(url="/auth/login/", permanent=False)),
 ]
 
-# در Development فایل‌های media را Django سرو می‌کند
+# ✅ در Development فقط فایل‌های media را Django سرو می‌کند
+# Static را نیازی نیست اضافه کنیم — runserver خودش از STATICFILES_DIRS سرو می‌کنه
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

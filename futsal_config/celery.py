@@ -8,7 +8,8 @@ import os
 from celery import Celery
 from celery.schedules import crontab
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "futsal_config.settings.production")
+# ✅ از env var خونده می‌شه — اگه ست نشده بود، development پیش‌فرض باشه
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "futsal_config.settings.development")
 
 app = Celery("futsal_club")
 

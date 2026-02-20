@@ -9,20 +9,27 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]   # در توسعه همه host ها مجاز
 
-# ── SQLite for local dev (no Postgres needed) ──────────────────────────
-# If DOCKER=True, use Postgres instead
+# ── Database ──────────────────────────────────────────────────────────
 import os
 if os.environ.get("DATABASE_URL"):
     import dj_database_url
     DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
+# اگر DATABASE_URL ست نشده، از SQLite در base.py استفاده می‌شه
+
+# ── Session: از DB استفاده کن نه Redis ────────────────────────────────
+# ✅ در dev ممکنه Redis نباشه — از db-backed session استفاده می‌کنیم
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
+# ── Cache: memory-based در development ───────────────────────────────
+# ✅ اگر Redis نداریم، cache رو از حافظه بخونیم
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
 
 # ── Email: print to console ───────────────────────────────────────────
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-# ── Debug Toolbar (optional — install separately) ─────────────────────
-# INSTALLED_APPS += ["debug_toolbar"]
-# MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")
-# INTERNAL_IPS = ["127.0.0.1"]
 
 # ── Static files served by Django in dev ──────────────────────────────
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
