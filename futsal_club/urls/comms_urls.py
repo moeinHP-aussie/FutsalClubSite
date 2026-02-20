@@ -20,7 +20,8 @@ urlpatterns = [
     path("announcements/create/", AnnouncementCreateView.as_view(), name="announcement-create"),
 
     # ── اعلان‌ها (notifications) ─────────────────────────────────────
-    path("notifications/",                   NotificationListView.as_view(),      name="notification-list"),
-    path("notifications/<int:pk>/read/",     NotificationMarkReadView.as_view(),  name="notification-read"),
-    path("notifications/read-all/",          NotificationMarkAllReadView.as_view(),name="notification-read-all"),
+    path("notifications/",                   NotificationListView.as_view(),       name="notification-list"),
+    # ✅ read-all باید قبل از <int:pk>/read/ باشد تا URL درست resolve شود
+    path("notifications/read-all/",          NotificationMarkAllReadView.as_view(), name="notification-read-all"),
+    path("notifications/<int:pk>/read/",     NotificationMarkReadView.as_view(),   name="notification-read"),
 ]

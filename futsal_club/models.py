@@ -7,7 +7,7 @@ models.py - Designed with Persian localization for Iranian users
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.core.validators import RegexValidator, MinLengthValidator, MaxLengthValidator
+from django.core.validators import RegexValidator, MinLengthValidator, MaxLengthValidator, MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django_jalali.db import models as jmodels
@@ -234,12 +234,15 @@ class Player(models.Model):
             self.player_id = self._generate_player_id()
         super().save(*args, **kwargs)
 
-    @staticmethod
-    def _generate_player_id():
-        """تولید شناسه یکتا برای بازیکن به فرمت PLY-XXXXXXXX"""
+    @classmethod
+    def _generate_player_id(cls):
+        """تولید شناسه یکتا برای بازیکن به فرمت PLY-XXXXXXXX — با مدیریت تداخل همزمان"""
         import random, string
-        suffix = ''.join(random.choices(string.digits, k=8))
-        return f'PLY-{suffix}'
+        while True:
+            suffix = ''.join(random.choices(string.digits, k=8))
+            candidate = f'PLY-{suffix}'
+            if not cls.objects.filter(player_id=candidate).exists():
+                return candidate
 
     def archive(self, reason=''):
         """آرشیو نرم بازیکن به جای حذف"""
@@ -259,8 +262,11 @@ class Player(models.Model):
             today = jdate.today()
             reference = jdate(today.year, 10, 11)   # ۱۱ دی ماه سال جاری
             birth     = jdate(self.dob.year, self.dob.month, self.dob.day)
-            age = reference.year - birth.year
-            if (birth.month, birth.day) > (reference.month, reference.day):
+            # ✅ برای مقایسه صحیح از تاریخ میلادی استفاده می‌کنیم
+            reference_g = reference.togregorian()
+            birth_g     = birth.togregorian()
+            age = reference_g.year - birth_g.year
+            if (birth_g.month, birth_g.day) > (reference_g.month, reference_g.day):
                 age -= 1
 
             if age < 8:   return _('زیر ۸ سال')
@@ -379,6 +385,7 @@ class PlayerSoftTrait(models.Model):
     )
     score       = models.PositiveSmallIntegerField(
         _('امتیاز'), default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text=_('بازه ۱ تا ۱۰')
     )
     note        = models.CharField(_('یادداشت'), max_length=255, blank=True)
@@ -660,6 +667,9 @@ class PlayerInvoice(models.Model):
         return f'فاکتور {self.player} — {self.jalali_year}/{self.jalali_month:02d}'
 
     def save(self, *args, **kwargs):
+        # ✅ جلوگیری از منفی شدن مبلغ نهایی
+        if self.discount > self.amount:
+            raise ValueError(_('تخفیف نمی‌تواند از مبلغ اصلی بیشتر باشد.'))
         self.final_amount = self.amount - self.discount
         super().save(*args, **kwargs)
 

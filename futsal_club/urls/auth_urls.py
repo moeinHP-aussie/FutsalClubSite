@@ -1,6 +1,6 @@
 """
 futsal_club/urls/auth_urls.py
-namespace = "auth"
+namespace = "accounts"    ← ✅ اصلاح شد (قبلاً اشتباه "auth" نوشته شده بود)
 """
 from django.urls import path
 from ..views.auth_views import CustomLoginView, CustomLogoutView, DashboardView, ChangePasswordView
