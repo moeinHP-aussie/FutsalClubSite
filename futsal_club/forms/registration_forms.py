@@ -157,33 +157,23 @@ class ApplicantRegistrationForm(forms.Form):
     # ─── Validation ───────────────────────────────────────────────
     def clean_national_id(self):
         nid = self.cleaned_data["national_id"]
+
+        # ── اعتبارسنجی یکتا بودن ───────────────────────────────
         if Player.objects.filter(national_id=nid).exists():
             raise forms.ValidationError("این کد ملی قبلاً ثبت شده است.")
-        return nid
 
-    def clean(self):
-        cleaned = super().clean()
-        ins_status = cleaned.get("insurance_status")
-        ins_expiry = cleaned.get("insurance_expiry_date")
-        if ins_status == "active" and not ins_expiry:
-            self.add_error(
-                "insurance_expiry_date",
-                "در صورت داشتن بیمه فعال، تاریخ انقضا الزامی است."
-            )
-        return cleaned
-
-    def clean_national_id_validate_checksum(self):
-        """اعتبارسنجی الگوریتم کد ملی ایران."""
-        nid = self.cleaned_data.get("national_id", "")
+        # ── اعتبارسنجی checksum کد ملی ایران ──────────────────
+        # ✅ اصلاح: این منطق به clean_national_id منتقل شد
+        # متد clean_national_id_validate_checksum هرگز توسط Django فراخوانی نمی‌شود
         if len(set(nid)) == 1:   # مثل 1111111111
             raise forms.ValidationError("کد ملی وارد شده معتبر نیست.")
-        # الگوریتم کنترل کد ملی
         digits = [int(d) for d in nid]
         check  = digits[-1]
         total  = sum(digits[i] * (10 - i) for i in range(9))
         rem    = total % 11
         if not ((rem < 2 and check == rem) or (rem >= 2 and check == 11 - rem)):
             raise forms.ValidationError("کد ملی وارد شده معتبر نیست.")
+
         return nid
 
 

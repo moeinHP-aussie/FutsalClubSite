@@ -55,3 +55,4 @@ def status_badge(status: str):
     }
     label, bg, color = labels.get(status, ("نامشخص", "#f1f3f5", "#868e96"))
     return {"label": label, "bg": bg, "color": color}
+

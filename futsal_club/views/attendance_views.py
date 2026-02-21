@@ -22,6 +22,7 @@ from ..mixins import RoleRequiredMixin
 from ..models import (
     AttendanceSheet,
     Coach,
+    CoachCategoryRate,   # ✅ اصلاح: import مفقود اضافه شد
     Player,
     SessionDate,
     TrainingCategory,

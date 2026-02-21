@@ -1,241 +1,385 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ورود به سیستم — باشگاه فوتسال</title>
+  <title>ورود — باشگاه فوتسال اسپاد</title>
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: "Vazirmatn", Tahoma, sans-serif;
-      background: linear-gradient(135deg, #0d1b2a 0%, #1a3150 50%, #0d1b2a 100%);
       min-height: 100vh;
+      display: flex;
+      direction: rtl;
+      overflow: hidden;
+    }
+
+    /* ── Right Panel — Visual (60%) ── */
+    .visual-panel {
+      flex: 6;
+      background: #0d1b2a;
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
-      direction: rtl;
+      overflow: hidden;
     }
 
-    .login-card {
+    /* خطوط دینامیک پس‌زمینه */
+    .visual-panel::before {
+      content: "";
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 60px,
+          rgba(245,158,11,.03) 60px,
+          rgba(245,158,11,.03) 61px
+        ),
+        radial-gradient(ellipse 70% 60% at 50% 40%, rgba(26,49,80,.8) 0%, transparent 70%);
+    }
+
+    /* دایره‌های تزئینی */
+    .deco-circle {
+      position: absolute; border-radius: 50%;
+      border: 1px solid rgba(245,158,11,.1);
+    }
+    .deco-circle.c1 { width: 500px; height: 500px; top: -100px; right: -100px; }
+    .deco-circle.c2 { width: 320px; height: 320px; bottom: -80px; left: 20%; border-color: rgba(14,165,233,.12); }
+    .deco-circle.c3 { width: 200px; height: 200px; top: 40%; right: 30%; border-color: rgba(245,158,11,.06); }
+
+    .visual-content {
+      position: relative; z-index: 2;
+      text-align: center; padding: 3rem;
+    }
+
+    .club-logo-wrap {
+      width: 110px; height: 110px;
+      border-radius: 22px;
       background: #fff;
-      border-radius: 20px;
-      padding: 2.5rem;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 25px 60px rgba(0,0,0,.4);
-      animation: slideUp .4s cubic-bezier(.34,1.56,.64,1) both;
+      margin: 0 auto 1.75rem;
+      box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 0 4px rgba(245,158,11,.25);
+      overflow: hidden;
+      animation: logoIn .6s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .club-logo-wrap img {
+      width: 100%; height: 100%; object-fit: cover;
     }
 
-    @keyframes slideUp {
-      from { transform: translateY(30px); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
+    @keyframes logoIn {
+      from { transform: scale(.7) rotate(-5deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0deg); opacity: 1; }
     }
 
-    .logo {
+    .club-name {
+      font-size: 2rem; font-weight: 900;
+      color: #fff;
+      line-height: 1.1;
+      animation: fadeUp .5s .15s both;
+    }
+    .club-name span { color: #f59e0b; }
+
+    .club-tagline {
+      font-size: .95rem; color: rgba(255,255,255,.45);
+      margin-top: .75rem; font-weight: 400;
+      animation: fadeUp .5s .25s both;
+    }
+
+    /* آمار باشگاه */
+    .club-stats {
+      display: flex; justify-content: center; gap: 2.5rem;
+      margin-top: 2.5rem;
+      animation: fadeUp .5s .35s both;
+    }
+    .stat-item { text-align: center; }
+    .stat-num {
+      font-size: 1.6rem; font-weight: 900; color: #f59e0b;
+      line-height: 1;
+    }
+    .stat-lbl {
+      font-size: .7rem; color: rgba(255,255,255,.35);
+      margin-top: .2rem; font-weight: 500;
+    }
+
+    /* رده‌های سنی badge */
+    .age-badges {
+      display: flex; justify-content: center; gap: .5rem;
+      margin-top: 2rem; flex-wrap: wrap;
+      animation: fadeUp .5s .45s both;
+    }
+    .age-badge {
+      padding: .3rem .85rem; border-radius: 99px;
+      font-size: .72rem; font-weight: 700;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      color: rgba(255,255,255,.55);
+    }
+    .age-badge.highlight {
+      background: rgba(245,158,11,.15);
+      border-color: rgba(245,158,11,.3);
+      color: #fcd34d;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Left Panel — Login Form (40%) ── */
+    .login-panel {
+      flex: 4;
+      background: #fff;
       display: flex;
       align-items: center;
-      gap: .85rem;
-      margin-bottom: 1.75rem;
+      justify-content: center;
+      padding: 2rem;
+      overflow-y: auto;
     }
 
-    .logo-icon {
-      width: 52px; height: 52px;
-      background: linear-gradient(135deg, #f59e0b, #fcd34d);
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem;
-      box-shadow: 0 4px 16px rgba(245,158,11,.35);
-      flex-shrink: 0;
+    .login-box {
+      width: 100%; max-width: 380px;
+      animation: slideIn .45s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
 
-    .logo-text h1 {
-      font-size: 1.1rem;
-      font-weight: 800;
-      color: #0d1b2a;
+    .login-header { margin-bottom: 2rem; }
+    .login-header h1 {
+      font-size: 1.6rem; font-weight: 900; color: #0d1b2a;
+      line-height: 1.15;
+    }
+    .login-header p {
+      font-size: .875rem; color: #64748b; margin-top: .4rem;
+    }
+    .login-header .accent-line {
+      width: 40px; height: 4px;
+      background: linear-gradient(90deg, #f59e0b, #fcd34d);
+      border-radius: 99px;
+      margin-bottom: .75rem;
     }
 
-    .logo-text p {
-      font-size: .78rem;
-      color: #64748b;
-      margin-top: .1rem;
-    }
-
-    h2 {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: #0f172a;
-      margin-bottom: .35rem;
-    }
-
-    .subtitle {
-      font-size: .85rem;
-      color: #64748b;
-      margin-bottom: 1.75rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.1rem;
-    }
+    /* ── Form ── */
+    .form-group { margin-bottom: 1.1rem; }
 
     label {
       display: block;
-      font-size: .83rem;
-      font-weight: 600;
-      color: #374151;
+      font-size: .82rem; font-weight: 700; color: #374151;
       margin-bottom: .4rem;
     }
 
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; right: .85rem; top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem; color: #94a3b8;
+      pointer-events: none;
+    }
     input {
       width: 100%;
-      padding: .7rem 1rem;
-      border: 1.5px solid #e2e8f0;
+      padding: .75rem 2.5rem .75rem 1rem;
+      border: 2px solid #e2e8f0;
       border-radius: 10px;
-      font-family: inherit;
-      font-size: .9rem;
-      color: #0f172a;
-      transition: border-color .15s, box-shadow .15s;
+      font-family: inherit; font-size: .9rem; color: #0f172a;
       background: #f8fafc;
+      transition: border-color .15s, box-shadow .15s, background .15s;
     }
-
     input:focus {
       outline: none;
       border-color: #0d1b2a;
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(13,27,42,.1);
+      box-shadow: 0 0 0 4px rgba(13,27,42,.07);
     }
 
     .error-box {
-      background: #fee2e2;
-      border: 1px solid #fecaca;
+      background: #fef2f2;
+      border: 1.5px solid #fca5a5;
       border-radius: 10px;
       padding: .85rem 1rem;
-      font-size: .85rem;
-      color: #991b1b;
+      font-size: .84rem; color: #b91c1c;
       margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: .5rem;
+      display: flex; align-items: center; gap: .5rem;
     }
 
     .btn-login {
       width: 100%;
-      padding: .8rem;
-      background: linear-gradient(135deg, #0d1b2a, #1a3150);
+      padding: .85rem;
+      background: linear-gradient(135deg, #0d1b2a 0%, #1a3150 100%);
       color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-family: inherit;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all .2s;
-      margin-top: .5rem;
+      border: none; border-radius: 10px;
+      font-family: inherit; font-size: 1rem; font-weight: 800;
+      cursor: pointer; margin-top: .5rem;
+      transition: transform .15s, box-shadow .15s;
+      position: relative; overflow: hidden;
     }
-
-    .btn-login:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(13,27,42,.35);
+    .btn-login::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(245,158,11,.15) 100%);
+      opacity: 0; transition: opacity .2s;
     }
-
+    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,27,42,.3); }
+    .btn-login:hover::after { opacity: 1; }
     .btn-login:active { transform: translateY(0); }
 
-    .register-link {
-      text-align: center;
-      margin-top: 1.25rem;
-      font-size: .84rem;
-      color: #64748b;
+    .divider {
+      text-align: center; margin: 1.25rem 0;
+      position: relative;
+    }
+    .divider::before {
+      content: ""; position: absolute;
+      top: 50%; left: 0; right: 0;
+      height: 1px; background: #e2e8f0;
+    }
+    .divider span {
+      position: relative; background: #fff;
+      padding: 0 .75rem; font-size: .78rem; color: #94a3b8;
     }
 
-    .register-link a {
-      color: #f59e0b;
-      font-weight: 700;
-      text-decoration: none;
+    .btn-register {
+      display: block; width: 100%;
+      padding: .75rem;
+      background: transparent;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-family: inherit; font-size: .9rem; font-weight: 700;
+      color: #0d1b2a; text-align: center; text-decoration: none;
+      transition: border-color .15s, background .15s;
     }
+    .btn-register:hover { border-color: #f59e0b; background: #fffbeb; }
 
-    .register-link a:hover { text-decoration: underline; }
-
-    .messages {
-      margin-bottom: 1rem;
-    }
-
+    /* Messages */
+    .messages { margin-bottom: 1rem; }
     .message-item {
-      padding: .7rem 1rem;
-      border-radius: 8px;
-      font-size: .85rem;
-      margin-bottom: .4rem;
+      padding: .7rem 1rem; border-radius: 8px;
+      font-size: .84rem; margin-bottom: .4rem;
     }
-
     .message-success { background: #d1fae5; color: #065f46; }
-    .message-info    { background: #dbeafe; color: #1e3a8a; }
-    .message-warning { background: #fef3c7; color: #92400e; }
     .message-error   { background: #fee2e2; color: #991b1b; }
+    .message-warning { background: #fef3c7; color: #92400e; }
+    .message-info    { background: #dbeafe; color: #1e3a8a; }
+
+    /* ── Mobile: stack panels ── */
+    @media (max-width: 768px) {
+      body { flex-direction: column; overflow: auto; }
+      .visual-panel { flex: none; padding: 2.5rem 1.5rem; min-height: 220px; }
+      .club-logo-wrap { width: 80px; height: 80px; margin-bottom: 1.25rem; }
+      .club-name { font-size: 1.4rem; }
+      .club-stats { gap: 1.5rem; }
+      .age-badges { display: none; }
+      .login-panel { flex: none; padding: 1.5rem; }
+    }
   </style>
 </head>
 <body>
-<div class="login-card">
 
-  <!-- Logo -->
-  <div class="logo">
-    <div class="logo-icon">⚽</div>
-    <div class="logo-text">
-      <h1>باشگاه فوتسال</h1>
-      <p>سیستم جامع مدیریت</p>
-    </div>
-  </div>
+<!-- ── Visual Panel ─────────────────────────────────── -->
+<div class="visual-panel">
+  <div class="deco-circle c1"></div>
+  <div class="deco-circle c2"></div>
+  <div class="deco-circle c3"></div>
 
-  <h2>ورود به سیستم</h2>
-  <p class="subtitle">نام کاربری و رمز عبور خود را وارد کنید</p>
-
-  <!-- Django Messages -->
-  {% if messages %}
-  <div class="messages">
-    {% for message in messages %}
-    <div class="message-item message-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <!-- Error -->
-  {% if error %}
-  <div class="error-box">
-    <span>⚠️</span>
-    <span>{{ error }}</span>
-  </div>
-  {% endif %}
-
-  <!-- Form -->
-  <form method="post" action="{% url 'accounts:login' %}">
-    {% csrf_token %}
-    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-
-    <div class="form-group">
-      <label for="username">نام کاربری</label>
-      <input type="text" id="username" name="username"
-             value="{{ username|default:'' }}"
-             placeholder="نام کاربری خود را وارد کنید"
-             autocomplete="username"
-             required autofocus>
+  <div class="visual-content">
+    <div class="club-logo-wrap">
+      <img src="{% static 'img/fcespad.jpg' %}" alt="لوگوی باشگاه فوتسال اسپاد">
     </div>
 
-    <div class="form-group">
-      <label for="password">رمز عبور</label>
-      <input type="password" id="password" name="password"
-             placeholder="رمز عبور"
-             autocomplete="current-password"
-             required>
+    <div class="club-name">
+      باشگاه فوتسال<br><span>اسپاد</span>
+    </div>
+    <div class="club-tagline">سیستم مدیریت جامع باشگاه</div>
+
+    <div class="club-stats">
+      <div class="stat-item">
+        <div class="stat-num">۷–۱۸</div>
+        <div class="stat-lbl">رده سنی</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">⚡</div>
+        <div class="stat-lbl">انرژی و قدرت</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">🏆</div>
+        <div class="stat-lbl">قهرمانی</div>
+      </div>
     </div>
 
-    <button type="submit" class="btn-login">🔑 ورود به سیستم</button>
-  </form>
-
-  <div class="register-link">
-    بازیکن جدید هستید؟
-    <a href="{% url 'registration:apply' %}">ثبت‌نام کنید ←</a>
+    <div class="age-badges">
+      <span class="age-badge">زیر ۹ سال</span>
+      <span class="age-badge highlight">زیر ۱۱</span>
+      <span class="age-badge highlight">زیر ۱۳</span>
+      <span class="age-badge highlight">زیر ۱۵</span>
+      <span class="age-badge">زیر ۱۷</span>
+      <span class="age-badge">زیر ۱۹</span>
+    </div>
   </div>
-
 </div>
+
+<!-- ── Login Panel ──────────────────────────────────── -->
+<div class="login-panel">
+  <div class="login-box">
+
+    <div class="login-header">
+      <div class="accent-line"></div>
+      <h1>خوش آمدی! 👋</h1>
+      <p>وارد سیستم مدیریت باشگاه شو</p>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+      <div class="message-item message-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="error-box">
+      <span>⚠️</span><span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'accounts:login' %}">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      <div class="form-group">
+        <label for="username">نام کاربری</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="username" name="username"
+                 value="{{ username|default:'' }}"
+                 placeholder="نام کاربری خود را وارد کنید"
+                 autocomplete="username" required autofocus>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">رمز عبور</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" name="password"
+                 placeholder="رمز عبور"
+                 autocomplete="current-password" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login">ورود به سیستم ←</button>
+    </form>
+
+    <div class="divider"><span>یا</span></div>
+
+    <a href="{% url 'registration:apply' %}" class="btn-register">
+      🏃 ثبت‌نام بازیکن جدید
+    </a>
+
+  </div>
+</div>
+
 </body>
 </html>

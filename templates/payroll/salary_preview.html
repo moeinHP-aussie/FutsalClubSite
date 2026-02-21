@@ -1,4 +1,4 @@
-{# templates/payroll/salary_preview.html #}
+{% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -87,9 +87,13 @@
 
   {# ── Header ────────────────────────────────────────────── #}
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
-    <div>
-      <h1>📊 محاسبه حقوق مربی</h1>
-      <p class="meta">{{ coach }} | دسته: {{ category }}</p>
+    <div style="display:flex;align-items:center;gap:.85rem">
+      <img src="{% static 'img/fcespad.jpg' %}" alt="اسپاد"
+           style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0">
+      <div>
+        <h1>📊 محاسبه حقوق مربی</h1>
+        <p class="meta">{{ coach }} | دسته: {{ category }}</p>
+      </div>
     </div>
     <div class="month-nav">
       <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}">

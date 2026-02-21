@@ -193,6 +193,9 @@
 </div>
 
 <!-- ── Quick Approve Modal ──────────────────────────────────── -->
+{# ✅ اصلاح: URL های approve و reject از Django context گرفته می‌شوند #}
+<div id="approve-url-base" data-url="{% url 'registration:approve' 0 %}" style="display:none"></div>
+<div id="reject-url-base"  data-url="{% url 'registration:reject' 0 %}"  style="display:none"></div>
 <div id="approve-modal" class="reject-modal">
   <div class="reject-box">
     <h3 style="margin-bottom:1rem">✅ تأیید سریع متقاضی</h3>
@@ -242,15 +245,19 @@
 
 {% block extra_js %}
 <script>
+// ✅ اصلاح: URL ها از data attributes گرفته می‌شوند نه hardcode
+const approveBaseUrl = document.getElementById("approve-url-base").dataset.url.replace("/0/", "/");
+const rejectBaseUrl  = document.getElementById("reject-url-base").dataset.url.replace("/0/", "/");
+
 function quickApprove(pk, name) {
   document.getElementById("approve-name").textContent = `بازیکن: ${name}`;
-  document.getElementById("approve-form").action = `/registration/applicants/${pk}/approve/`;
+  document.getElementById("approve-form").action = approveBaseUrl + pk + "/";
   document.getElementById("approve-modal").classList.add("open");
 }
 
 function openRejectModal(pk, name) {
   document.getElementById("reject-name").textContent = `بازیکن: ${name}`;
-  document.getElementById("reject-form").action = `/registration/applicants/${pk}/reject/`;
+  document.getElementById("reject-form").action = rejectBaseUrl + pk + "/";
   document.getElementById("reject-modal").classList.add("open");
 }
 

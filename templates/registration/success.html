@@ -1,47 +1,262 @@
-{% comment %}templates/registration/success.html{% endcomment %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ثبت‌نام موفق</title>
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ثبت‌نام موفق — باشگاه فوتسال اسپاد</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:"Vazirmatn",Tahoma,sans-serif;background:#0d1b2a;min-height:100vh;display:flex;align-items:center;justify-content:center;direction:rtl;padding:1rem}
-    .card{background:#fff;border-radius:16px;padding:2.5rem;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-    .icon{font-size:4rem;margin-bottom:1rem;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both}
-    @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-    h1{font-size:1.4rem;font-weight:900;color:#0d1b2a;margin-bottom:.5rem}
-    p{color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:1.25rem}
-    .player-id{background:#f0f4f8;border:1px solid #e2e8f0;border-radius:10px;padding:1rem;font-size:1.1rem;font-weight:800;color:#0d1b2a;margin:1rem 0;letter-spacing:.05em}
-    .step-list{text-align:right;background:#eff6ff;border-radius:10px;padding:1rem 1.25rem;margin:1rem 0}
-    .step-list li{font-size:.85rem;color:#1e3a8a;margin:.35rem 0;list-style:none;display:flex;gap:.5rem;align-items:flex-start}
-    .btn{display:inline-flex;align-items:center;padding:.65rem 1.5rem;border-radius:8px;background:#f59e0b;color:#0d1b2a;font-weight:800;text-decoration:none;font-size:.9rem;transition:.2s}
-    .btn:hover{filter:brightness(1.1)}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Vazirmatn", Tahoma, sans-serif;
+      background: #0d1b2a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      direction: rtl;
+      padding: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* پس‌زمینه انرژیک */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(14,165,233,.1) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(245,158,11,.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* دایره‌های تزئینی متحرک */
+    .bg-circle {
+      position: fixed; border-radius: 50%;
+      pointer-events: none;
+    }
+    .bg-circle.c1 {
+      width: 600px; height: 600px;
+      border: 1px solid rgba(245,158,11,.05);
+      top: -200px; right: -200px;
+      animation: spin 40s linear infinite;
+    }
+    .bg-circle.c2 {
+      width: 400px; height: 400px;
+      border: 1px solid rgba(14,165,233,.07);
+      bottom: -100px; left: -100px;
+      animation: spin 30s linear infinite reverse;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 0;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 24px 80px rgba(0,0,0,.5);
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* نوار رنگی بالا */
+    .card-top-bar {
+      height: 5px;
+      background: linear-gradient(90deg, #f59e0b, #fcd34d, #10b981);
+    }
+
+    .card-body { padding: 2.5rem 2rem; text-align: center; }
+
+    /* آیکون انیمیشن‌دار */
+    .success-icon-wrap {
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      margin: 0 auto 1.5rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.8rem;
+      box-shadow: 0 8px 32px rgba(16,185,129,.4);
+      animation: successPop .6s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    @keyframes successPop {
+      0%  { transform: scale(0) rotate(-15deg); opacity: 0; }
+      60% { transform: scale(1.15) rotate(5deg); }
+      100%{ transform: scale(1) rotate(0); opacity: 1; }
+    }
+
+    h1 {
+      font-size: 1.5rem; font-weight: 900;
+      color: #0d1b2a; margin-bottom: .5rem;
+      animation: fadeUp .4s .2s both;
+    }
+    .subtitle {
+      color: #64748b; font-size: .9rem; line-height: 1.65;
+      animation: fadeUp .4s .3s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* کد پیگیری */
+    .tracking-box {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 1.5px solid #93c5fd;
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      margin: 1.4rem 0;
+      animation: fadeUp .4s .4s both;
+    }
+    .tracking-label {
+      font-size: .72rem; font-weight: 700;
+      color: #1d4ed8; text-transform: uppercase; letter-spacing: .05em;
+      margin-bottom: .35rem;
+    }
+    .tracking-code {
+      font-size: 1.4rem; font-weight: 900;
+      color: #1e3a8a; letter-spacing: .05em;
+      font-family: "Vazirmatn", monospace;
+    }
+    .tracking-hint {
+      font-size: .72rem; color: #3b82f6; margin-top: .3rem;
+    }
+
+    /* مراحل بعدی */
+    .steps-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1.1rem;
+      margin-bottom: 1.4rem;
+      text-align: right;
+      animation: fadeUp .4s .5s both;
+    }
+    .steps-title {
+      font-size: .78rem; font-weight: 800; color: #64748b;
+      margin-bottom: .65rem; text-align: center;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .step-row {
+      display: flex; align-items: flex-start; gap: .75rem;
+      padding: .5rem 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .step-row:last-child { border-bottom: none; }
+    .step-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; flex-shrink: 0;
+      margin-top: .1rem;
+    }
+    .step-dot.done    { background: #d1fae5; }
+    .step-dot.pending { background: #fef3c7; }
+    .step-dot.future  { background: #f1f5f9; }
+    .step-text { font-size: .84rem; line-height: 1.5; color: #374151; }
+    .step-text strong { color: #0d1b2a; }
+
+    /* دکمه */
+    .btn-login {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .85rem 2rem;
+      background: linear-gradient(135deg, #0d1b2a, #1a3150);
+      color: #fff; text-decoration: none;
+      border-radius: 10px; font-weight: 800; font-size: .95rem;
+      box-shadow: 0 6px 20px rgba(13,27,42,.3);
+      transition: transform .15s, box-shadow .15s;
+      animation: fadeUp .4s .6s both;
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(13,27,42,.35);
+    }
+
+    /* لوگو footer */
+    .card-footer {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      padding: 1rem;
+      display: flex; align-items: center; justify-content: center; gap: .6rem;
+    }
+    .footer-logo {
+      width: 28px; height: 28px; border-radius: 6px;
+      overflow: hidden;
+    }
+    .footer-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .footer-text { font-size: .75rem; color: #94a3b8; font-weight: 600; }
+
+    @media (max-width: 480px) {
+      .card-body { padding: 1.75rem 1.25rem; }
+      h1 { font-size: 1.25rem; }
+    }
   </style>
 </head>
 <body>
+<div class="bg-circle c1"></div>
+<div class="bg-circle c2"></div>
+
 <div class="card">
-  <div class="icon">🎉</div>
-  <h1>ثبت‌نام شما با موفقیت انجام شد!</h1>
-  <p>اطلاعات شما دریافت شد و در صف بررسی قرار گرفت. مدیر فنی باشگاه به زودی پرونده شما را بررسی خواهد کرد.</p>
+  <div class="card-top-bar"></div>
+  <div class="card-body">
 
-  {% if player_id %}
-  <div class="player-id">
-    کد پیگیری: <span style="color:#3b5bdb">{{ player_id }}</span>
+    <div class="success-icon-wrap">🎉</div>
+
+    <h1>ثبت‌نامت موفق بود!</h1>
+    <p class="subtitle">
+      اطلاعاتت دریافت شد و تو صف بررسیه.<br>
+      مدیر فنی باشگاه به زودی پرونده‌ات رو بررسی می‌کنه.
+    </p>
+
+    {% if player_id %}
+    <div class="tracking-box">
+      <div class="tracking-label">🔖 کد پیگیری تو</div>
+      <div class="tracking-code">{{ player_id }}</div>
+      <div class="tracking-hint">این کد رو جایی یادداشت کن — برای پیگیری لازمته</div>
+    </div>
+    {% endif %}
+
+    <div class="steps-card">
+      <div class="steps-title">مراحل پیش رو</div>
+
+      <div class="step-row">
+        <div class="step-dot done">✅</div>
+        <div class="step-text"><strong>فرم ثبت‌نام ارسال شد</strong><br>اطلاعاتت با موفقیت دریافت شد</div>
+      </div>
+      <div class="step-row">
+        <div class="step-dot pending">⏳</div>
+        <div class="step-text"><strong>بررسی توسط مدیر فنی</strong><br>پرونده‌ات در صف بررسی قرار گرفت</div>
+      </div>
+      <div class="step-row">
+        <div class="step-dot future">📱</div>
+        <div class="step-text"><strong>اطلاع‌رسانی</strong><br>پس از تأیید، پیامک دریافت می‌کنی</div>
+      </div>
+      <div class="step-row">
+        <div class="step-dot future">🔑</div>
+        <div class="step-text">
+          <strong>ورود به سیستم</strong><br>
+          نام کاربری: <strong>کد ملی</strong> | رمز اولیه: <strong>کد ملی</strong>
+        </div>
+      </div>
+    </div>
+
+    <a href="{% url 'accounts:login' %}" class="btn-login">
+      🔑 ورود به سیستم
+    </a>
+
   </div>
-  <p style="font-size:.78rem;color:#94a3b8">این کد را برای پیگیری ثبت‌نام خود نگه دارید.</p>
-  {% endif %}
-
-  <div class="step-list">
-    <li>✅ <span>فرم ثبت‌نام با موفقیت ارسال شد</span></li>
-    <li>⏳ <span>مدیر فنی پرونده شما را بررسی می‌کند</span></li>
-    <li>📱 <span>پس از تأیید، پیامک اطلاع‌رسانی دریافت خواهید کرد</span></li>
-    <li>🔑 <span>نام کاربری شما: کد ملی | رمز اولیه: کد ملی</span></li>
+  <div class="card-footer">
+    <div class="footer-logo">
+      <img src="{% static 'img/fcespad.jpg' %}" alt="اسپاد">
+    </div>
+    <span class="footer-text">باشگاه فوتسال اسپاد</span>
   </div>
-
-  <a href="{% url 'accounts:login' %}" class="btn">🔑 ورود به سیستم</a>
 </div>
+
 </body>
 </html>
