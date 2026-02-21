@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}پروفایل {{ player.first_name }} {{ player.last_name }}{% endblock %}
+{% block nav_my_profile %}{% if not request.user.is_technical_director %}active{% endif %}{% endblock %}
+{% block nav_players %}{% if request.user.is_technical_director %}active{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  {% if request.user.is_technical_director %}
+    <a href="{% url 'training:player-list' %}" style="text-decoration:none;color:inherit">بازیکنان</a>
+    <span class="sep">›</span>
+  {% endif %}
+  <span class="cur">{{ player.first_name }} {{ player.last_name }}</span>
+{% endblock %}
+
+{% block content %}
+{% if not player %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:1rem">❓</div>
+  <h3 style="font-weight:800">پروفایل یافت نشد</h3>
+  <p style="color:var(--text-muted);font-size:.875rem;margin-top:.5rem">اطلاعات بازیکن در سیستم موجود نیست</p>
+</div>
+{% else %}
+
+<!-- Header -->
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div style="display:flex;align-items:center;gap:.85rem">
+    <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--navy));display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;font-weight:900">
+      {{ player.first_name|slice:":1" }}{{ player.last_name|slice:":1" }}
+    </div>
+    <div>
+      <h1 style="font-size:1.2rem;font-weight:900;color:var(--navy)">
+        {{ player.first_name }} {{ player.last_name }}
+      </h1>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-top:.2rem">
+        <span style="font-size:.75rem;font-family:monospace;color:var(--text-muted)">{{ player.player_id }}</span>
+        {% if player.insurance_status == 'active' %}
+          <span class="badge badge-green">بیمه فعال ✅</span>
+        {% else %}
+          <span class="badge badge-red">بدون بیمه</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% if request.user.is_technical_director or request.user.is_superuser %}
+  <a href="{% url 'registration:applicant-detail' player.pk %}" class="btn btn-navy btn-sm">✏️ ویرایش پروفایل</a>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+
+  <!-- Personal info -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">👤 اطلاعات شخصی</span></div>
+    <div style="padding:.75rem 1rem">
+      {% for label, val in player_info %}
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">{{ label }}</span>
+        <span style="font-size:.875rem;font-weight:600">{{ val|default:"—" }}</span>
+      </div>
+      {% empty %}
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">نام پدر</span>
+        <span style="font-size:.875rem;font-weight:600">{{ player.father_name }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">کد ملی</span>
+        <span style="font-size:.875rem;font-weight:600;font-family:monospace">{{ player.national_id }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">تاریخ تولد</span>
+        <span style="font-size:.875rem;font-weight:600">{{ player.dob }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">موبایل</span>
+        <span style="font-size:.875rem;font-weight:600">{{ player.phone }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">موبایل پدر</span>
+        <span style="font-size:.875rem;font-weight:600">{{ player.father_phone }}</span>
+      </div>
+      {% if player.address %}
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0">
+        <span style="font-size:.8rem;color:var(--text-muted)">آدرس</span>
+        <span style="font-size:.82rem;font-weight:600;text-align:left;max-width:60%">{{ player.address }}</span>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Biometrics + family -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">📏 اطلاعات جسمانی</span></div>
+    <div style="padding:.75rem 1rem">
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">قد</span>
+        <span style="font-size:.875rem;font-weight:600">{% if player.height %}{{ player.height }} cm{% else %}—{% endif %}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">وزن</span>
+        <span style="font-size:.875rem;font-weight:600">{% if player.weight %}{{ player.weight }} kg{% else %}—{% endif %}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">دست برتر</span>
+        <span style="font-size:.875rem;font-weight:600">{{ player.get_preferred_hand_display }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">پای برتر</span>
+        <span style="font-size:.875rem;font-weight:600">{{ player.get_preferred_foot_display }}</span>
+      </div>
+      {% if player.medical_history %}
+      <div style="padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.25rem">سابقه پزشکی</div>
+        <div style="font-size:.82rem;line-height:1.5">{{ player.medical_history }}</div>
+      </div>
+      {% endif %}
+      {% if player.injury_history %}
+      <div style="padding:.45rem 0">
+        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.25rem">سابقه آسیب‌دیدگی</div>
+        <div style="font-size:.82rem;line-height:1.5">{{ player.injury_history }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- دسته‌های عضو -->
+<div class="card" style="margin-bottom:1rem">
+  <div class="card-header"><span class="card-title">🗂️ دسته‌های آموزشی</span></div>
+  {% if categories %}
+  <div style="padding:.75rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem">
+    {% for cat in categories %}
+    <a href="{% url 'training:category-detail' cat.pk %}"
+       style="background:rgba(14,165,233,.1);color:var(--teal);border-radius:8px;padding:.4rem 1rem;font-size:.82rem;font-weight:700;text-decoration:none;transition:background .15s"
+       onmouseenter="this.style.background='rgba(14,165,233,.2)'"
+       onmouseleave="this.style.background='rgba(14,165,233,.1)'">
+      🗂️ {{ cat.name }}
+      <span style="font-size:.7rem;opacity:.7;margin-right:.25rem">{{ cat.monthly_fee|floatformat:0 }} ریال</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="padding:1.25rem;text-align:center;color:var(--text-muted);font-size:.875rem">هنوز به هیچ دسته‌ای اضافه نشده</div>
+  {% endif %}
+</div>
+
+<!-- آخرین فاکتورها -->
+{% if recent_invoices %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">🧾 آخرین فاکتورها</span>
+    <a href="{% url 'payroll:finance-dashboard' %}" class="btn btn-outline btn-sm">همه ←</a>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>ماه</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th></tr></thead>
+      <tbody>
+        {% for inv in recent_invoices %}
+        <tr>
+          <td style="font-size:.82rem">{{ inv.month|date:"Y/m" }}</td>
+          <td style="font-size:.82rem">{{ inv.amount|floatformat:0 }} ریال</td>
+          <td>
+            {% if inv.is_paid %}
+              <span class="badge badge-green">پرداخت شده</span>
+            {% else %}
+              <span class="badge badge-red">پرداخت نشده</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.75rem;color:var(--text-muted)">{{ inv.created_at|date:"Y/m/d" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}{# end if player #}
+{% endblock %}

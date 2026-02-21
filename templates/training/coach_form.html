@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}ویرایش مربی{% else %}مربی جدید{% endif %}{% endblock %}
+{% block nav_coaches %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'training:coach-list' %}" style="text-decoration:none;color:inherit">مربیان</a>
+  <span class="sep">›</span>
+  <span class="cur">{% if is_edit %}ویرایش{% else %}مربی جدید{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;margin:0 auto">
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="height:4px;background:linear-gradient(90deg,var(--teal),var(--navy))"></div>
+    <div style="padding:1.5rem 1.75rem">
+
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,var(--teal),var(--navy));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem">🏃</div>
+        <div>
+          <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">
+            {% if is_edit %}ویرایش «{{ object.first_name }} {{ object.last_name }}»{% else %}افزودن مربی جدید{% endif %}
+          </h1>
+          <p style="font-size:.78rem;color:var(--text-muted)">اطلاعات مربی را وارد کنید</p>
+        </div>
+      </div>
+
+      {% if form.errors %}
+      <div class="server-errors" style="margin-bottom:1rem">
+        ⚠️ {% for field in form %}{% for err in field.errors %}<div>• {{ field.label }}: {{ err }}</div>{% endfor %}{% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">نام <span style="color:var(--red)">*</span></label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">نام خانوادگی <span style="color:var(--red)">*</span></label>
+            {{ form.last_name }}
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">مدرک مربیگری</label>
+            {{ form.degree }}
+          </div>
+          <div>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">موبایل <span style="color:var(--red)">*</span></label>
+            {{ form.phone }}
+            {% if form.phone.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.phone.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div style="margin-bottom:1rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">شماره کارت بانکی</label>
+          {{ form.bank_card_number }}
+          <span style="font-size:.72rem;color:var(--text-muted)">۱۶ رقم — برای واریز حقوق</span>
+          {% if form.bank_card_number.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.bank_card_number.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div style="margin-bottom:1rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">حساب کاربری سیستم</label>
+          {{ form.user }}
+          <span style="font-size:.72rem;color:var(--text-muted)">اگر این مربی باید بتواند وارد سیستم شود</span>
+        </div>
+
+        <div style="margin-bottom:1.5rem;display:flex;align-items:center;gap:.6rem">
+          {{ form.is_active }}
+          <label for="{{ form.is_active.id_for_label }}" style="font-size:.875rem;font-weight:600;cursor:pointer">این مربی فعال است</label>
+        </div>
+
+        <div style="display:flex;gap:.6rem;justify-content:flex-end">
+          <a href="{% url 'training:coach-list' %}" class="btn btn-outline">انصراف</a>
+          <button type="submit" class="btn btn-amber">
+            {% if is_edit %}💾 ذخیره{% else %}✅ افزودن مربی{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

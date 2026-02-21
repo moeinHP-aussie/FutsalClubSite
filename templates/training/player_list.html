@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}بازیکنان{% endblock %}
+{% block nav_players %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">بازیکنان</span>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.25rem;font-weight:900;color:var(--navy)">👥 بازیکنان</h1>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">{{ total_count }} بازیکن تأییدشده</p>
+  </div>
+  <div style="display:flex;gap:.5rem">
+    <a href="{% url 'registration:applicant-list' %}" class="btn btn-outline btn-sm">📋 متقاضیان جدید</a>
+    <a href="{% url 'registration:bulk-import' %}" class="btn btn-navy btn-sm">📥 ایمپورت اکسل</a>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="card" style="padding:.85rem 1rem;margin-bottom:1rem">
+  <form method="get" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+    <input type="text" name="q" value="{{ q }}"
+           placeholder="نام، کد ملی، موبایل..."
+           style="padding:.55rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem;flex:1;min-width:180px">
+    <select name="category"
+            style="padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
+      <option value="">همه دسته‌ها</option>
+      {% for cat in all_categories %}
+      <option value="{{ cat.pk }}" {% if category_filter == cat.pk|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">🔍 جستجو</button>
+    {% if q or category_filter %}<a href="?" class="btn btn-outline btn-sm">✕ پاک</a>{% endif %}
+  </form>
+</div>
+
+<!-- Table -->
+{% if players %}
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>نام و نام خانوادگی</th>
+          <th>کد ملی</th>
+          <th>موبایل</th>
+          <th>پدر</th>
+          <th>دسته</th>
+          <th>بیمه</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for player in players %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:.8rem">
+            {{ page_obj.start_index|add:forloop.counter0 }}
+          </td>
+          <td>
+            <strong>{{ player.first_name }} {{ player.last_name }}</strong>
+            <div style="font-size:.72rem;color:var(--text-muted)">{{ player.father_name }}</div>
+          </td>
+          <td style="font-family:monospace;font-size:.82rem">{{ player.national_id }}</td>
+          <td style="font-size:.82rem">{{ player.phone }}</td>
+          <td style="font-size:.82rem">{{ player.father_phone }}</td>
+          <td>
+            {% for cat in player.categories.all %}
+            <span style="background:rgba(14,165,233,.1);color:var(--teal);border-radius:6px;padding:.15rem .5rem;font-size:.7rem;font-weight:600">{{ cat.name }}</span>
+            {% empty %}<span style="color:var(--text-muted);font-size:.75rem">—</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% if player.insurance_status == 'active' %}
+              <span class="badge badge-green">✅</span>
+            {% else %}
+              <span class="badge badge-red">❌</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'training:player-profile' player.pk %}"
+               class="btn btn-outline btn-sm">👤 پروفایل</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display:flex;justify-content:center;gap:.4rem;margin-top:1rem">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">← قبلی</a>
+  {% endif %}
+  <span style="padding:.5rem .85rem;font-size:.82rem;color:var(--text-muted)">
+    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">بعدی →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:1rem">👥</div>
+  <h3 style="font-weight:800;margin-bottom:.5rem">هیچ بازیکنی یافت نشد</h3>
+  <p style="color:var(--text-muted);font-size:.875rem">
+    {% if q %}نتیجه‌ای برای «{{ q }}» پیدا نشد{% else %}هنوز بازیکن تأییدشده‌ای وجود ندارد{% endif %}
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

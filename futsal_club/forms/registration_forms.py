@@ -148,12 +148,6 @@ class ApplicantRegistrationForm(forms.Form):
         widget=forms.TextInput(attrs={"placeholder": "در صورت داشتن بیمه وارد کنید"})
     )
 
-    # ─── تأیید شرایط ──────────────────────────────────────────────
-    agree_terms = forms.BooleanField(
-        label=_('قوانین و مقررات باشگاه را خوانده و قبول دارم'),
-        error_messages={"required": "تأیید قوانین الزامی است."}
-    )
-
     # ─── Validation ───────────────────────────────────────────────
     def clean_national_id(self):
         nid = self.cleaned_data["national_id"]

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}ثبت تراکنش مالی{% endblock %}
+{% block nav_expenses %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:expense-list' %}" style="text-decoration:none;color:inherit">هزینه‌ها</a>
+  <span class="sep">›</span><span class="cur">تراکنش جدید</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;margin:0 auto">
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="height:4px;background:linear-gradient(90deg,var(--red),var(--amber))"></div>
+    <div style="padding:1.5rem 1.75rem">
+
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,#ef4444,#f59e0b);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">📊</div>
+        <div>
+          <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">ثبت تراکنش مالی جدید</h1>
+          <p style="font-size:.78rem;color:var(--text-muted)">هزینه یا درآمد باشگاه را وارد کنید</p>
+        </div>
+      </div>
+
+      {% if not has_categories %}
+      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#92400e">
+        ⚠️ هنوز هیچ دسته مالی تعریف نشده. لطفاً ابتدا از <a href="/admin/futsal_club/expensecategory/add/" style="color:var(--amber)">پنل ادمین</a> دسته بسازید.
+      </div>
+      {% endif %}
+
+      {% if form.errors %}
+      <div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#991b1b">
+        ⚠️ خطا:
+        {% for field in form %}{% for err in field.errors %}<div>• {{ field.label }}: {{ err }}</div>{% endfor %}{% endfor %}
+        {% for err in form.non_field_errors %}<div>• {{ err }}</div>{% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- نوع تراکنش - radio بزرگ -->
+        <div style="margin-bottom:1.25rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.5rem">نوع تراکنش <span style="color:var(--red)">*</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+            <label id="lbl-expense" style="display:flex;align-items:center;gap:.6rem;padding:.75rem 1rem;border:2px solid var(--red);border-radius:10px;cursor:pointer;background:#fef2f2;transition:.15s"
+                   onclick="setKind('expense')">
+              <input type="radio" name="transaction_type" value="expense" checked
+                     style="accent-color:var(--red);width:16px;height:16px">
+              <div>
+                <div style="font-weight:800;font-size:.9rem;color:var(--red)">💸 هزینه</div>
+                <div style="font-size:.72rem;color:#b91c1c">پرداخت از صندوق</div>
+              </div>
+            </label>
+            <label id="lbl-income" style="display:flex;align-items:center;gap:.6rem;padding:.75rem 1rem;border:2px solid var(--surface-2);border-radius:10px;cursor:pointer;transition:.15s"
+                   onclick="setKind('income')">
+              <input type="radio" name="transaction_type" value="income"
+                     style="accent-color:var(--green);width:16px;height:16px">
+              <div>
+                <div style="font-weight:800;font-size:.9rem;color:var(--green)">💰 درآمد</div>
+                <div style="font-size:.72rem;color:#047857">دریافت به صندوق</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- ردیف عنوان + دسته -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">عنوان <span style="color:var(--red)">*</span></label>
+            {{ form.title }}
+            {% if form.title.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.title.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">دسته <span style="color:var(--red)">*</span></label>
+            {{ form.category }}
+            {% if form.category.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.category.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- مبلغ + تاریخ -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">مبلغ (ریال) <span style="color:var(--red)">*</span></label>
+            {{ form.amount }}
+            {% if form.amount.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.amount.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">تاریخ (شمسی) <span style="color:var(--red)">*</span></label>
+            {{ form.date_jalali }}
+            <span style="font-size:.72rem;color:var(--text-muted)">فرمت: ۱۴۰۳/۰۶/۱۵</span>
+            {% if form.date_jalali.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.date_jalali.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- شرح -->
+        <div style="margin-bottom:1rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">شرح (اختیاری)</label>
+          {{ form.description }}
+        </div>
+
+        <!-- پیوست -->
+        <div style="margin-bottom:1.5rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">پیوست (اختیاری)</label>
+          {{ form.attachment }}
+          <span style="font-size:.72rem;color:var(--text-muted)">تصویر رسید یا فاکتور</span>
+        </div>
+
+        <div style="display:flex;gap:.6rem;justify-content:flex-end">
+          <a href="{% url 'payroll:expense-list' %}" class="btn btn-outline">انصراف</a>
+          <button type="submit" class="btn btn-amber" id="submit-btn">✅ ثبت تراکنش</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function setKind(kind) {
+  const lblExpense = document.getElementById('lbl-expense');
+  const lblIncome  = document.getElementById('lbl-income');
+  const btn        = document.getElementById('submit-btn');
+  if (kind === 'expense') {
+    lblExpense.style.borderColor = 'var(--red)';
+    lblExpense.style.background  = '#fef2f2';
+    lblIncome.style.borderColor  = 'var(--surface-2)';
+    lblIncome.style.background   = '';
+    btn.textContent = '✅ ثبت هزینه';
+  } else {
+    lblIncome.style.borderColor  = 'var(--green)';
+    lblIncome.style.background   = '#f0fdf4';
+    lblExpense.style.borderColor = 'var(--surface-2)';
+    lblExpense.style.background  = '';
+    btn.textContent = '✅ ثبت درآمد';
+  }
+}
+</script>
+{% endblock %}

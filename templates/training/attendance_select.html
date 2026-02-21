@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}انتخاب دسته — حضور و غیاب{% endblock %}
+{% block nav_attendance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">حضور و غیاب</span>
+{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:1.5rem">
+  <h1 style="font-size:1.25rem;font-weight:900;color:var(--navy)">📅 حضور و غیاب</h1>
+  <p style="font-size:.85rem;color:var(--text-muted);margin-top:.3rem">
+    برای ثبت یا مشاهده حضور، ابتدا یک دسته آموزشی انتخاب کنید
+  </p>
+</div>
+
+{% if categories %}
+<div class="grid-auto">
+  {% for cat in categories %}
+  <div class="card" style="padding:0;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s"
+       onclick="window.location='{% url 'attendance:matrix' cat.pk %}'"
+       onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 32px rgba(13,27,42,.18)'"
+       onmouseleave="this.style.transform='';this.style.boxShadow=''">
+
+    <div style="height:5px;background:linear-gradient(90deg,var(--amber),var(--teal))"></div>
+    <div style="padding:1.25rem">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem">
+        <div>
+          <div style="font-size:1rem;font-weight:900;color:var(--navy)">{{ cat.name }}</div>
+          <div style="font-size:.75rem;color:var(--text-muted);margin-top:.15rem">{{ cat.player_count }} بازیکن</div>
+        </div>
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;font-size:1.1rem">📅</div>
+      </div>
+
+      <!-- Schedule badges -->
+      {% if cat.schedules.all %}
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:1rem">
+        {% for sch in cat.schedules.all %}
+        <span style="background:rgba(14,165,233,.1);color:var(--teal);border-radius:99px;padding:.2rem .65rem;font-size:.7rem;font-weight:700">
+          {{ sch.get_weekday_display }} {{ sch.start_time|time:"H:i" }}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <a href="{% url 'attendance:matrix' cat.pk %}"
+         class="btn btn-amber btn-sm" style="width:100%;justify-content:center"
+         onclick="event.stopPropagation()">
+        ورود به ماتریس حضور ←
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3.5rem;margin-bottom:1rem">📅</div>
+  <h3 style="font-weight:800">هیچ دسته‌ای موجود نیست</h3>
+  <p style="color:var(--text-muted);font-size:.875rem;margin-top:.5rem">
+    هنوز دسته آموزشی فعالی وجود ندارد یا شما به دسته‌ای اضافه نشده‌اید
+  </p>
+  {% if request.user.is_technical_director or request.user.is_superuser %}
+  <a href="{% url 'training:category-create' %}" class="btn btn-amber" style="margin-top:1rem">
+    ➕ ایجاد دسته جدید
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

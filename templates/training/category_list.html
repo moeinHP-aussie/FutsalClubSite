@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}دسته‌های آموزشی{% endblock %}
+{% block nav_categories %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">دسته‌های آموزشی</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header bar -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.25rem;font-weight:900;color:var(--navy)">🗂️ دسته‌های آموزشی</h1>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">
+      {{ total_active }} دسته فعال &nbsp;·&nbsp; {{ total_inactive }} غیرفعال
+    </p>
+  </div>
+  {% if request.user.is_technical_director or request.user.is_superuser %}
+  <a href="{% url 'training:category-create' %}" class="btn btn-amber">
+    ➕ دسته جدید
+  </a>
+  {% endif %}
+</div>
+
+<!-- Filter bar -->
+<div class="card" style="padding:.85rem 1rem;margin-bottom:1rem">
+  <form method="get" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+    <input type="text" name="q" value="{{ q }}"
+           placeholder="جستجوی نام دسته..."
+           style="padding:.55rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem;min-width:200px">
+    <div style="display:flex;gap:.4rem">
+      <a href="?show=active{% if q %}&q={{ q }}{% endif %}"
+         class="btn {% if show == 'active' %}btn-navy{% else %}btn-outline{% endif %} btn-sm">فعال</a>
+      <a href="?show=inactive{% if q %}&q={{ q }}{% endif %}"
+         class="btn {% if show == 'inactive' %}btn-navy{% else %}btn-outline{% endif %} btn-sm">غیرفعال</a>
+      <a href="?show=all{% if q %}&q={{ q }}{% endif %}"
+         class="btn {% if show == 'all' %}btn-navy{% else %}btn-outline{% endif %} btn-sm">همه</a>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">🔍 جستجو</button>
+    {% if q %}<a href="?" class="btn btn-outline btn-sm">✕ پاک</a>{% endif %}
+  </form>
+</div>
+
+<!-- Category cards grid -->
+{% if categories %}
+<div class="grid-auto">
+  {% for cat in categories %}
+  <div class="card" style="padding:0;overflow:hidden;transition:transform .2s,box-shadow .2s"
+       onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 28px rgba(13,27,42,.14)'"
+       onmouseleave="this.style.transform='';this.style.boxShadow=''">
+
+    <!-- Color top bar -->
+    <div style="height:4px;background:{% if cat.is_active %}linear-gradient(90deg,var(--amber),var(--amber-light)){% else %}var(--surface-2){% endif %}"></div>
+
+    <div style="padding:1.1rem 1.25rem">
+      <!-- Name + status -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.75rem">
+        <div>
+          <div style="font-weight:800;font-size:1rem;color:var(--navy)">{{ cat.name }}</div>
+          {% if cat.description %}
+          <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;line-height:1.4">{{ cat.description|truncatechars:60 }}</div>
+          {% endif %}
+        </div>
+        {% if cat.is_active %}
+          <span class="badge badge-green">فعال</span>
+        {% else %}
+          <span class="badge" style="background:#f1f5f9;color:#64748b">غیرفعال</span>
+        {% endif %}
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:flex;gap:1rem;margin-bottom:.9rem">
+        <div style="text-align:center">
+          <div style="font-size:1.3rem;font-weight:900;color:var(--navy)">{{ cat.player_count }}</div>
+          <div style="font-size:.68rem;color:var(--text-muted)">بازیکن</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:1.3rem;font-weight:900;color:var(--teal)">{{ cat.coach_count }}</div>
+          <div style="font-size:.68rem;color:var(--text-muted)">مربی</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--amber)">{{ cat.monthly_fee|floatformat:0 }}</div>
+          <div style="font-size:.68rem;color:var(--text-muted)">شهریه (ریال)</div>
+        </div>
+      </div>
+
+      <!-- Schedule pills -->
+      {% if cat.schedules.all %}
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.9rem">
+        {% for sch in cat.schedules.all %}
+        <span style="background:rgba(14,165,233,.1);color:var(--teal);border-radius:99px;padding:.2rem .65rem;font-size:.7rem;font-weight:600">
+          {{ sch.get_weekday_display }} {{ sch.start_time|time:"H:i" }}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Actions -->
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+        <a href="{% url 'training:category-detail' cat.pk %}"
+           class="btn btn-outline btn-sm" style="flex:1;justify-content:center">👁️ جزئیات</a>
+        {% if request.user.is_technical_director or request.user.is_superuser %}
+        <a href="{% url 'training:category-update' cat.pk %}"
+           class="btn btn-navy btn-sm">✏️ ویرایش</a>
+        <a href="{% url 'training:attendance-select' %}?cat={{ cat.pk }}"
+           class="btn btn-amber btn-sm">📅 حضور</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:1rem">🗂️</div>
+  <h3 style="font-weight:800;margin-bottom:.5rem">هیچ دسته‌ای پیدا نشد</h3>
+  <p style="color:var(--text-muted);font-size:.875rem">
+    {% if q %}نتیجه‌ای برای «{{ q }}» یافت نشد.
+    {% else %}هنوز هیچ دسته آموزشی تعریف نشده است.{% endif %}
+  </p>
+  {% if request.user.is_technical_director or request.user.is_superuser %}
+  <a href="{% url 'training:category-create' %}" class="btn btn-amber" style="margin-top:1rem">
+    ➕ اولین دسته را بساز
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

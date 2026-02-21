@@ -67,10 +67,19 @@
     .btn:disabled{opacity:.5;pointer-events:none}
     /* ── Errors ── */
     .server-errors{background:#fee2e2;border:1px solid #fecaca;border-radius:var(--radius-sm);padding:1rem;margin:0 2rem 0;font-size:.85rem;color:#991b1b}
-    /* ── Agree ── */
-    .agree-row{display:flex;align-items:flex-start;gap:.75rem;padding:1rem 2rem;background:#fffbeb;border-top:1px solid #fef3c7}
-    .agree-row input[type=checkbox]{width:18px;height:18px;margin-top:.1rem;accent-color:var(--amber);flex-shrink:0}
-    .agree-text{font-size:.82rem;line-height:1.6;color:var(--text-muted)}
+    /* ── Agree ── (حذف شد) */
+    /* ── Jalali Date Picker ── */
+    .jalali-picker { display: flex; gap: .4rem; align-items: center; }
+    .jalali-picker select {
+      flex: 1; padding: .6rem .5rem;
+      border: 1.5px solid var(--surface-2); border-radius: var(--radius-sm);
+      font-family: inherit; font-size: .875rem; background: var(--white);
+      transition: border-color .15s; appearance: none; text-align: center; cursor: pointer;
+    }
+    .jalali-picker select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(13,27,42,.1); }
+    .jalali-picker .jp-year { flex: 2.2; }
+    .jalali-picker .jp-month { flex: 2.5; }
+    .jalali-picker .jp-day  { flex: 1.2; }
     @media(max-width:600px){.field-grid{grid-template-columns:1fr}.steps-bar{padding:1rem}.form-section{padding:1.25rem}.form-nav{padding:1rem}.field-grid.cols-2{grid-template-columns:1fr}}
   </style>
 </head>
@@ -149,7 +158,25 @@
           </div>
           <div class="form-group">
             <label>تاریخ تولد (شمسی) <span class="req">*</span></label>
-            <input type="text" name="dob" value="{{ form.dob.value|default:'' }}" required placeholder="مثال: ۱۳۸۰/۰۶/۱۵">
+            <div class="jalali-picker" id="picker-dob">
+              <select class="jp-year" onchange="jalaliCompose('dob')">
+                <option value="">سال</option>
+              </select>
+              <select class="jp-month" onchange="jalaliCompose('dob')">
+                <option value="">ماه</option>
+                <option value="1">فروردین</option><option value="2">اردیبهشت</option>
+                <option value="3">خرداد</option><option value="4">تیر</option>
+                <option value="5">مرداد</option><option value="6">شهریور</option>
+                <option value="7">مهر</option><option value="8">آبان</option>
+                <option value="9">آذر</option><option value="10">دی</option>
+                <option value="11">بهمن</option><option value="12">اسفند</option>
+              </select>
+              <select class="jp-day" onchange="jalaliCompose('dob')">
+                <option value="">روز</option>
+              </select>
+            </div>
+            <input type="hidden" name="dob" id="hidden-dob" value="{{ form.dob.value|default:'' }}">
+            <span class="hint">سال تولد را انتخاب کنید — برای رده‌بندی سنی</span>
           </div>
           <div class="form-group">
             <label>موبایل بازیکن <span class="req">*</span></label>
@@ -226,7 +253,21 @@
           </div>
           <div class="form-group">
             <label>شغل پدر</label>
-            <input type="text" name="father_job" value="{{ form.father_job.value|default:'' }}" placeholder="شغل پدر">
+            <input type="text" name="father_job" value="{{ form.father_job.value|default:'' }}"
+                   placeholder="شغل پدر" list="job-list-father" autocomplete="off">
+            <datalist id="job-list-father">
+              <option value="نظامی / ارتش">
+              <option value="نظامی / سپاه">
+              <option value="کارمند دولت">
+              <option value="کارمند بخش خصوصی">
+              <option value="آزاد / کسب‌وکار شخصی">
+              <option value="پزشک / پرستار">
+              <option value="مهندس">
+              <option value="معلم / استاد">
+              <option value="کشاورز">
+              <option value="بازنشسته">
+              <option value="بیکار / جویای کار">
+            </datalist>
           </div>
           <div class="form-group">
             <label>تحصیلات مادر</label>
@@ -239,7 +280,21 @@
           </div>
           <div class="form-group">
             <label>شغل مادر</label>
-            <input type="text" name="mother_job" value="{{ form.mother_job.value|default:'' }}" placeholder="شغل مادر">
+            <input type="text" name="mother_job" value="{{ form.mother_job.value|default:'' }}"
+                   placeholder="شغل مادر" list="job-list-mother" autocomplete="off">
+            <datalist id="job-list-mother">
+              <option value="نظامی / ارتش">
+              <option value="نظامی / سپاه">
+              <option value="کارمند دولت">
+              <option value="کارمند بخش خصوصی">
+              <option value="آزاد / کسب‌وکار شخصی">
+              <option value="پزشک / پرستار">
+              <option value="مهندس">
+              <option value="معلم / استاد">
+              <option value="خانه‌دار">
+              <option value="بازنشسته">
+              <option value="بیکار / جویای کار">
+            </datalist>
           </div>
         </div>
       </div>
@@ -261,20 +316,19 @@
         <div id="insurance-date-wrap" style="display:none;margin-top:1rem">
           <div class="form-group">
             <label>تاریخ انقضای بیمه <span class="req">*</span></label>
-            <input type="text" name="insurance_expiry_date" value="{{ form.insurance_expiry_date.value|default:'' }}" placeholder="مثال: ۱۴۰۴/۰۶/۳۱">
+            <div class="jalali-picker" id="picker-ins">
+              <select class="jp-year" onchange="jalaliCompose('ins')">
+                <option value="">سال</option>
+              </select>
+              <select class="jp-month" onchange="jalaliCompose('ins')">
+                <option value="">ماه</option>
+              </select>
+              <select class="jp-day" onchange="jalaliCompose('ins')">
+                <option value="">روز</option>
+              </select>
+            </div>
+            <input type="hidden" name="insurance_expiry_date" id="hidden-ins" value="{{ form.insurance_expiry_date.value|default:'' }}">
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Agree Terms (always visible in step 4) -->
-    <div id="agree-wrap" style="display:none">
-      <div class="agree-row">
-        <input type="checkbox" name="agree_terms" id="agree_terms" {% if form.agree_terms.value %}checked{% endif %}>
-        <div class="agree-text">
-          <strong>قوانین و مقررات باشگاه فوتسال</strong> را مطالعه کرده و تمامی موارد را می‌پذیرم.
-          اطلاعات وارد شده صحیح بوده و مسئولیت صحت آن‌ها بر عهده اینجانب است.
-          <span class="req">*</span>
         </div>
       </div>
     </div>
@@ -312,10 +366,9 @@ function showStep(step) {
     el.classList.toggle("done", i+1 < step);
   });
   document.getElementById("cur-step").textContent = toP(step);
-  document.getElementById("prev-btn").style.display    = step > 1 ? "flex" : "none";
-  document.getElementById("next-btn").style.display    = step < totalSteps ? "flex" : "none";
-  document.getElementById("submit-btn").style.display  = step === totalSteps ? "flex" : "none";
-  document.getElementById("agree-wrap").style.display  = step === totalSteps ? "block" : "none";
+  document.getElementById("prev-btn").style.display   = step > 1 ? "flex" : "none";
+  document.getElementById("next-btn").style.display   = step < totalSteps ? "flex" : "none";
+  document.getElementById("submit-btn").style.display = step === totalSteps ? "flex" : "none";
   currentStep = step;
   window.scrollTo({top:0, behavior:"smooth"});
 }
@@ -331,18 +384,109 @@ function toggleInsuranceDate(val) {
   document.getElementById("insurance-date-wrap").style.display = val === "active" ? "block" : "none";
 }
 
+/* ════════════════════════════════════════════
+   تقویم شمسی — Jalali Date Picker
+════════════════════════════════════════════ */
+const JALALI_MONTHS = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور",
+                        "مهر","آبان","آذر","دی","بهمن","اسفند"];
+
+// آیا سال کبیسه شمسی است؟
+function isJalaliLeap(y) {
+  const r = ((y - (y > 0 ? 474 : 473)) % 2820 + 474 + 38) * 682;
+  return (r % 2816) < 682;
+}
+
+// تعداد روزهای هر ماه
+function jalaliDaysInMonth(month, year) {
+  if (month <= 6) return 31;
+  if (month <= 11) return 30;
+  return isJalaliLeap(year) ? 30 : 29;
+}
+
+// ساخت گزینه‌های dropdown
+function buildYearOptions(sel, from, to, selectedVal) {
+  sel.innerHTML = '<option value="">سال</option>';
+  for (let y = to; y >= from; y--) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = toP(y);
+    if (String(y) === String(selectedVal)) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+function buildMonthOptions(sel, selectedVal) {
+  sel.innerHTML = '<option value="">ماه</option>';
+  JALALI_MONTHS.forEach((name, i) => {
+    const opt = document.createElement("option");
+    opt.value = i + 1;
+    opt.textContent = name;
+    if (String(i + 1) === String(selectedVal)) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function buildDayOptions(sel, month, year, selectedVal) {
+  const days = (month && year) ? jalaliDaysInMonth(+month, +year) : 31;
+  sel.innerHTML = '<option value="">روز</option>';
+  for (let d = 1; d <= days; d++) {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = toP(d);
+    if (String(d) === String(selectedVal)) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+// ترکیب مقادیر → hidden field  (فرمت: YYYY/MM/DD)
+function jalaliCompose(fieldId) {
+  const picker = document.getElementById(`picker-${fieldId}`);
+  const hidden = document.getElementById(`hidden-${fieldId}`);
+  if (!picker || !hidden) return;
+  const y = picker.querySelector(".jp-year").value;
+  const m = picker.querySelector(".jp-month").value;
+  const d = picker.querySelector(".jp-day").value;
+  // بعد از تغییر سال/ماه، روزها رو rebuild کن
+  buildDayOptions(picker.querySelector(".jp-day"), m, y, d);
+  hidden.value = (y && m && d) ? `${y}/${String(m).padStart(2,"0")}/${String(d).padStart(2,"0")}` : "";
+}
+
+// parse مقدار موجود از hidden field
+function parseDateValue(val) {
+  if (!val) return {y:"",m:"",d:""};
+  const parts = val.replace(/[۰-۹]/g, c => "۰۱۲۳۴۵۶۷۸۹".indexOf(c)).split("/");
+  return { y: parts[0]||"", m: parts[1] ? parseInt(parts[1]) : "", d: parts[2] ? parseInt(parts[2]) : "" };
+}
+
+// اولیه‌سازی هر دو picker
+function initPicker(fieldId, yearFrom, yearTo) {
+  const picker = document.getElementById(`picker-${fieldId}`);
+  const hidden = document.getElementById(`hidden-${fieldId}`);
+  if (!picker) return;
+  const val = parseDateValue(hidden ? hidden.value : "");
+  buildYearOptions(picker.querySelector(".jp-year"),   yearFrom, yearTo, val.y);
+  buildMonthOptions(picker.querySelector(".jp-month"), val.m);
+  buildDayOptions(picker.querySelector(".jp-day"), val.m, val.y, val.d);
+}
+
 // Init insurance state + show correct step on error
 document.addEventListener("DOMContentLoaded", () => {
+  // ── تقویم تولد: سال‌های ۱۳۴۰ تا ۱۴۱۰ ──
+  initPicker("dob", 1340, 1410);
+
+  // ── تقویم انقضای بیمه: سال‌های ۱۴۰۰ تا ۱۴۱۵ ──
+  initPicker("ins", 1400, 1415);
+
   const active = document.getElementById("ins-active");
   if (active && active.checked) toggleInsuranceDate("active");
 
-  // ✅ اصلاح: در صورت خطا، اولین مرحله‌ای که خطا دارد نمایش داده می‌شود
+  // نمایش مرحله درست در صورت خطا
   {% if form.errors %}
   const errorFields = {{ form.errors|json_script:"form-errors" }};
   const step1Fields = ["first_name","last_name","father_name","national_id","dob","phone","father_phone","mother_phone","address"];
   const step2Fields = ["height","weight","preferred_hand","preferred_foot","medical_history","injury_history"];
   const step3Fields = ["father_education","father_job","mother_education","mother_job"];
-  const step4Fields = ["insurance_status","insurance_expiry_date","agree_terms"];
+  const step4Fields = ["insurance_status","insurance_expiry_date"];
 
   let errorStep = 1;
   const errKeys = Object.keys(JSON.parse(document.getElementById("form-errors").textContent));

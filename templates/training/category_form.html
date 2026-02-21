@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}ویرایش دسته{% else %}دسته جدید{% endif %}{% endblock %}
+{% block nav_categories %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'training:category-list' %}" style="text-decoration:none;color:inherit">دسته‌های آموزشی</a>
+  <span class="sep">›</span>
+  <span class="cur">{% if is_edit %}ویرایش{% else %}دسته جدید{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:580px;margin:0 auto">
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="height:4px;background:linear-gradient(90deg,var(--amber),var(--amber-light))"></div>
+    <div style="padding:1.5rem 1.75rem">
+
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,var(--navy),var(--navy-3));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🗂️</div>
+        <div>
+          <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">
+            {% if is_edit %}ویرایش دسته «{{ object.name }}»{% else %}ایجاد دسته جدید{% endif %}
+          </h1>
+          <p style="font-size:.78rem;color:var(--text-muted)">اطلاعات دسته آموزشی را وارد کنید</p>
+        </div>
+      </div>
+
+      {% if form.errors %}
+      <div class="server-errors" style="margin-bottom:1rem">
+        ⚠️ لطفاً خطاهای زیر را برطرف کنید:
+        {% for field in form %}{% for err in field.errors %}
+        <div>• {{ field.label }}: {{ err }}</div>
+        {% endfor %}{% endfor %}
+        {% for err in form.non_field_errors %}
+        <div>• {{ err }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group" style="margin-bottom:1rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">
+            نام دسته <span style="color:var(--red)">*</span>
+          </label>
+          {{ form.name }}
+          {% if form.name.errors %}
+          <span style="font-size:.72rem;color:var(--red)">{{ form.name.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">توضیحات</label>
+          {{ form.description }}
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">
+            شهریه ماهانه (ریال)
+          </label>
+          {{ form.monthly_fee }}
+          {% if form.monthly_fee.errors %}
+          <span style="font-size:.72rem;color:var(--red)">{{ form.monthly_fee.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group" style="margin-bottom:1.5rem;display:flex;align-items:center;gap:.6rem">
+          {{ form.is_active }}
+          <label for="{{ form.is_active.id_for_label }}"
+                 style="font-size:.875rem;font-weight:600;cursor:pointer">این دسته فعال است</label>
+        </div>
+
+        <div style="display:flex;gap:.6rem;justify-content:flex-end">
+          <a href="{% url 'training:category-list' %}" class="btn btn-outline">انصراف</a>
+          <button type="submit" class="btn btn-amber">
+            {% if is_edit %}💾 ذخیره تغییرات{% else %}✅ ایجاد دسته{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

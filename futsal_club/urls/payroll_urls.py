@@ -26,6 +26,8 @@ from ..views.zarinpal_views import (
     PaymentSuccessView,          # ← اضافه شد
 )
 
+from ..views.expense_views import ExpenseListView, ExpenseCreateView
+
 app_name = "payroll"
 
 urlpatterns = [
@@ -66,4 +68,10 @@ urlpatterns = [
     # ── صفحه موفقیت پرداخت (ریدایرکت از ZarinpalCallbackView) ────
     path("invoices/<int:category_pk>/payment-success/",
          PaymentSuccessView.as_view(), name="payment-success"),
+
+    # ── هزینه‌ها و درآمدها ─────────────────────────────────────────
+    path("expenses/",
+         ExpenseListView.as_view(),  name="expense-list"),
+    path("expenses/create/",
+         ExpenseCreateView.as_view(), name="expense-create"),
 ]

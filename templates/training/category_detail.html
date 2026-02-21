@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ category.name }}{% endblock %}
+{% block nav_categories %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'training:category-list' %}" style="text-decoration:none;color:inherit">دسته‌ها</a>
+  <span class="sep">›</span><span class="cur">{{ category.name }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <h1 style="font-size:1.3rem;font-weight:900;color:var(--navy)">{{ category.name }}</h1>
+      {% if category.is_active %}
+        <span class="badge badge-green">فعال</span>
+      {% else %}
+        <span class="badge" style="background:#f1f5f9;color:#64748b">غیرفعال</span>
+      {% endif %}
+    </div>
+    {% if category.description %}
+    <p style="font-size:.85rem;color:var(--text-muted);margin-top:.3rem">{{ category.description }}</p>
+    {% endif %}
+  </div>
+  {% if request.user.is_technical_director or request.user.is_superuser %}
+  <div style="display:flex;gap:.5rem">
+    <a href="{% url 'training:category-update' category.pk %}" class="btn btn-navy btn-sm">✏️ ویرایش</a>
+    <a href="{% url 'training:attendance-select' %}?cat={{ category.pk }}" class="btn btn-amber btn-sm">📅 ثبت حضور</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Stats row -->
+<div class="grid-auto" style="margin-bottom:1.25rem">
+  <div class="stat-card amber">
+    <div class="stat-label">شهریه ماهانه</div>
+    <div class="stat-value" style="font-size:1.4rem">{{ category.monthly_fee|floatformat:0 }}</div>
+    <div class="stat-sub">ریال</div>
+    <span class="stat-icon">💰</span>
+  </div>
+  <div class="stat-card navy">
+    <div class="stat-label">تعداد بازیکنان</div>
+    <div class="stat-value">{{ players|length }}</div>
+    <span class="stat-icon">👥</span>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-label">مربیان</div>
+    <div class="stat-value">{{ coach_rates|length }}</div>
+    <span class="stat-icon">🏃</span>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">جلسات در هفته</div>
+    <div class="stat-value">{{ schedules|length }}</div>
+    <span class="stat-icon">📅</span>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+
+  <!-- Schedule -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">📅 برنامه تمرین</span></div>
+    {% if schedules %}
+    <div style="padding:.75rem 1rem">
+      {% for sch in schedules %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--surface-2)">
+        <div>
+          <strong style="font-size:.875rem">{{ sch.get_weekday_display }}</strong>
+          {% if sch.location %}
+          <span style="font-size:.75rem;color:var(--text-muted);margin-right:.35rem">· {{ sch.location }}</span>
+          {% endif %}
+        </div>
+        <span style="font-size:.82rem;color:var(--teal);font-weight:700">
+          {{ sch.start_time|time:"H:i" }}
+          {% if sch.end_time %}— {{ sch.end_time|time:"H:i" }}{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.875rem">
+      برنامه‌ای تعریف نشده
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Coaches -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🏃 مربیان</span>
+    </div>
+    {% if coach_rates %}
+    <div style="padding:.75rem 1rem">
+      {% for cr in coach_rates %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--surface-2)">
+        <div>
+          <div style="font-weight:700;font-size:.875rem">{{ cr.coach.first_name }} {{ cr.coach.last_name }}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ cr.coach.get_degree_display }}</div>
+        </div>
+        <span style="font-size:.78rem;color:var(--amber);font-weight:700">
+          {{ cr.session_rate|floatformat:0 }} ریال/جلسه
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.875rem">
+      هنوز مربی اضافه نشده
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Players table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">👥 بازیکنان ({{ players|length }})</span>
+    {% if request.user.is_technical_director or request.user.is_superuser %}
+    <a href="{% url 'training:attendance-select' %}?cat={{ category.pk }}" class="btn btn-amber btn-sm">📅 ثبت حضور</a>
+    {% endif %}
+  </div>
+  {% if players %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>نام</th>
+          <th>کد ملی</th>
+          <th>موبایل</th>
+          <th>بیمه</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for player in players %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:.8rem">{{ forloop.counter }}</td>
+          <td><strong>{{ player.first_name }} {{ player.last_name }}</strong></td>
+          <td style="font-family:monospace;font-size:.82rem">{{ player.national_id }}</td>
+          <td style="font-size:.82rem">{{ player.phone }}</td>
+          <td>
+            {% if player.insurance_status == 'active' %}
+              <span class="badge badge-green">✅ دارد</span>
+            {% else %}
+              <span class="badge badge-red">❌ ندارد</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'training:player-profile' player.pk %}"
+               class="btn btn-outline btn-sm">👤 پروفایل</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:2rem;text-align:center;color:var(--text-muted)">
+    هنوز بازیکنی به این دسته اضافه نشده
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

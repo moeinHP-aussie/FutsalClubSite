@@ -65,7 +65,7 @@
     ════════════════════════════════════════════════════════════ */
     .sidebar {
       width: var(--sidebar-w);
-      min-height: 100vh;
+      height: 100vh; overflow: hidden;
       background: var(--navy);
       display: flex;
       flex-direction: column;
@@ -147,6 +147,8 @@
       background: rgba(255,255,255,.07);
       color: var(--white);
     }
+    .nav-item-disabled { opacity: .4; cursor: not-allowed !important; }
+    .nav-item-disabled:hover { background: none !important; }
     .nav-item.active {
       background: rgba(245,158,11,.18);
       color: var(--amber-light);
@@ -198,6 +200,7 @@
       flex: 1;
       display: flex; flex-direction: column;
       min-height: 100vh;
+      overflow-y: auto;
       transition: margin-right .3s;
     }
 
@@ -593,7 +596,7 @@
     <div class="nav-section">
       <div class="nav-label">عمومی</div>
     </div>
-    <a href="{% url 'dashboard' %}"
+    <a href="{% url 'accounts:dashboard' %}"
        class="nav-item {% block nav_dashboard %}{% endblock %}">
       <span class="nav-icon">🏠</span> داشبورد
     </a>
@@ -603,19 +606,28 @@
     <div class="nav-section">
       <div class="nav-label">مدیریت فنی</div>
     </div>
-    <a href="#" class="nav-item {% block nav_players %}{% endblock %}">
+    <a href="{% url 'training:player-list' %}"
+       class="nav-item {% block nav_players %}{% endblock %}">
       <span class="nav-icon">👥</span> بازیکنان
     </a>
-    <a href="#" class="nav-item {% block nav_applicants %}{% endblock %}">
+    <a href="{% url 'registration:applicant-list' %}"
+       class="nav-item {% block nav_applicants %}{% endblock %}">
       <span class="nav-icon">📋</span> متقاضیان جدید
     </a>
-    <a href="#" class="nav-item {% block nav_categories %}{% endblock %}">
+    <a href="{% url 'training:category-list' %}"
+       class="nav-item {% block nav_categories %}{% endblock %}">
       <span class="nav-icon">🗂️</span> دسته‌های آموزشی
     </a>
-    <a href="#" class="nav-item {% block nav_coaches %}{% endblock %}">
+    <a href="{% url 'training:coach-list' %}"
+       class="nav-item {% block nav_coaches %}{% endblock %}">
       <span class="nav-icon">🏃</span> مربیان
     </a>
-    <a href="#" class="nav-item {% block nav_exercises %}{% endblock %}">
+    <a href="{% url 'registration:bulk-import' %}"
+       class="nav-item {% block nav_import %}{% endblock %}">
+      <span class="nav-icon">📥</span> ایمپورت از اکسل
+    </a>
+    <a href="{% url 'exercises:gallery' %}"
+       class="nav-item {% block nav_exercises %}{% endblock %}">
       <span class="nav-icon">🎯</span> مخزن تمرین‌ها
     </a>
     {% endif %}
@@ -625,10 +637,12 @@
     <div class="nav-section">
       <div class="nav-label">تمرین‌ها</div>
     </div>
-    <a href="#" class="nav-item {% block nav_attendance %}{% endblock %}">
+    {# حضور و غیاب نیاز به category_pk دارد — تا زمان ساخت صفحه انتخاب دسته، به لیست دسته‌ها در ادمین می‌رود #}
+    <a href="{% url 'training:attendance-select' %}"
+       class="nav-item {% block nav_attendance %}{% endblock %}">
       <span class="nav-icon">📅</span> حضور و غیاب
     </a>
-    <a href="{% url 'comms:announcement-create' %}"
+    <a href="{% url 'comms:announcement-list' %}"
        class="nav-item {% block nav_announcements %}{% endblock %}">
       <span class="nav-icon">📣</span> اطلاعیه‌ها
     </a>
@@ -639,17 +653,21 @@
     <div class="nav-section">
       <div class="nav-label">مالی</div>
     </div>
-    <a href="{% url 'payroll:dashboard' %}"
+    <a href="{% url 'payroll:finance-dashboard' %}"
        class="nav-item {% block nav_finance %}{% endblock %}">
       <span class="nav-icon">💰</span> داشبورد مالی
     </a>
-    <a href="#" class="nav-item {% block nav_invoices %}{% endblock %}">
+    {# فاکتورها و حقوق نیاز به category_pk دارند — از داشبورد مالی انتخاب می‌شود #}
+    <a href="{% url 'payroll:finance-dashboard' %}#invoices"
+       class="nav-item {% block nav_invoices %}{% endblock %}">
       <span class="nav-icon">🧾</span> فاکتورها
     </a>
-    <a href="#" class="nav-item {% block nav_salaries %}{% endblock %}">
+    <a href="{% url 'payroll:finance-dashboard' %}#salaries"
+       class="nav-item {% block nav_salaries %}{% endblock %}">
       <span class="nav-icon">💳</span> حقوق مربیان
     </a>
-    <a href="#" class="nav-item {% block nav_expenses %}{% endblock %}">
+    <a href="{% url 'payroll:expense-list' %}"
+       class="nav-item {% block nav_expenses %}{% endblock %}">
       <span class="nav-icon">📊</span> هزینه‌ها
     </a>
     {% endif %}
@@ -659,13 +677,16 @@
     <div class="nav-section">
       <div class="nav-label">پروفایل من</div>
     </div>
-    <a href="#" class="nav-item {% block nav_my_profile %}{% endblock %}">
+    <a href="{% url 'training:my-profile' %}"
+       class="nav-item {% block nav_my_profile %}{% endblock %}">
       <span class="nav-icon">👤</span> پروفایل من
     </a>
-    <a href="#" class="nav-item {% block nav_my_invoices %}{% endblock %}">
+    <a href="{% url 'payroll:finance-dashboard' %}"
+       class="nav-item {% block nav_my_invoices %}{% endblock %}">
       <span class="nav-icon">🧾</span> فاکتورهای من
     </a>
-    <a href="#" class="nav-item {% block nav_my_attendance %}{% endblock %}">
+    <a href="{% url 'training:attendance-select' %}"
+       class="nav-item {% block nav_my_attendance %}{% endblock %}">
       <span class="nav-icon">📅</span> حضور من
     </a>
     {% endif %}
@@ -710,7 +731,7 @@
     <button class="topbar-toggle" onclick="toggleSidebar()" aria-label="منو">☰</button>
 
     <nav class="topbar-breadcrumb">
-      <a href="{% url 'dashboard' %}" style="text-decoration:none;color:inherit">خانه</a>
+      <a href="{% url 'accounts:dashboard' %}" style="text-decoration:none;color:inherit">خانه</a>
       {% block breadcrumb %}{% endblock %}
     </nav>
 

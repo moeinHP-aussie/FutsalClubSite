@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}بررسی متقاضی — {{ player.first_name }} {{ player.last_name }}{% endblock %}
+{% block nav_applicants %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'registration:applicant-list' %}" style="text-decoration:none;color:inherit">متقاضیان</a>
+  <span class="sep">›</span>
+  <span class="cur">{{ player.first_name }} {{ player.last_name }}</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.info-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: .55rem 0; border-bottom: 1px solid var(--surface-2);
+  gap: .5rem;
+}
+.info-row:last-child { border-bottom: none; }
+.info-label { font-size: .8rem; color: var(--text-muted); flex-shrink: 0; }
+.info-val   { font-size: .875rem; font-weight: 600; text-align: left; }
+
+/* Approve panel */
+.approve-panel {
+  border: 2px solid var(--green);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  background: #f0fdf4;
+  margin-bottom: 1rem;
+}
+.reject-panel {
+  border: 2px solid var(--red);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  background: #fef2f2;
+}
+.section-divider {
+  font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-muted);
+  padding: .5rem 0 .25rem;
+  border-bottom: 1px solid var(--surface-2);
+  margin-bottom: .75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Status Banner ──────────────────────────────────────── -->
+{% if player.status == 'pending' %}
+<div style="background:linear-gradient(90deg,#fffbeb,#fef9c3);border:1.5px solid #fde68a;border-radius:var(--radius);padding:.85rem 1.25rem;display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+  <span style="font-size:1.4rem">⏳</span>
+  <div>
+    <strong style="color:#92400e">در انتظار بررسی</strong>
+    <div style="font-size:.8rem;color:#a16207;margin-top:.1rem">این متقاضی هنوز تأیید یا رد نشده است</div>
+  </div>
+</div>
+{% elif player.status == 'approved' %}
+<div style="background:#d1fae5;border:1.5px solid #a7f3d0;border-radius:var(--radius);padding:.85rem 1.25rem;display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+  <span style="font-size:1.4rem">✅</span>
+  <div>
+    <strong style="color:#065f46">تأیید شده</strong>
+    {% if player.approved_by %}
+    <div style="font-size:.8rem;color:#047857;margin-top:.1rem">توسط {{ player.approved_by.get_full_name }} | {{ player.approval_date|date:"Y/m/d" }}</div>
+    {% endif %}
+  </div>
+</div>
+{% elif player.status == 'rejected' %}
+<div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:var(--radius);padding:.85rem 1.25rem;display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+  <span style="font-size:1.4rem">❌</span>
+  <div>
+    <strong style="color:#991b1b">رد شده</strong>
+    {% if player.rejection_reason %}<div style="font-size:.8rem;color:#b91c1c;margin-top:.1rem">{{ player.rejection_reason }}</div>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:1.25rem;align-items:start">
+
+<!-- ── Left: Player Info ───────────────────────────────── -->
+<div>
+
+  <!-- اطلاعات شخصی -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-header">
+      <span class="card-title">👤 اطلاعات شخصی</span>
+      <span style="font-size:.78rem;color:var(--text-muted);font-family:monospace">{{ player.player_id }}</span>
+    </div>
+    <div style="padding:.75rem 1.25rem">
+      <div class="info-row"><span class="info-label">نام کامل</span><span class="info-val">{{ player.first_name }} {{ player.last_name }}</span></div>
+      <div class="info-row"><span class="info-label">نام پدر</span><span class="info-val">{{ player.father_name }}</span></div>
+      <div class="info-row"><span class="info-label">کد ملی</span><span class="info-val" style="font-family:monospace">{{ player.national_id }}</span></div>
+      <div class="info-row"><span class="info-label">تاریخ تولد</span><span class="info-val">{{ player.dob }}</span></div>
+      {% if age_category %}<div class="info-row"><span class="info-label">رده سنی</span><span class="info-val"><span class="badge badge-teal">{{ age_category }}</span></span></div>{% endif %}
+      <div class="info-row"><span class="info-label">موبایل</span><span class="info-val">{{ player.phone }}</span></div>
+      <div class="info-row"><span class="info-label">موبایل پدر</span><span class="info-val">{{ player.father_phone }}</span></div>
+      {% if player.mother_phone %}<div class="info-row"><span class="info-label">موبایل مادر</span><span class="info-val">{{ player.mother_phone }}</span></div>{% endif %}
+      {% if player.address %}<div class="info-row"><span class="info-label">آدرس</span><span class="info-val" style="max-width:60%">{{ player.address }}</span></div>{% endif %}
+    </div>
+  </div>
+
+  <!-- اطلاعات خانوادگی -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-header"><span class="card-title">👨‍👩‍👦 اطلاعات خانوادگی</span></div>
+    <div style="padding:.75rem 1.25rem">
+      <div class="info-row"><span class="info-label">تحصیلات پدر</span><span class="info-val">{{ player.get_father_education_display|default:"—" }}</span></div>
+      <div class="info-row"><span class="info-label">شغل پدر</span><span class="info-val">{{ player.father_job|default:"—" }}</span></div>
+      <div class="info-row"><span class="info-label">تحصیلات مادر</span><span class="info-val">{{ player.get_mother_education_display|default:"—" }}</span></div>
+      <div class="info-row"><span class="info-label">شغل مادر</span><span class="info-val">{{ player.mother_job|default:"—" }}</span></div>
+    </div>
+  </div>
+
+  <!-- اطلاعات جسمانی -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-header"><span class="card-title">📏 اطلاعات جسمانی</span></div>
+    <div style="padding:.75rem 1.25rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div class="info-row"><span class="info-label">قد</span><span class="info-val">{% if player.height %}{{ player.height }} cm{% else %}—{% endif %}</span></div>
+        <div class="info-row"><span class="info-label">وزن</span><span class="info-val">{% if player.weight %}{{ player.weight }} kg{% else %}—{% endif %}</span></div>
+        <div class="info-row"><span class="info-label">دست برتر</span><span class="info-val">{{ player.get_preferred_hand_display }}</span></div>
+        <div class="info-row"><span class="info-label">پای برتر</span><span class="info-val">{{ player.get_preferred_foot_display }}</span></div>
+      </div>
+      {% if player.medical_history %}
+      <div style="margin-top:.5rem;padding:.6rem .85rem;background:#fef2f2;border-radius:8px;font-size:.82rem">
+        <strong>سابقه پزشکی:</strong> {{ player.medical_history }}
+      </div>
+      {% endif %}
+      {% if player.injury_history %}
+      <div style="margin-top:.4rem;padding:.6rem .85rem;background:#fff7ed;border-radius:8px;font-size:.82rem">
+        <strong>سابقه آسیب‌دیدگی:</strong> {{ player.injury_history }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- بیمه -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">🛡️ بیمه</span></div>
+    <div style="padding:.75rem 1.25rem">
+      <div class="info-row">
+        <span class="info-label">وضعیت بیمه</span>
+        <span class="info-val">
+          {% if player.insurance_status == 'active' %}
+            <span class="badge badge-green">✅ دارای بیمه</span>
+          {% else %}
+            <span class="badge badge-red">❌ بدون بیمه</span>
+          {% endif %}
+        </span>
+      </div>
+      {% if player.insurance_expiry_date %}
+      <div class="info-row"><span class="info-label">تاریخ انقضا</span><span class="info-val">{{ player.insurance_expiry_date }}</span></div>
+      {% endif %}
+      {% if player.insurance_image %}
+      <div style="margin-top:.75rem">
+        <img src="{{ player.insurance_image.url }}" alt="بیمه‌نامه"
+             style="max-width:100%;border-radius:8px;border:1px solid var(--surface-2)">
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div><!-- /left -->
+
+<!-- ── Right: Actions ─────────────────────────────────── -->
+<div>
+
+  {% if player.status == 'pending' %}
+
+  <!-- ✅ فرم تأیید -->
+  <div class="approve-panel">
+    <div class="section-divider" style="color:#065f46">✅ تأیید متقاضی</div>
+    <form method="post" action="{% url 'registration:approve' player.pk %}">
+      {% csrf_token %}
+
+      <div style="margin-bottom:.85rem">
+        <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.35rem">دسته‌های آموزشی</label>
+        <div style="display:flex;flex-direction:column;gap:.3rem;max-height:180px;overflow-y:auto;padding:.35rem;border:1.5px solid #a7f3d0;border-radius:8px;background:#fff">
+          {% for cat in categories %}
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:.3rem .5rem;border-radius:6px;transition:background .1s"
+                 onmouseenter="this.style.background='#f0fdf4'" onmouseleave="this.style.background=''">
+            <input type="checkbox" name="category_ids" value="{{ cat.pk }}"
+                   style="accent-color:var(--green)">
+            <span style="font-size:.85rem;font-weight:600">{{ cat.name }}</span>
+            <span style="font-size:.72rem;color:var(--text-muted);margin-right:auto">{{ cat.monthly_fee|floatformat:0 }} ریال</span>
+          </label>
+          {% empty %}
+          <div style="font-size:.82rem;color:var(--text-muted);padding:.5rem">هنوز دسته‌ای تعریف نشده</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.85rem">
+        <div>
+          <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">پست</label>
+          <select name="position" style="width:100%;padding:.5rem;border:1.5px solid #a7f3d0;border-radius:8px;font-family:inherit;font-size:.85rem">
+            <option value="-">مشخص نشده</option>
+            <option value="pivot">پیوت</option>
+            <option value="winger">وینگر / بال</option>
+            <option value="fixo">فیکسو</option>
+            <option value="gk">دروازه‌بان</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">سطح مهارت</label>
+          <select name="skill_level" style="width:100%;padding:.5rem;border:1.5px solid #a7f3d0;border-radius:8px;font-family:inherit;font-size:.85rem">
+            <option value="">انتخاب</option>
+            <option value="A">A</option><option value="B">B</option>
+            <option value="C">C</option><option value="D">D</option>
+            <option value="E">E</option><option value="F">F</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.85rem">
+        <div>
+          <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">شماره پیراهن</label>
+          <input type="number" name="shirt_number" min="1" max="99"
+                 style="width:100%;padding:.5rem;border:1.5px solid #a7f3d0;border-radius:8px;font-family:inherit;font-size:.85rem"
+                 placeholder="مثال: ۷">
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin-top:1.5rem">
+          <input type="checkbox" name="is_two_footed" id="two-footed" style="accent-color:var(--green)">
+          <label for="two-footed" style="font-size:.85rem;font-weight:600;cursor:pointer">دوپا</label>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-green" style="width:100%;justify-content:center;font-size:.95rem">
+        ✅ تأیید و ثبت در سیستم
+      </button>
+    </form>
+  </div>
+
+  <!-- ❌ فرم رد -->
+  <div class="reject-panel">
+    <div class="section-divider" style="color:#991b1b">❌ رد متقاضی</div>
+    <form method="post" action="{% url 'registration:reject' player.pk %}">
+      {% csrf_token %}
+      <div style="margin-bottom:.75rem">
+        <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.35rem">دلیل رد <span style="color:var(--red)">*</span></label>
+        <textarea name="rejection_reason" rows="3" required
+                  style="width:100%;padding:.6rem .85rem;border:1.5px solid #fca5a5;border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical"
+                  placeholder="دلیل رد متقاضی را توضیح دهید..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-red" style="width:100%;justify-content:center"
+              onclick="return confirm('آیا از رد این متقاضی مطمئن هستید؟')">
+        ❌ رد متقاضی
+      </button>
+    </form>
+  </div>
+
+  {% else %}
+  <!-- بازیکن قبلاً پردازش شده -->
+  <div class="card" style="padding:1.5rem;text-align:center">
+    {% if player.status == 'approved' %}
+    <div style="font-size:2.5rem;margin-bottom:.75rem">✅</div>
+    <p style="font-weight:800;color:var(--green)">این بازیکن تأیید شده</p>
+    <a href="{% url 'training:player-profile' player.pk %}" class="btn btn-outline" style="margin-top:1rem;display:inline-flex">
+      👤 مشاهده پروفایل کامل
+    </a>
+    {% else %}
+    <div style="font-size:2.5rem;margin-bottom:.75rem">❌</div>
+    <p style="font-weight:800;color:var(--red)">این متقاضی رد شده</p>
+    {% endif %}
+  </div>
+
+  {% if player.status == 'rejected' %}
+  <!-- امکان بازبینی و تأیید مجدد -->
+  <div class="approve-panel" style="margin-top:1rem">
+    <div class="section-divider" style="color:#065f46">🔄 بازبینی و تأیید</div>
+    <form method="post" action="{% url 'registration:approve' player.pk %}">
+      {% csrf_token %}
+      <div style="margin-bottom:.75rem">
+        <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.35rem">دسته آموزشی</label>
+        {% for cat in categories %}
+        <label style="display:block;margin-bottom:.3rem;cursor:pointer;font-size:.85rem">
+          <input type="checkbox" name="category_ids" value="{{ cat.pk }}" style="accent-color:var(--green)">
+          {{ cat.name }}
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn btn-green" style="width:100%;justify-content:center">
+        ✅ تأیید مجدد
+      </button>
+    </form>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <!-- لینک‌های سریع -->
+  <div class="card" style="padding:.85rem 1rem;margin-top:1rem">
+    <div style="font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:.6rem">دسترسی سریع</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      <a href="{% url 'registration:applicant-list' %}" class="btn btn-outline btn-sm">← بازگشت به لیست</a>
+      {% if player.status == 'approved' %}
+      <a href="{% url 'registration:archive-player' player.pk %}"
+         class="btn btn-sm" style="border:1.5px solid var(--text-muted);color:var(--text-muted)"
+         onclick="return confirm('آیا می‌خواهید این بازیکن را آرشیو کنید؟')">
+        🗄️ آرشیو بازیکن
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+</div><!-- /right -->
+</div><!-- /grid -->
+
+{% endblock %}

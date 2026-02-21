@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}مربیان{% endblock %}
+{% block nav_coaches %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">مربیان</span>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.25rem;font-weight:900;color:var(--navy)">🏃 مربیان</h1>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">
+      {{ total_active }} مربی فعال &nbsp;·&nbsp; {{ total_inactive }} غیرفعال
+    </p>
+  </div>
+  {% if request.user.is_technical_director or request.user.is_superuser %}
+  <a href="{% url 'training:coach-create' %}" class="btn btn-amber">➕ مربی جدید</a>
+  {% endif %}
+</div>
+
+<!-- Filter -->
+<div class="card" style="padding:.85rem 1rem;margin-bottom:1rem">
+  <form method="get" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+    <input type="text" name="q" value="{{ q }}"
+           placeholder="جستجوی نام یا موبایل..."
+           style="padding:.55rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem;min-width:200px">
+    <div style="display:flex;gap:.4rem">
+      <a href="?show=active{% if q %}&q={{ q }}{% endif %}"
+         class="btn {% if show == 'active' %}btn-navy{% else %}btn-outline{% endif %} btn-sm">فعال</a>
+      <a href="?show=inactive{% if q %}&q={{ q }}{% endif %}"
+         class="btn {% if show == 'inactive' %}btn-navy{% else %}btn-outline{% endif %} btn-sm">غیرفعال</a>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">🔍</button>
+    {% if q %}<a href="?" class="btn btn-outline btn-sm">✕</a>{% endif %}
+  </form>
+</div>
+
+{% if coaches %}
+<div class="grid-auto">
+  {% for coach in coaches %}
+  <div class="card" style="padding:1.1rem 1.25rem;transition:transform .2s,box-shadow .2s"
+       onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 28px rgba(13,27,42,.14)'"
+       onmouseleave="this.style.transform='';this.style.boxShadow=''">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.85rem">
+      <!-- Avatar + name -->
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-size:1rem;color:#fff;font-weight:800;flex-shrink:0">
+          {{ coach.first_name|slice:":1" }}{{ coach.last_name|slice:":1" }}
+        </div>
+        <div>
+          <div style="font-weight:800;font-size:.95rem;color:var(--navy)">
+            {{ coach.first_name }} {{ coach.last_name }}
+          </div>
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ coach.get_degree_display|default:"—" }}</div>
+        </div>
+      </div>
+      {% if coach.is_active %}
+        <span class="badge badge-green">فعال</span>
+      {% else %}
+        <span class="badge" style="background:#f1f5f9;color:#64748b">غیرفعال</span>
+      {% endif %}
+    </div>
+
+    <!-- Info pills -->
+    <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.85rem">
+      <span style="font-size:.75rem;background:rgba(14,165,233,.1);color:var(--teal);padding:.2rem .65rem;border-radius:99px;font-weight:600">
+        📞 {{ coach.phone }}
+      </span>
+      <span style="font-size:.75rem;background:rgba(245,158,11,.1);color:#92400e;padding:.2rem .65rem;border-radius:99px;font-weight:600">
+        🗂️ {{ coach.category_count }} دسته
+      </span>
+    </div>
+
+    <!-- دسته‌ها -->
+    {% if coach.categories.all %}
+    <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.85rem">
+      {% for cat in coach.categories.all %}
+      <span style="font-size:.7rem;background:var(--surface);color:var(--navy);padding:.2rem .55rem;border-radius:6px;font-weight:600;border:1px solid var(--surface-2)">
+        {{ cat.name }}
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div style="display:flex;gap:.4rem">
+      <a href="{% url 'training:coach-detail' coach.pk %}"
+         class="btn btn-outline btn-sm" style="flex:1;justify-content:center">👁️ جزئیات</a>
+      {% if request.user.is_technical_director or request.user.is_superuser %}
+      <a href="{% url 'training:coach-update' coach.pk %}" class="btn btn-navy btn-sm">✏️</a>
+      <form method="post" action="{% url 'training:coach-toggle' coach.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm {% if coach.is_active %}btn-outline{% else %}btn-green{% endif %}"
+                style="border-color:{% if coach.is_active %}var(--red){% else %}var(--green){% endif %};color:{% if coach.is_active %}var(--red){% else %}var(--green){% endif %}">
+          {% if coach.is_active %}🚫{% else %}✅{% endif %}
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:1rem">🏃</div>
+  <h3 style="font-weight:800;margin-bottom:.5rem">هیچ مربی‌ای پیدا نشد</h3>
+  {% if request.user.is_technical_director or request.user.is_superuser %}
+  <a href="{% url 'training:coach-create' %}" class="btn btn-amber" style="margin-top:1rem">➕ مربی جدید</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

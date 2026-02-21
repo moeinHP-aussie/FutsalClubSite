@@ -153,7 +153,7 @@
 
 <div class="quick-actions">
   <a href="{% url 'registration:applicant-list' %}" class="quick-btn qb-amber">📋 متقاضیان جدید</a>
-  <a href="{% url 'attendance:category-list' %}" class="quick-btn qb-navy">📅 ثبت حضور</a>
+  <a href="{% url 'registration:applicant-list' %}" class="quick-btn qb-navy">📅 ثبت حضور</a>
   <a href="{% url 'comms:announcement-create' %}" class="quick-btn qb-teal">📣 اطلاعیه جدید</a>
   <a href="{% url 'exercises:gallery' %}" class="quick-btn qb-green">🎯 مخزن تمرین‌ها</a>
 </div>
@@ -243,7 +243,7 @@
 </div>
 
 <div class="quick-actions">
-  <a href="{% url 'attendance:category-list' %}" class="quick-btn qb-navy">📋 ثبت حضور</a>
+  <a href="{% url 'registration:applicant-list' %}" class="quick-btn qb-navy">📋 ثبت حضور</a>
   <a href="{% url 'exercises:gallery' %}" class="quick-btn qb-amber">🎯 مخزن تمرین‌ها</a>
   <a href="{% url 'comms:announcement-list' %}" class="quick-btn qb-teal">📢 اعلانات</a>
 </div>
@@ -264,7 +264,7 @@
   <div class="alert-body">
     <div class="alert-title">{{ my_pending_invoices }} فاکتور پرداخت‌نشده داری!</div>
     <div class="alert-sub">
-      <a href="{% url 'payroll:invoice-list-player' %}" class="btn btn-amber btn-sm" style="margin-top:.4rem;display:inline-flex">مشاهده فاکتورها →</a>
+      <a href="{% url 'payroll:finance-dashboard' %}" class="btn btn-amber btn-sm" style="margin-top:.4rem;display:inline-flex">مشاهده فاکتورها →</a>
     </div>
   </div>
 </div>

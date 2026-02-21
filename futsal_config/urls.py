@@ -41,6 +41,9 @@ urlpatterns = [
     # ── مخزن تمرین‌ها ─────────────────────────────────────────────────
     path("exercises/", include("futsal_club.urls.exercise_urls", namespace="exercises")),
 
+    # ── دسته‌های آموزشی، مربیان، بازیکنان ─────────────────────────────
+    path("training/", include("futsal_club.urls.training_urls", namespace="training")),
+
     # ── ریدایرکت صفحه اصلی به لاگین ─────────────────────────────────
     path("", RedirectView.as_view(url="/auth/login/", permanent=False)),
 ]

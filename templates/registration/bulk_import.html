@@ -120,6 +120,42 @@
   background: linear-gradient(90deg, var(--green), var(--teal));
   transition: width .5s ease;
 }
+
+/* ── Loading Overlay ─────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.import-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(13,27,42,.75);
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 1.25rem;
+}
+.import-overlay-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 340px; width: 90%;
+  box-shadow: 0 24px 60px rgba(0,0,0,.4);
+}
+.import-spinner {
+  font-size: 2.5rem;
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-bottom: .75rem;
+}
+.import-overlay-title {
+  font-size: 1rem; font-weight: 800; color: #0d1b2a;
+  margin-bottom: .5rem;
+}
+.import-overlay-msg {
+  font-size: .85rem; color: #64748b; min-height: 1.4rem;
+  transition: opacity .3s;
+}
+.import-overlay-hint {
+  font-size: .75rem; color: #94a3b8; margin-top: 1rem;
+  padding-top: .75rem; border-top: 1px solid #e2e8f0;
+}
 </style>
 {% endblock %}
 
@@ -134,13 +170,27 @@
   {% endif %}
 </div>
 
+<!-- ── Loading Overlay ──────────────────────────────────────── -->
+<div id="import-loading-overlay" class="import-overlay">
+  <div class="import-overlay-box">
+    <div class="import-spinner">⚙️</div>
+    <div class="import-overlay-title">در حال پردازش فایل...</div>
+    <div class="import-overlay-msg" id="import-loading-msg">📖 در حال خواندن فایل اکسل...</div>
+    <div class="import-overlay-hint">
+      لطفاً صبر کنید و صفحه را نبندید.<br>
+      بسته به تعداد بازیکنان ممکن است چند ثانیه طول بکشد.
+    </div>
+  </div>
+</div>
+
 {% if not result %}
 {# ═══════════════════════════════════ UPLOAD FORM ═══════════════════════════════════ #}
 <div style="display:grid;grid-template-columns:1fr 360px;gap:1.5rem;align-items:start">
 
   <!-- Left: Upload Form -->
   <div>
-    <form method="post" enctype="multipart/form-data" id="import-form">
+    <form method="post" enctype="multipart/form-data" id="import-form"
+          onsubmit="return onFormSubmit(this)">
       {% csrf_token %}
 
       <!-- Drop Zone -->
@@ -204,8 +254,7 @@
 
       <!-- Submit -->
       <div style="display:flex;gap:.75rem;justify-content:flex-end">
-        <button type="submit" class="btn btn-amber btn-lg" id="import-btn"
-                onclick="onSubmit(this)">
+        <button type="submit" class="btn btn-amber btn-lg" id="import-btn">
           📥 شروع ایمپورت
         </button>
       </div>
@@ -492,11 +541,47 @@ function toggleDryRun(cb) {
   }
 }
 
-/* ── Submit ──────────────────────────────────────────────── */
-function onSubmit(btn) {
-  btn.disabled    = true;
-  btn.textContent = "⏳ در حال پردازش...";
-  showLoading();
+/* ── Form Submit Handler ─────────────────────────────────── */
+function onFormSubmit(form) {
+  const file = document.getElementById("excel-file");
+  if (!file || !file.files.length) {
+    return true; // browser will show required validation
+  }
+
+  // نمایش overlay پیشرفت — قبل از disable کردن دکمه
+  showLoadingOverlay();
+
+  // بعد از یه فریم کوتاه، دکمه رو غیرفعال کن (فرم قبلاً submit شده)
+  const btn = document.getElementById("import-btn");
+  setTimeout(() => {
+    if (btn) {
+      btn.disabled  = true;
+      btn.innerHTML = "<span style='animation:spin .8s linear infinite;display:inline-block'>⏳</span> در حال پردازش...";
+      btn.style.opacity = ".8";
+    }
+  }, 50);
+
+  return true; // اجازه submit به مرورگر
+}
+
+function showLoadingOverlay() {
+  const overlay = document.getElementById("import-loading-overlay");
+  if (overlay) overlay.style.display = "flex";
+
+  // پیام‌های متناوب برای اطلاع کاربر
+  const msgs = [
+    "📖 در حال خواندن فایل اکسل...",
+    "🔍 در حال بررسی داده‌ها...",
+    "⚙️ در حال پردازش بازیکنان...",
+    "💾 در حال ذخیره در دیتابیس...",
+    "✅ در حال نهایی‌سازی...",
+  ];
+  let i = 0;
+  const lbl = document.getElementById("import-loading-msg");
+  if (lbl) {
+    lbl.textContent = msgs[0];
+    setInterval(() => { i = (i+1) % msgs.length; lbl.textContent = msgs[i]; }, 2000);
+  }
 }
 
 /* ── Result Filters ──────────────────────────────────────── */

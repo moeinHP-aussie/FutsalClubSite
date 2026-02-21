@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ coach.first_name }} {{ coach.last_name }}{% endblock %}
+{% block nav_coaches %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'training:coach-list' %}" style="text-decoration:none;color:inherit">مربیان</a>
+  <span class="sep">›</span><span class="cur">{{ coach.first_name }} {{ coach.last_name }}</span>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div style="display:flex;align-items:center;gap:.85rem">
+    <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;font-weight:900">
+      {{ coach.first_name|slice:":1" }}{{ coach.last_name|slice:":1" }}
+    </div>
+    <div>
+      <h1 style="font-size:1.2rem;font-weight:900;color:var(--navy)">
+        {{ coach.first_name }} {{ coach.last_name }}
+        {% if coach.is_active %}<span class="badge badge-green" style="margin-right:.5rem">فعال</span>
+        {% else %}<span class="badge" style="background:#f1f5f9;color:#64748b;margin-right:.5rem">غیرفعال</span>{% endif %}
+      </h1>
+      <p style="font-size:.82rem;color:var(--text-muted)">{{ coach.get_degree_display|default:"مدرک ثبت نشده" }}</p>
+    </div>
+  </div>
+  {% if request.user.is_technical_director or request.user.is_superuser %}
+  <div style="display:flex;gap:.5rem">
+    <a href="{% url 'training:coach-update' coach.pk %}" class="btn btn-navy btn-sm">✏️ ویرایش</a>
+    <form method="post" action="{% url 'training:coach-toggle' coach.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm" style="border:1.5px solid {% if coach.is_active %}var(--red){% else %}var(--green){% endif %};color:{% if coach.is_active %}var(--red){% else %}var(--green){% endif %}">
+        {% if coach.is_active %}🚫 غیرفعال{% else %}✅ فعال{% endif %}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+  <!-- Info card -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">📋 اطلاعات</span></div>
+    <div style="padding:.75rem 1rem">
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.82rem;color:var(--text-muted)">موبایل</span>
+        <span style="font-size:.875rem;font-weight:700">{{ coach.phone }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.82rem;color:var(--text-muted)">شماره کارت</span>
+        <span style="font-size:.82rem;font-family:monospace">
+          {% if coach.bank_card_number %}{{ coach.bank_card_number|slice:":4" }}-****-****-{{ coach.bank_card_number|slice:"-4:" }}{% else %}—{% endif %}
+        </span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0">
+        <span style="font-size:.82rem;color:var(--text-muted)">تاریخ ثبت</span>
+        <span style="font-size:.82rem">{{ coach.created_at|date:"Y/m/d" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories + rates -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">🗂️ دسته‌ها و نرخ‌ها</span></div>
+    {% if coach_rates %}
+    <div style="padding:.75rem 1rem">
+      {% for cr in coach_rates %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--surface-2)">
+        <div>
+          <div style="font-weight:700;font-size:.875rem">{{ cr.category.name }}</div>
+          <div style="font-size:.7rem;color:var(--text-muted)">{% if cr.is_active %}فعال{% else %}غیرفعال{% endif %}</div>
+        </div>
+        <span style="font-size:.82rem;color:var(--amber);font-weight:700">{{ cr.session_rate|floatformat:0 }} ریال</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.875rem">هنوز به دسته‌ای متصل نشده</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if request.user.is_finance_manager or request.user.is_technical_director or request.user.is_superuser %}
+<div style="display:flex;gap:.6rem;flex-wrap:wrap">
+  {% for cr in coach_rates %}
+  <a href="{% url 'payroll:salary-list' cr.category.pk %}" class="btn btn-outline btn-sm">
+    💳 حقوق در {{ cr.category.name }}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
