@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ exercise.title }}{% endblock %}
+{% block nav_exercises %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'exercises:gallery' %}" style="text-decoration:none;color:inherit">مخزن تمرین‌ها</a>
+  <span class="sep">›</span><span class="cur">{{ exercise.title }}</span>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:1.25rem;align-items:start">
+
+<!-- Main: media preview -->
+<div>
+  <div class="card" style="padding:0;overflow:hidden">
+
+    <!-- Media Preview -->
+    <div style="background:#0d1b2a;min-height:280px;display:flex;align-items:center;justify-content:center;position:relative">
+
+      {% if exercise.media_type == 'video' %}
+        <video controls style="max-width:100%;max-height:420px;border-radius:0">
+          <source src="{{ exercise.file.url }}">
+          مرورگر شما پخش ویدیو را پشتیبانی نمی‌کند.
+        </video>
+
+      {% elif exercise.media_type == 'image' %}
+        <img src="{{ exercise.file.url }}" alt="{{ exercise.title }}"
+             style="max-width:100%;max-height:420px;object-fit:contain">
+
+      {% elif exercise.media_type == 'gif' %}
+        <img src="{{ exercise.file.url }}" alt="{{ exercise.title }}"
+             style="max-width:100%;max-height:420px">
+
+      {% elif exercise.media_type == 'document' %}
+        <div style="text-align:center;padding:3rem;color:#fff">
+          <div style="font-size:4rem;margin-bottom:1rem">📄</div>
+          <p style="font-size:.9rem;opacity:.7;margin-bottom:1.5rem">پیش‌نمایش برای این فرمت در دسترس نیست</p>
+          <a href="{% url 'exercises:download' exercise.pk %}" class="btn btn-amber">
+            ⬇️ دانلود فایل
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Title + meta -->
+    <div style="padding:1.25rem 1.5rem">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.75rem">
+        <h1 style="font-size:1.15rem;font-weight:900;color:var(--navy)">{{ exercise.title }}</h1>
+        <div style="display:flex;gap:.4rem;flex-shrink:0">
+          {% if exercise.is_public %}
+            <span class="badge badge-green">🌐 عمومی</span>
+          {% else %}
+            <span class="badge" style="background:#f1f5f9;color:#64748b">🔒 خصوصی</span>
+          {% endif %}
+          <span class="badge badge-teal">
+            {% if exercise.media_type == 'video' %}🎬 ویدیو
+            {% elif exercise.media_type == 'image' %}🖼️ تصویر
+            {% elif exercise.media_type == 'gif' %}✨ گیف
+            {% else %}📄 سند{% endif %}
+          </span>
+        </div>
+      </div>
+
+      {% if exercise.description %}
+      <p style="font-size:.875rem;color:var(--text-muted);line-height:1.7;margin-bottom:1rem">
+        {{ exercise.description }}
+      </p>
+      {% endif %}
+
+      <!-- Tags -->
+      {% if exercise.tags.all %}
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:1rem">
+        {% for tag in exercise.tags.all %}
+        <span style="background:rgba(14,165,233,.1);color:var(--teal);border-radius:99px;padding:.2rem .65rem;font-size:.72rem;font-weight:600">
+          #{{ tag.name }}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Actions -->
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        {% if exercise.media_type != 'document' %}
+        <a href="{{ exercise.file.url }}" target="_blank" class="btn btn-outline btn-sm">👁️ باز کردن در تب جدید</a>
+        {% endif %}
+        <a href="{% url 'exercises:download' exercise.pk %}" class="btn btn-navy btn-sm">⬇️ دانلود</a>
+        {% if request.user.is_technical_director or exercise.uploaded_by == request.user.coach_profile %}
+        <a href="{% url 'exercises:delete' exercise.pk %}"
+           class="btn btn-sm" style="border:1.5px solid var(--red);color:var(--red)"
+           onclick="return confirm('آیا از حذف این تمرین مطمئنید؟')">🗑️ حذف</a>
+        {% endif %}
+        <a href="{% url 'exercises:gallery' %}" class="btn btn-outline btn-sm">← بازگشت</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar: info -->
+<div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">📋 اطلاعات</span></div>
+    <div style="padding:.75rem 1rem">
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">آپلود‌کننده</span>
+        <span style="font-size:.875rem;font-weight:600">
+          {{ exercise.uploaded_by.first_name }} {{ exercise.uploaded_by.last_name|default:"—" }}
+        </span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.8rem;color:var(--text-muted)">تاریخ آپلود</span>
+        <span style="font-size:.82rem">{{ exercise.created_at|date:"Y/m/d" }}</span>
+      </div>
+      {% if exercise.categories.all %}
+      <div style="padding:.5rem 0">
+        <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.35rem">دسته‌های مرتبط</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+          {% for cat in exercise.categories.all %}
+          <span style="background:var(--surface);border:1px solid var(--surface-2);border-radius:6px;padding:.2rem .55rem;font-size:.75rem;font-weight:600">
+            {{ cat.name }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Thumbnail -->
+  {% if exercise.thumbnail %}
+  <div class="card" style="margin-top:1rem;padding:1rem;text-align:center">
+    <div style="font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:.5rem">تصویر بندانگشتی</div>
+    <img src="{{ exercise.thumbnail.url }}" alt="thumbnail"
+         style="max-width:100%;border-radius:8px;border:1px solid var(--surface-2)">
+  </div>
+  {% endif %}
+</div>
+
+</div>
+{% endblock %}

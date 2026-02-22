@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}کاربر جدید{% endblock %}
+{% block nav_admin_users %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'admin_panel:user-list' %}" style="text-decoration:none;color:inherit">مدیریت کاربران</a>
+  <span class="sep">›</span><span class="cur">کاربر جدید</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:580px;margin:0 auto">
+  <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy);margin-bottom:1.25rem">+ ایجاد کاربر جدید</h1>
+
+  {% if errors %}
+  <div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:1rem">
+    {% for e in errors %}
+    <div style="font-size:.85rem;color:#991b1b">⚠️ {{ e }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="height:4px;background:var(--navy)"></div>
+    <form method="post" style="padding:1.5rem">
+      {% csrf_token %}
+
+      <!-- نقش -->
+      <div style="margin-bottom:1.25rem">
+        <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.4rem">نقش *</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          {% for val, label, icon in roles %}
+          <label style="display:flex;align-items:center;gap:.5rem;padding:.65rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;cursor:pointer;transition:.12s"
+                 onclick="this.parentNode.querySelectorAll('label').forEach(l=>l.style.borderColor='var(--surface-2)');this.style.borderColor='var(--amber)'">
+            <input type="radio" name="role" value="{{ val }}" required
+                   {% if post.role == val %}checked{% endif %} style="accent-color:var(--navy)">
+            <span style="font-size:.85rem;font-weight:700">{{ icon }} {{ label }}</span>
+          </label>
+          {% empty %}
+          <label style="display:flex;align-items:center;gap:.5rem;padding:.65rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;cursor:pointer">
+            <input type="radio" name="role" value="technical_director" required style="accent-color:var(--navy)">
+            <span style="font-size:.85rem;font-weight:700">🔧 مدیر فنی</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;padding:.65rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;cursor:pointer">
+            <input type="radio" name="role" value="finance_manager" style="accent-color:var(--navy)">
+            <span style="font-size:.85rem;font-weight:700">💰 مدیر مالی</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;padding:.65rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;cursor:pointer">
+            <input type="radio" name="role" value="coach" style="accent-color:var(--navy)">
+            <span style="font-size:.85rem;font-weight:700">🎯 مربی</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;padding:.65rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;cursor:pointer">
+            <input type="radio" name="role" value="superuser" style="accent-color:var(--navy)">
+            <span style="font-size:.85rem;font-weight:700">👑 ادمین دیگر</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- اطلاعات -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+        <div>
+          <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">نام</label>
+          <input type="text" name="first_name" value="{{ post.first_name }}"
+                 style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
+        </div>
+        <div>
+          <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">نام خانوادگی</label>
+          <input type="text" name="last_name" value="{{ post.last_name }}"
+                 style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
+        </div>
+      </div>
+
+      <div style="margin-bottom:.75rem">
+        <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">موبایل</label>
+        <input type="text" name="phone" value="{{ post.phone }}" placeholder="09..."
+               style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem">
+        <div>
+          <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">نام کاربری *</label>
+          <input type="text" name="username" value="{{ post.username }}" required
+                 placeholder="بدون فاصله"
+                 style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:monospace;font-size:.875rem">
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:.2rem">برای مربی: مثلاً نام‌خانوادگی</div>
+        </div>
+        <div>
+          <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">رمز عبور * <span style="font-weight:400;font-size:.72rem">(حداقل ۶ کاراکتر)</span></label>
+          <div style="position:relative">
+            <input type="text" name="password" id="pw-input" value="{{ post.password }}" required
+                   style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:monospace;font-size:.875rem">
+          </div>
+          <button type="button" onclick="genPass()" class="btn btn-outline btn-sm" style="margin-top:.3rem;font-size:.72rem">🎲 تولید خودکار</button>
+        </div>
+      </div>
+
+      <!-- مدرک مربیگری — فقط برای مربی -->
+      <div id="coach-extras" style="display:none;margin-bottom:1rem">
+        <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">مدرک مربیگری</label>
+        <select name="degree"
+                style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
+          <option value="other">سایر</option>
+          <option value="level1">درجه ۱</option>
+          <option value="level2">درجه ۲</option>
+          <option value="level3">درجه ۳</option>
+          <option value="afc_a">AFC A</option>
+          <option value="afc_b">AFC B</option>
+          <option value="afc_c">AFC C</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.25rem">
+        <a href="{% url 'admin_panel:user-list' %}" class="btn btn-outline">انصراف</a>
+        <button type="submit" class="btn btn-navy">✅ ایجاد کاربر</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('input[name="role"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('coach-extras').style.display =
+      r.value === 'coach' ? 'block' : 'none';
+  });
+});
+
+function genPass() {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let pw = '';
+  for (let i = 0; i < 8; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('pw-input').value = pw;
+}
+</script>
+{% endblock %}

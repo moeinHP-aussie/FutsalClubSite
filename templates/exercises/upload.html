@@ -1,294 +1,177 @@
 {% extends "base.html" %}
-{% block title %}آپلود تمرین{% endblock %}
+{% block title %}آپلود تمرین جدید{% endblock %}
 {% block nav_exercises %}active{% endblock %}
 
 {% block breadcrumb %}
   <span class="sep">›</span>
   <a href="{% url 'exercises:gallery' %}" style="text-decoration:none;color:inherit">مخزن تمرین‌ها</a>
-  <span class="sep">›</span>
-  <span class="cur">آپلود تمرین جدید</span>
+  <span class="sep">›</span><span class="cur">تمرین جدید</span>
 {% endblock %}
 
 {% block extra_head %}
 <style>
-.upload-form { max-width: 680px; }
 .drop-zone {
-  border: 2px dashed var(--surface-2);
-  border-radius: var(--radius);
-  padding: 2.5rem;
-  text-align: center;
-  cursor: pointer;
-  transition: var(--transition);
-  background: var(--surface);
-  position: relative;
+  border: 2px dashed var(--surface-2); border-radius: var(--radius);
+  padding: 3rem 2rem; text-align: center; cursor: pointer;
+  transition: var(--transition); background: var(--surface); position: relative;
 }
-.drop-zone:hover, .drop-zone.drag-over {
-  border-color: var(--amber);
-  background: #fffbeb;
-}
-.drop-zone input[type=file] {
-  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-}
-.drop-icon { font-size: 2.5rem; margin-bottom: .75rem; }
-.drop-text { font-size: .9rem; font-weight: 600; color: var(--text-muted); }
-.drop-sub  { font-size: .78rem; color: var(--text-light); margin-top: .3rem; }
-.file-preview {
-  display: none;
-  padding: .85rem;
-  background: #d1fae5;
-  border: 1px solid #a7f3d0;
-  border-radius: var(--radius-sm);
-  font-size: .85rem; color: #065f46;
-  display: flex; align-items: center; gap: .75rem;
-}
-.file-preview.show { display: flex; }
-.media-type-selector { display: grid; grid-template-columns: repeat(4,1fr); gap: .5rem; }
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--amber); background: #fffbeb; }
+.drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 .type-card {
-  border: 1.5px solid var(--surface-2);
-  border-radius: var(--radius-sm);
-  padding: .85rem .5rem;
-  text-align: center; cursor: pointer;
-  transition: var(--transition);
+  display: flex; flex-direction: column; align-items: center; gap: .4rem;
+  padding: .85rem; border: 2px solid var(--surface-2); border-radius: 10px;
+  cursor: pointer; transition: .15s; font-size: .8rem; font-weight: 700; color: var(--text-muted);
 }
-.type-card:hover { border-color: var(--navy); background: var(--surface); }
-.type-card input { display: none; }
-.type-card input:checked + .type-content { color: var(--navy); }
-.type-card:has(input:checked) { border-color: var(--navy); background: rgba(13,27,42,.05); }
-.type-icon { font-size: 1.5rem; display: block; margin-bottom: .25rem; }
-.type-label { font-size: .78rem; font-weight: 600; }
-.public-toggle {
-  display: flex; align-items: center; gap: .75rem;
-  padding: .85rem 1rem;
-  border: 1.5px solid var(--surface-2); border-radius: var(--radius-sm);
-  cursor: pointer; transition: var(--transition);
-}
-.public-toggle:hover { border-color: var(--teal); background: #ecfeff; }
-input[type=checkbox]#is_public:checked ~ .toggle-body .toggle-sw { background: var(--teal); }
-.toggle-sw {
-  width: 40px; height: 22px; border-radius: 99px;
-  background: var(--surface-2); position: relative; flex-shrink: 0; transition: background .2s;
-}
-.toggle-sw::after {
-  content: ""; position: absolute;
-  width: 16px; height: 16px; border-radius: 50%;
-  background: var(--white); top: 3px; right: 3px;
-  transition: right .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
-}
-.cat-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem; }
-.cat-chip { display: none; }
-.cat-chip-label {
-  padding: .35rem .85rem; border-radius: 99px;
-  border: 1.5px solid var(--surface-2);
-  font-size: .78rem; font-weight: 600;
-  cursor: pointer; transition: var(--transition); color: var(--text-muted);
-}
-.cat-chip:checked + .cat-chip-label {
-  border-color: var(--navy); background: var(--navy); color: var(--white);
-}
+.type-card:hover { border-color: var(--amber); color: var(--navy); }
+.type-card.selected { border-color: var(--amber); background: #fffbeb; color: var(--navy); }
+.type-card .icon { font-size: 1.6rem; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div>
-    <h1>⬆️ آپلود تمرین جدید</h1>
-    <p>فایل ویدیو، تصویر، گیف یا سند آموزشی</p>
-  </div>
-  <a href="{% url 'exercises:gallery' %}" class="btn btn-outline">← مخزن تمرین‌ها</a>
-</div>
+<div style="max-width:640px;margin:0 auto">
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="height:4px;background:linear-gradient(90deg,var(--amber),var(--teal))"></div>
+    <div style="padding:1.5rem 1.75rem">
 
-<div class="upload-form">
-  <form method="post" enctype="multipart/form-data" id="upload-form">
-    {% csrf_token %}
-
-    {% if form.errors %}
-    <div class="alert alert-danger mb-2">
-      <span class="alert-icon">❌</span>
-      <div>
-        {% for f, errors in form.errors.items %}
-          {% for e in errors %}<div>{{ e }}</div>{% endfor %}
-        {% endfor %}
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,var(--amber),var(--navy));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🏋️</div>
+        <div>
+          <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">آپلود تمرین جدید</h1>
+          <p style="font-size:.78rem;color:var(--text-muted)">ویدیو، تصویر، گیف یا سند آموزشی</p>
+        </div>
       </div>
-    </div>
-    {% endif %}
 
-    <!-- ── Media Type Selection ── -->
-    <div class="card mb-2">
-      <div class="card-header"><span class="card-title">📂 نوع رسانه</span></div>
-      <div class="card-body">
-        <div class="media-type-selector">
-          {% for val, label in form.media_type.field.choices %}
-          <label class="type-card">
-            <input type="radio" name="media_type" value="{{ val }}"
-                   {% if form.media_type.value == val or forloop.first and not form.media_type.value %}checked{% endif %}
-                   onchange="updateDropZone(this.value)">
-            <div class="type-content">
-              <span class="type-icon">
+      {% if form.errors %}
+      <div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#991b1b">
+        ⚠️ {% for field in form %}{% for err in field.errors %}<div>• {{ field.label }}: {{ err }}</div>{% endfor %}{% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data" id="upload-form">
+        {% csrf_token %}
+
+        <!-- نوع رسانه -->
+        <div style="margin-bottom:1.25rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.6rem">نوع فایل <span style="color:var(--red)">*</span></label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem">
+            {% for val, lbl in form.media_type.field.choices %}
+            <label class="type-card {% if forloop.first %}selected{% endif %}" id="tc-{{ val }}"
+                   onclick="selectType('{{ val }}')">
+              <span class="icon">
                 {% if val == 'video' %}🎬{% elif val == 'image' %}🖼️{% elif val == 'gif' %}✨{% else %}📄{% endif %}
               </span>
-              <div class="type-label">{{ label }}</div>
+              <input type="radio" name="media_type" value="{{ val }}" {% if forloop.first %}checked{% endif %}
+                     style="display:none">
+              {{ lbl }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- عنوان -->
+        <div style="margin-bottom:1rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">عنوان تمرین <span style="color:var(--red)">*</span></label>
+          {{ form.title }}
+        </div>
+
+        <!-- توضیحات -->
+        <div style="margin-bottom:1rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">توضیحات</label>
+          {{ form.description }}
+        </div>
+
+        <!-- آپلود فایل -->
+        <div style="margin-bottom:1.25rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.5rem">فایل تمرین <span style="color:var(--red)">*</span></label>
+          <div class="drop-zone" id="drop-zone">
+            {{ form.file }}
+            <div style="font-size:2.5rem;margin-bottom:.5rem" id="drop-icon">📂</div>
+            <div style="font-weight:700;font-size:.9rem" id="drop-title">فایل را اینجا رها کنید یا کلیک کنید</div>
+            <div style="font-size:.78rem;color:var(--text-muted);margin-top:.3rem">
+              حداکثر ۲۰۰ مگابایت | MP4, JPG, PNG, GIF, PDF, DOCX
+            </div>
+          </div>
+          <div id="file-chosen" style="display:none;margin-top:.5rem;padding:.6rem .85rem;background:#d1fae5;border-radius:8px;font-size:.85rem;color:#065f46;font-weight:600"></div>
+          {% if form.file.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.file.errors.0 }}</div>{% endif %}
+        </div>
+
+        <!-- دسته‌های مرتبط -->
+        {% if form.categories.field.choices %}
+        <div style="margin-bottom:1.25rem">
+          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.5rem">دسته‌های مرتبط</label>
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+            {% for val, lbl in form.categories.field.choices %}
+            <label style="display:flex;align-items:center;gap:.4rem;padding:.35rem .75rem;border:1.5px solid var(--surface-2);border-radius:99px;cursor:pointer;font-size:.8rem;transition:.15s"
+                   onmouseenter="this.style.borderColor='var(--navy)'" onmouseleave="this.style.borderColor=''">
+              <input type="checkbox" name="categories" value="{{ val }}" style="accent-color:var(--navy)">
+              {{ lbl }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- دسترسی -->
+        <div style="margin-bottom:1.5rem;padding:.85rem 1rem;border:1.5px solid var(--surface-2);border-radius:10px">
+          <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer">
+            {{ form.is_public }}
+            <div>
+              <div style="font-weight:700;font-size:.875rem">🌐 قابل مشاهده برای همه مربیان</div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-top:.15rem">
+                اگر فعال باشد سایر مربیان هم می‌توانند این تمرین را ببینند
+              </div>
             </div>
           </label>
-          {% endfor %}
         </div>
-      </div>
-    </div>
 
-    <!-- ── File Upload ── -->
-    <div class="card mb-2">
-      <div class="card-header"><span class="card-title">📎 فایل تمرین <span style="color:var(--red)">*</span></span></div>
-      <div class="card-body">
-        <div class="drop-zone" id="drop-zone">
-          <input type="file" name="file" id="file-input" required onchange="onFileSelected(this)">
-          <div class="drop-icon" id="drop-icon">🎬</div>
-          <div class="drop-text">فایل را اینجا رها کنید یا کلیک کنید</div>
-          <div class="drop-sub" id="drop-sub">MP4, WebM, MOV — حداکثر ۲۰۰ مگابایت</div>
+        <div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;padding:.65rem .85rem;margin-bottom:1.25rem;font-size:.8rem;color:#065f46">
+          💡 تصویر بندانگشتی به صورت خودکار توسط سیستم ساخته می‌شود.
         </div>
-        <div class="file-preview" id="file-preview">
-          <span style="font-size:1.5rem">✅</span>
-          <div>
-            <div style="font-weight:600" id="file-name">—</div>
-            <div style="font-size:.75rem;color:#065f46" id="file-size">—</div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- ── Details ── -->
-    <div class="card mb-2">
-      <div class="card-header"><span class="card-title">📝 جزئیات تمرین</span></div>
-      <div class="card-body">
-        <div class="form-group mb-2">
-          <label class="form-label">عنوان <span class="req">*</span></label>
-          <input type="text" name="title" class="form-control" required
-                 value="{{ form.title.value|default:'' }}"
-                 placeholder="عنوان توصیفی تمرین">
+        <div style="display:flex;gap:.6rem;justify-content:flex-end">
+          <a href="{% url 'exercises:gallery' %}" class="btn btn-outline">انصراف</a>
+          <button type="submit" class="btn btn-amber" id="submit-btn">📤 آپلود تمرین</button>
         </div>
-        <div class="form-group mb-2">
-          <label class="form-label">توضیحات</label>
-          <textarea name="description" class="form-control" rows="3"
-                    placeholder="هدف تمرین، نحوه اجرا، نکات فنی...">{{ form.description.value|default:'' }}</textarea>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          <div class="form-group">
-            <label class="form-label">مدت زمان (دقیقه)</label>
-            <input type="number" name="duration_minutes" class="form-control"
-                   value="{{ form.duration_minutes.value|default:'' }}"
-                   placeholder="مثال: ۱۵" min="1" inputmode="numeric">
-          </div>
-          <div class="form-group">
-            <label class="form-label">تصویر بندانگشتی</label>
-            <input type="file" name="thumbnail" class="form-control" accept="image/*">
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
-
-    <!-- ── Categories ── -->
-    {% if form.categories.field.choices %}
-    <div class="card mb-2">
-      <div class="card-header"><span class="card-title">🗂️ دسته‌های مرتبط</span></div>
-      <div class="card-body">
-        <div class="cat-chips">
-          {% for val, label in form.categories.field.choices %}
-          <div>
-            <input type="checkbox" name="categories" value="{{ val }}"
-                   id="cat_{{ val }}" class="cat-chip"
-                   {% if val|stringformat:'s' in form.categories.value|default:'' %}checked{% endif %}>
-            <label for="cat_{{ val }}" class="cat-chip-label">{{ label }}</label>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- ── Visibility ── -->
-    <div class="card mb-2">
-      <div class="card-header"><span class="card-title">👁️ دسترسی</span></div>
-      <div class="card-body">
-        <input type="checkbox" name="is_public" id="is_public"
-               style="display:none" {% if form.is_public.value %}checked{% endif %}
-               onchange="togglePublic(this)">
-        <label for="is_public" class="public-toggle">
-          <div class="toggle-body" style="display:flex;align-items:center;gap:.75rem;flex:1">
-            <div class="toggle-sw" id="pub-toggle-sw"></div>
-            <div>
-              <div style="font-weight:600;font-size:.9rem" id="pub-label">🔒 خصوصی</div>
-              <div class="form-hint" id="pub-hint">فقط خودم می‌توانم ببینم</div>
-            </div>
-          </div>
-        </label>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:.75rem;justify-content:flex-end">
-      <a href="{% url 'exercises:gallery' %}" class="btn btn-outline">انصراف</a>
-      <button type="submit" class="btn btn-amber" id="upload-btn">
-        ⬆️ آپلود تمرین
-      </button>
-    </div>
-
-  </form>
+  </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-const TYPE_META = {
-  video:    { icon: "🎬", hint: "MP4, WebM, MOV — حداکثر ۲۰۰ مگابایت" },
-  image:    { icon: "🖼️", hint: "JPG, PNG, WebP — حداکثر ۲۰ مگابایت" },
-  gif:      { icon: "✨", hint: "فایل GIF — حداکثر ۳۰ مگابایت" },
-  document: { icon: "📄", hint: "PDF, Word — حداکثر ۵۰ مگابایت" },
-};
-
-function updateDropZone(type) {
-  const m = TYPE_META[type] || TYPE_META.video;
-  document.getElementById("drop-icon").textContent = m.icon;
-  document.getElementById("drop-sub").textContent  = m.hint;
+function selectType(val) {
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('tc-' + val);
+  if (card) { card.classList.add('selected'); card.querySelector('input').checked = true; }
+  // به‌روزرسانی آیکون drop zone
+  const icons = { video:'🎬', image:'🖼️', gif:'✨', document:'📄' };
+  const di = document.getElementById('drop-icon');
+  if (di) di.textContent = icons[val] || '📂';
 }
 
-function onFileSelected(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const preview = document.getElementById("file-preview");
-  document.getElementById("file-name").textContent = file.name;
-  document.getElementById("file-size").textContent = (file.size / 1024 / 1024).toFixed(2) + " MB";
-  preview.classList.add("show");
-}
-
-function togglePublic(cb) {
-  const sw     = document.getElementById("pub-toggle-sw");
-  const label  = document.getElementById("pub-label");
-  const hint   = document.getElementById("pub-hint");
-  sw.style.background = cb.checked ? "var(--teal)" : "";
-  if (sw.querySelector) {}
-  label.textContent = cb.checked ? "🌐 عمومی" : "🔒 خصوصی";
-  hint.textContent  = cb.checked ? "تمام مربیان می‌توانند ببینند" : "فقط خودم می‌توانم ببینم";
-}
+// File chosen feedback
+document.getElementById('{{ form.file.id_for_label }}')?.addEventListener('change', function() {
+  const f = this.files[0];
+  if (!f) return;
+  const el = document.getElementById('file-chosen');
+  el.style.display = 'block';
+  el.textContent = '✅ ' + f.name + ' (' + (f.size / 1024 / 1024).toFixed(2) + ' MB)';
+});
 
 // Drag & Drop
-const dz = document.getElementById("drop-zone");
-dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("drag-over"); });
-dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
-dz.addEventListener("drop",      e => {
-  e.preventDefault(); dz.classList.remove("drag-over");
-  const fi = document.getElementById("file-input");
-  fi.files = e.dataTransfer.files;
-  onFileSelected(fi);
+const dz = document.getElementById('drop-zone');
+dz?.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz?.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz?.addEventListener('drop',      e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const fi = dz.querySelector('input[type=file]');
+  if (fi && e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; fi.dispatchEvent(new Event('change')); }
 });
 
-// Upload progress UX
-document.getElementById("upload-form").addEventListener("submit", function() {
-  const btn = document.getElementById("upload-btn");
-  btn.disabled    = true;
-  btn.textContent = "⏳ در حال آپلود...";
-});
-
-// Init
-document.addEventListener("DOMContentLoaded", () => {
-  const checked = document.querySelector('input[name=media_type]:checked');
-  if (checked) updateDropZone(checked.value);
+// Submit feedback
+document.getElementById('upload-form')?.addEventListener('submit', function() {
+  const btn = document.getElementById('submit-btn');
+  setTimeout(() => { btn.disabled = true; btn.textContent = '⏳ در حال آپلود...'; }, 50);
 });
 </script>
 {% endblock %}

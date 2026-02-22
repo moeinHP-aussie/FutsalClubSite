@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}انواع ویژگی نرم{% endblock %}
+{% block nav_players %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">ویژگی‌های نرم</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:620px;margin:0 auto">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">🧠 انواع ویژگی نرم</h1>
+    <a href="javascript:history.back()" class="btn btn-outline btn-sm">← بازگشت</a>
+  </div>
+
+  <!-- Add form -->
+  <div class="card" style="padding:1rem 1.25rem;margin-bottom:1rem">
+    <div style="font-size:.85rem;font-weight:700;margin-bottom:.75rem;color:var(--navy)">➕ افزودن ویژگی جدید</div>
+    <form method="post" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end">
+      {% csrf_token %}
+      <div style="flex:1;min-width:160px">
+        <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:.25rem">نام ویژگی *</label>
+        <input type="text" name="name" required placeholder="مثال: رهبری، مهارت اجتماعی"
+               style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.85rem">
+      </div>
+      <div style="flex:1;min-width:160px">
+        <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:.25rem">توضیحات</label>
+        <input type="text" name="description" placeholder="اختیاری"
+               style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.85rem">
+      </div>
+      <button type="submit" class="btn btn-navy btn-sm">افزودن</button>
+    </form>
+  </div>
+
+  <!-- List -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">لیست ویژگی‌ها</span></div>
+    {% if traits %}
+    <div style="padding:.5rem .75rem">
+      {% for trait in traits %}
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--surface-2)">
+        <div style="flex:1">
+          <div style="font-size:.875rem;font-weight:700">{{ trait.name }}</div>
+          {% if trait.description %}
+          <div style="font-size:.75rem;color:var(--text-muted);margin-top:.1rem">{{ trait.description }}</div>
+          {% endif %}
+        </div>
+        <span class="badge {% if trait.is_active %}badge-green{% else %}badge-red{% endif %}">
+          {% if trait.is_active %}فعال{% else %}غیرفعال{% endif %}
+        </span>
+        {% if trait.is_active %}
+        <form method="post" action="{% url 'training:soft-trait-type-delete' trait.pk %}"
+              onsubmit="return confirm('غیرفعال شود؟')">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm"
+                  style="border:1.5px solid var(--red);color:var(--red);padding:.25rem .6rem">
+            غیرفعال
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:.875rem">
+      هنوز ویژگی نرمی تعریف نشده.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

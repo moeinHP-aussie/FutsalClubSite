@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block title %}پرداخت حقوق مربیان{% endblock %}
+{% block nav_coach_payroll %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span><span class="cur">پرداخت حقوق مربیان</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.coach-card {
+  background: var(--white);
+  border: 1.5px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  transition: box-shadow .15s, border-color .15s;
+  cursor: pointer;
+  position: relative;
+}
+.coach-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.coach-card.selected {
+  border-color: var(--amber);
+  background: #fffbeb;
+  box-shadow: 0 0 0 3px rgba(245,158,11,.12);
+}
+.coach-card.all-paid { border-color: #10b981; background: #f0fdf4; cursor: default; }
+.status-badge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .72rem; font-weight: 700; padding: .2rem .6rem; border-radius: 99px;
+}
+.s-approved  { background: #dbeafe; color: #1e3a8a; }
+.s-calculated{ background: #fef3c7; color: #92400e; }
+.s-paid      { background: #d1fae5; color: #065f46; }
+.salary-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .3rem 0; font-size: .8rem; border-bottom: 1px dashed var(--surface-2);
+}
+.salary-row:last-child { border-bottom: none; }
+
+/* sticky pay bar */
+.pay-bar {
+  position: sticky; bottom: 0; left: 0; right: 0;
+  background: var(--navy); color: #fff;
+  padding: .85rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.15);
+  z-index: 100;
+  margin-top: 1.5rem;
+  transition: opacity .2s;
+}
+.pay-bar.hidden { opacity: 0; pointer-events: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header + month nav -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.2rem;font-weight:900;color:var(--navy)">🧾 پرداخت حقوق مربیان</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">مشاهده خلاصه و پرداخت یکجا</p>
+  </div>
+  <!-- ناوبری ماه -->
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}"
+       class="btn btn-outline btn-sm">← ماه قبل</a>
+    <span style="font-size:.9rem;font-weight:800;color:var(--navy);padding:.35rem .75rem;
+                 background:#f8fafc;border-radius:8px;border:1.5px solid var(--surface-2)">
+      {{ month.year }}/{{ month.month|stringformat:"02d" }}
+    </span>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}"
+       class="btn btn-outline btn-sm">ماه بعد →</a>
+  </div>
+</div>
+
+<!-- Summary cards -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem;margin-bottom:1.25rem">
+  <div class="card" style="padding:.9rem 1.1rem;border-right:4px solid var(--navy)">
+    <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem">کل قابل پرداخت</div>
+    <div style="font-size:1.3rem;font-weight:900;color:var(--navy)">{{ grand_approved|floatformat:0 }} ریال</div>
+  </div>
+  <div class="card" style="padding:.9rem 1.1rem;border-right:4px solid #10b981">
+    <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem">پرداخت شده</div>
+    <div style="font-size:1.3rem;font-weight:900;color:#10b981">{{ grand_paid|floatformat:0 }} ریال</div>
+  </div>
+  <div class="card" style="padding:.9rem 1.1rem;border-right:4px solid var(--amber)">
+    <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem">جمع کل این ماه</div>
+    <div style="font-size:1.3rem;font-weight:900;color:var(--amber)">{{ grand_total|floatformat:0 }} ریال</div>
+  </div>
+</div>
+
+{% if coaches %}
+
+<!-- Select all toolbar -->
+{% if any_payable %}
+<div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem">
+  <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.85rem;font-weight:700">
+    <input type="checkbox" id="select-all-cb" onclick="toggleSelectAll(this)"
+           style="accent-color:var(--navy);width:16px;height:16px">
+    انتخاب همه (قابل پرداخت)
+  </label>
+  <span style="font-size:.78rem;color:var(--text-muted)" id="sel-info"></span>
+</div>
+{% endif %}
+
+<!-- Coach cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:5rem">
+  {% for entry in coaches %}
+  <div class="coach-card {% if entry.all_paid %}all-paid{% endif %}"
+       id="cc-{{ entry.coach.pk }}"
+       data-id="{{ entry.coach.pk }}"
+       data-payable="{{ entry.can_pay|yesno:'1,0' }}"
+       data-amount="{{ entry.approved }}"
+       onclick="toggleCoach(this)">
+
+    <!-- checkbox indicator -->
+    {% if entry.can_pay %}
+    <div style="position:absolute;top:.75rem;left:.85rem">
+      <div class="cc-check" style="width:20px;height:20px;border-radius:50%;
+           border:2px solid var(--surface-2);background:#fff;
+           display:flex;align-items:center;justify-content:center;
+           font-size:.7rem;font-weight:900;transition:.1s">
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">
+      <div style="width:40px;height:40px;border-radius:50%;
+           background:linear-gradient(135deg,var(--navy),var(--teal));
+           color:#fff;display:flex;align-items:center;justify-content:center;
+           font-weight:900;font-size:.85rem;flex-shrink:0">
+        {{ entry.coach.first_name|slice:":1" }}{{ entry.coach.last_name|slice:":1" }}
+      </div>
+      <div style="flex:1">
+        <div style="font-weight:800;font-size:.9rem;color:var(--navy)">
+          {{ entry.coach.first_name }} {{ entry.coach.last_name }}
+        </div>
+        {% if entry.coach.bank_card_number %}
+        <div style="font-size:.72rem;color:var(--text-muted);font-family:monospace">
+          💳 ****-{{ entry.coach.bank_card_number|slice:"-4:" }}
+        </div>
+        {% endif %}
+      </div>
+      {% if entry.all_paid %}
+        <span class="status-badge s-paid">✅ پرداخت شده</span>
+      {% elif entry.can_pay %}
+        <span class="status-badge s-approved">⏳ در انتظار پرداخت</span>
+      {% else %}
+        <span class="status-badge s-calculated">🔢 نیاز به تأیید</span>
+      {% endif %}
+    </div>
+
+    <!-- جزئیات حقوق هر دسته -->
+    <div style="border:1px solid var(--surface-2);border-radius:8px;overflow:hidden;margin-bottom:.75rem">
+      {% for salary in entry.salaries %}
+      <div class="salary-row" style="padding:.4rem .75rem">
+        <span style="color:var(--text-muted)">{{ salary.category.name }}</span>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span class="status-badge {% if salary.status == 'approved' %}s-approved{% elif salary.status == 'paid' %}s-paid{% else %}s-calculated{% endif %}">
+            {% if salary.status == 'approved' %}تأیید شده{% elif salary.status == 'paid' %}پرداخت شده{% else %}محاسبه شده{% endif %}
+          </span>
+          <span style="font-weight:700;font-size:.82rem">{{ salary.final_amount|floatformat:0 }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- مجموع -->
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.78rem;color:var(--text-muted)">جمع این ماه</span>
+      <span style="font-size:1.05rem;font-weight:900;color:{% if entry.all_paid %}#10b981{% else %}var(--navy){% endif %}">
+        {{ entry.total|floatformat:0 }} ریال
+      </span>
+    </div>
+    {% if entry.approved > 0 %}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.25rem">
+      <span style="font-size:.75rem;color:#1e3a8a">قابل پرداخت الان</span>
+      <span style="font-size:.9rem;font-weight:800;color:#1d4ed8">{{ entry.approved|floatformat:0 }} ریال</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Sticky pay bar -->
+<div class="pay-bar hidden" id="pay-bar">
+  <div>
+    <div style="font-size:.78rem;opacity:.7">مبلغ قابل پرداخت</div>
+    <div style="font-size:1.2rem;font-weight:900" id="pay-total-lbl">۰ ریال</div>
+  </div>
+  <div style="display:flex;gap:.6rem;align-items:center">
+    <span style="font-size:.82rem;opacity:.8" id="pay-count-lbl"></span>
+    <button class="btn btn-amber" onclick="openPayModal()">💸 پرداخت انتخاب‌شده‌ها</button>
+  </div>
+</div>
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:1rem">🧾</div>
+  <h3 style="font-weight:800;margin-bottom:.5rem">حقوقی برای این ماه ثبت نشده</h3>
+  <p style="color:var(--text-muted);font-size:.875rem">
+    ابتدا از بخش «حقوق مربیان» حقوق را محاسبه و تأیید کنید.
+  </p>
+  <a href="{% url 'payroll:finance-dashboard' %}" class="btn btn-navy" style="margin-top:1rem">
+    → داشبورد مالی
+  </a>
+</div>
+{% endif %}
+
+<!-- Pay confirmation modal -->
+<div id="pay-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <h3 style="font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:.75rem">💸 تأیید پرداخت حقوق</h3>
+    <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1rem" id="modal-desc"></p>
+    <div id="modal-coach-list" style="max-height:200px;overflow-y:auto;margin-bottom:1.25rem;
+         border:1px solid var(--surface-2);border-radius:8px;padding:.5rem .75rem"></div>
+    <div style="background:#d1fae5;border-radius:8px;padding:.65rem .85rem;margin-bottom:1.25rem">
+      <div style="font-size:.75rem;color:#065f46;margin-bottom:.15rem">جمع کل پرداخت</div>
+      <div style="font-size:1.2rem;font-weight:900;color:#065f46" id="modal-total"></div>
+    </div>
+    <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:1.25rem">
+      ⚡ پس از تأیید، اعلان رسید پرداخت برای هر مربی ارسال می‌شود.
+    </div>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closePayModal()">انصراف</button>
+      <button class="btn btn-amber" id="pay-confirm-btn" onclick="confirmPay()">💸 تأیید پرداخت</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const PAY_URL = "{% url 'payroll:coach-payroll-pay' %}";
+const CSRF    = "{{ csrf_token }}";
+const YEAR    = {{ month.year }};
+const MONTH   = {{ month.month }};
+
+let selected = new Set();
+
+function toggleCoach(card) {
+  const id      = parseInt(card.dataset.id);
+  const payable = card.dataset.payable === "1";
+  if (!payable) return;
+
+  if (selected.has(id)) {
+    selected.delete(id);
+    card.classList.remove("selected");
+    card.querySelector(".cc-check").textContent = "";
+    card.querySelector(".cc-check").style.borderColor = "var(--surface-2)";
+    card.querySelector(".cc-check").style.background  = "#fff";
+  } else {
+    selected.add(id);
+    card.classList.add("selected");
+    card.querySelector(".cc-check").textContent = "✓";
+    card.querySelector(".cc-check").style.borderColor = "var(--amber)";
+    card.querySelector(".cc-check").style.background  = "var(--amber)";
+    card.querySelector(".cc-check").style.color = "#fff";
+  }
+  updatePayBar();
+}
+
+function toggleSelectAll(cb) {
+  document.querySelectorAll(".coach-card[data-payable='1']").forEach(card => {
+    const id = parseInt(card.dataset.id);
+    if (cb.checked) {
+      selected.add(id);
+      card.classList.add("selected");
+      if (card.querySelector(".cc-check")) {
+        card.querySelector(".cc-check").textContent = "✓";
+        card.querySelector(".cc-check").style.cssText += ";border-color:var(--amber);background:var(--amber);color:#fff";
+      }
+    } else {
+      selected.delete(id);
+      card.classList.remove("selected");
+      if (card.querySelector(".cc-check")) {
+        card.querySelector(".cc-check").textContent = "";
+        card.querySelector(".cc-check").style.cssText += ";border-color:var(--surface-2);background:#fff";
+      }
+    }
+  });
+  updatePayBar();
+}
+
+function updatePayBar() {
+  const bar = document.getElementById("pay-bar");
+  if (selected.size === 0) { bar.classList.add("hidden"); return; }
+  bar.classList.remove("hidden");
+
+  let total = 0;
+  selected.forEach(id => {
+    const card = document.getElementById("cc-" + id);
+    if (card) total += parseInt(card.dataset.amount || 0);
+  });
+
+  document.getElementById("pay-total-lbl").textContent = total.toLocaleString("fa-IR") + " ریال";
+  document.getElementById("pay-count-lbl").textContent = selected.size + " مربی";
+  const info = document.getElementById("sel-info");
+  if (info) info.textContent = `(${selected.size} مربی انتخاب شده)`;
+}
+
+function openPayModal() {
+  if (selected.size === 0) return;
+  let total = 0;
+  let listHTML = "";
+  selected.forEach(id => {
+    const card = document.getElementById("cc-" + id);
+    if (!card) return;
+    const name = card.querySelector("[style*='font-weight:800']")?.textContent?.trim() || "";
+    const amt  = parseInt(card.dataset.amount || 0);
+    total += amt;
+    listHTML += `<div style="display:flex;justify-content:space-between;padding:.35rem 0;font-size:.85rem;border-bottom:1px solid var(--surface-2)">
+      <span>${name}</span><span style="font-weight:700">${amt.toLocaleString("fa-IR")} ریال</span></div>`;
+  });
+  document.getElementById("modal-desc").textContent   = `حقوق ${selected.size} مربی پرداخت می‌شود:`;
+  document.getElementById("modal-coach-list").innerHTML = listHTML;
+  document.getElementById("modal-total").textContent  = total.toLocaleString("fa-IR") + " ریال";
+  document.getElementById("pay-modal").style.display  = "flex";
+}
+function closePayModal() { document.getElementById("pay-modal").style.display = "none"; }
+
+async function confirmPay() {
+  const btn = document.getElementById("pay-confirm-btn");
+  btn.disabled    = true;
+  btn.textContent = "⏳ در حال پرداخت...";
+
+  try {
+    const res  = await fetch(PAY_URL, {
+      method:  "POST",
+      headers: { "Content-Type":"application/json","X-CSRFToken":CSRF },
+      body:    JSON.stringify({ coach_ids: [...selected], year: YEAR, month: MONTH }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+
+    closePayModal();
+    // نمایش موفقیت و reload
+    selected.forEach(id => {
+      const card = document.getElementById("cc-" + id);
+      if (card) {
+        card.classList.remove("selected");
+        card.classList.add("all-paid");
+        card.dataset.payable = "0";
+        const badge = card.querySelector(".status-badge");
+        if (badge) { badge.className = "status-badge s-paid"; badge.textContent = "✅ پرداخت شده"; }
+      }
+    });
+    selected.clear();
+    document.getElementById("pay-bar").classList.add("hidden");
+
+    showToast(`✅ حقوق ${data.paid_count} مربی پرداخت شد`, "ok");
+    setTimeout(() => location.reload(), 1800);
+  } catch (err) {
+    showToast("❌ " + err.message, "err");
+    btn.disabled    = false;
+    btn.textContent = "💸 تأیید پرداخت";
+  }
+}
+
+function showToast(msg, type) {
+  const el = document.createElement("div");
+  el.textContent = msg;
+  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+    background:${type==="ok"?"#10b981":"#ef4444"};color:#fff;
+    padding:.65rem 1.35rem;border-radius:99px;font-size:.85rem;font-weight:700;
+    z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+{% endblock %}

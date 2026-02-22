@@ -10,9 +10,11 @@ URL های مربوط به:
   - لیست و پروفایل بازیکنان
 """
 from django.urls import path
+from ..views.organize_views import OrganizeView, PlayerMoveView, StatsView
 from ..views.category_views import (
     # دسته‌های آموزشی
     CategoryListView,
+    CategoryDeleteView,
     CategoryCreateView,
     CategoryUpdateView,
     CategoryDetailView,
@@ -28,6 +30,13 @@ from ..views.category_views import (
     # بازیکنان
     PlayerListView,
     PlayerProfileView,
+    # پروفایل فنی + ویژگی نرم + زمان‌بندی
+    TechnicalProfileUpdateView,
+    SoftTraitUpdateView,
+    SoftTraitTypeView,
+    SoftTraitTypeDeleteView,
+    ScheduleManageView,
+    ScheduleDeleteView,
 )
 
 app_name = "training"
@@ -44,6 +53,8 @@ urlpatterns = [
          CategoryUpdateView.as_view(),        name="category-update"),
     path("categories/<int:pk>/toggle/",
          CategoryToggleActiveView.as_view(),  name="category-toggle"),
+    path("categories/<int:pk>/delete/",
+         CategoryDeleteView.as_view(),        name="category-delete"),
 
     # ── مربیان ───────────────────────────────────────────────────
     path("coaches/",
@@ -68,4 +79,30 @@ urlpatterns = [
          PlayerProfileView.as_view(),         name="player-profile"),
     path("profile/",
          PlayerProfileView.as_view(),         name="my-profile"),
+
+    # ── پروفایل فنی بازیکن ──────────────────────────────────────
+    path("players/<int:pk>/tech/",
+         TechnicalProfileUpdateView.as_view(), name="tech-profile-update"),
+    path("players/<int:pk>/soft-traits/",
+         SoftTraitUpdateView.as_view(),        name="soft-traits-update"),
+    path("soft-trait-types/",
+         SoftTraitTypeView.as_view(),          name="soft-trait-types"),
+    path("soft-trait-types/<int:pk>/delete/",
+         SoftTraitTypeDeleteView.as_view(),    name="soft-trait-type-delete"),
+
+    # ── زمان‌بندی تمرین ─────────────────────────────────────────
+    path("categories/<int:cat_pk>/schedule/add/",
+         ScheduleManageView.as_view(),         name="schedule-add"),
+    path("schedules/<int:pk>/delete/",
+         ScheduleDeleteView.as_view(),         name="schedule-delete"),
+
+    # ── سازماندهی رده‌ها ─────────────────────────────────────────
+    path("organize/",
+         OrganizeView.as_view(),              name="organize"),
+    path("organize/move/",
+         PlayerMoveView.as_view(),            name="player-move"),
+
+    # ── آمارگیری ─────────────────────────────────────────────────
+    path("stats/",
+         StatsView.as_view(),                 name="stats"),
 ]

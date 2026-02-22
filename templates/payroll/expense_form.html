@@ -23,8 +23,11 @@
       </div>
 
       {% if not has_categories %}
-      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#92400e">
-        ⚠️ هنوز هیچ دسته مالی تعریف نشده. لطفاً ابتدا از <a href="/admin/futsal_club/expensecategory/add/" style="color:var(--amber)">پنل ادمین</a> دسته بسازید.
+      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#92400e;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+        <span>⚠️ هنوز هیچ دسته مالی تعریف نشده است.</span>
+        <a href="{% url 'payroll:expense-category-create' %}" class="btn btn-amber btn-sm">
+          ➕ ایجاد دسته جدید
+        </a>
       </div>
       {% endif %}
 
@@ -72,7 +75,10 @@
             {% if form.title.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.title.errors.0 }}</div>{% endif %}
           </div>
           <div>
-            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">دسته <span style="color:var(--red)">*</span></label>
+            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">
+              دسته <span style="color:var(--red)">*</span>
+              <a href="{% url 'payroll:expense-category-create' %}" style="font-size:.72rem;font-weight:600;color:var(--amber);margin-right:.5rem">+ دسته جدید</a>
+            </label>
             {{ form.category }}
             {% if form.category.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.category.errors.0 }}</div>{% endif %}
           </div>

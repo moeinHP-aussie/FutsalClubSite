@@ -1,5 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{{ category.name }}{% endblock %}
+{% block title %}{{ category.name }}<script>
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}
 {% block nav_categories %}active{% endblock %}
 
 {% block breadcrumb %}
@@ -62,12 +68,58 @@
 
   <!-- Schedule -->
   <div class="card">
-    <div class="card-header"><span class="card-title">📅 برنامه تمرین</span></div>
-    {% if schedules %}
-    <div style="padding:.75rem 1rem">
-      {% for sch in schedules %}
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--surface-2)">
+    <div class="card-header">
+      <span class="card-title">📅 برنامه تمرین</span>
+      {% if request.user.is_technical_director or request.user.is_superuser %}
+      <button class="btn btn-amber btn-sm" onclick="toggleForm('sch-add-form')">+ افزودن جلسه</button>
+      {% endif %}
+    </div>
+
+    <!-- فرم افزودن جلسه -->
+    {% if request.user.is_technical_director or request.user.is_superuser %}
+    <div id="sch-add-form" style="display:none;padding:.85rem 1rem;border-bottom:1px solid var(--surface-2);background:#f8fafc">
+      <form method="post" action="{% url 'training:schedule-add' category.pk %}"
+            style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end">
+        {% csrf_token %}
         <div>
+          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.2rem">روز هفته *</label>
+          <select name="weekday"
+                  style="padding:.5rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem">
+            <option value="sat">شنبه</option>
+            <option value="sun">یکشنبه</option>
+            <option value="mon">دوشنبه</option>
+            <option value="tue">سه‌شنبه</option>
+            <option value="wed">چهارشنبه</option>
+            <option value="thu">پنجشنبه</option>
+            <option value="fri">جمعه</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.2rem">ساعت شروع *</label>
+          <input type="time" name="start_time" required
+                 style="padding:.5rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem">
+        </div>
+        <div>
+          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.2rem">ساعت پایان</label>
+          <input type="time" name="end_time"
+                 style="padding:.5rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem">
+        </div>
+        <div>
+          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.2rem">مکان / سالن</label>
+          <input type="text" name="location" placeholder="مثال: سالن اصلی"
+                 style="padding:.5rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem;width:140px">
+        </div>
+        <button type="submit" class="btn btn-navy btn-sm">✅ ذخیره</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if schedules %}
+    <div style="padding:.6rem .85rem">
+      {% for sch in schedules %}
+      <div class="sch-row" style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:1rem">📅</span>
+        <div style="flex:1">
           <strong style="font-size:.875rem">{{ sch.get_weekday_display }}</strong>
           {% if sch.location %}
           <span style="font-size:.75rem;color:var(--text-muted);margin-right:.35rem">· {{ sch.location }}</span>
@@ -75,14 +127,25 @@
         </div>
         <span style="font-size:.82rem;color:var(--teal);font-weight:700">
           {{ sch.start_time|time:"H:i" }}
-          {% if sch.end_time %}— {{ sch.end_time|time:"H:i" }}{% endif %}
+          {% if sch.end_time %}<span style="color:var(--text-muted)"> — </span>{{ sch.end_time|time:"H:i" }}{% endif %}
         </span>
+        {% if request.user.is_technical_director or request.user.is_superuser %}
+        <form method="post" action="{% url 'training:schedule-delete' sch.pk %}"
+              onsubmit="return confirm('این جلسه حذف شود؟')"
+              style="margin:0">
+          {% csrf_token %}
+          <button type="submit"
+                  style="background:none;border:none;cursor:pointer;font-size:.85rem;color:#ef4444;padding:.2rem .4rem">
+            ✕
+          </button>
+        </form>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
     {% else %}
     <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.875rem">
-      برنامه‌ای تعریف نشده
+      هنوز جلسه‌ای تعریف نشده — روی «+ افزودن جلسه» کلیک کنید.
     </div>
     {% endif %}
   </div>

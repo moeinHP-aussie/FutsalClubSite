@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}نتیجه ایجاد حساب‌ها{% endblock %}
+{% block nav_admin_users %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'admin_panel:user-list' %}" style="text-decoration:none;color:inherit">مدیریت کاربران</a>
+  <span class="sep">›</span><span class="cur">نتیجه</span>
+{% endblock %}
+
+{% block content %}
+
+<div style="text-align:center;margin-bottom:1.5rem">
+  <div style="font-size:3.5rem;margin-bottom:.75rem">
+    {% if errors %}⚠️{% else %}🎉{% endif %}
+  </div>
+  <h1 style="font-size:1.25rem;font-weight:900;color:var(--navy)">
+    {{ created|length }} حساب با موفقیت ایجاد شد
+  </h1>
+  {% if errors %}
+  <p style="color:#ef4444;font-size:.875rem;margin-top:.35rem">{{ errors|length }} خطا رخ داد</p>
+  {% endif %}
+</div>
+
+{% if created %}
+<div class="card" style="margin-bottom:1rem">
+  <div class="card-header">
+    <span class="card-title">✅ حساب‌های ایجادشده</span>
+    <form method="post" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-navy btn-sm">📥 دانلود CSV</button>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>نام</th><th>نام کاربری</th><th>رمز عبور</th></tr>
+      </thead>
+      <tbody>
+        {% for row in created %}
+        <tr>
+          <td style="font-size:.875rem;font-weight:700">{{ row.name }}</td>
+          <td style="font-family:monospace;font-size:.82rem;color:var(--navy)">{{ row.username }}</td>
+          <td style="font-family:monospace;font-size:.82rem;color:var(--text-muted)">{{ row.password }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if errors %}
+<div class="card" style="margin-bottom:1rem">
+  <div class="card-header"><span class="card-title" style="color:#ef4444">❌ خطاها</span></div>
+  <div style="padding:.75rem 1rem">
+    {% for err in errors %}
+    <div style="font-size:.82rem;color:#991b1b;padding:.3rem 0;border-bottom:1px solid var(--surface-2)">{{ err }}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:var(--radius);padding:.85rem 1rem;font-size:.85rem;color:#065f46;margin-bottom:1.25rem">
+  💡 <strong>اطلاع‌رسانی به بازیکنان:</strong> می‌توانید فایل CSV را دانلود کرده و نام کاربری و رمز را به بازیکنان اطلاع دهید.
+  رمز پیش‌فرض = کد ملی است و پس از اولین ورود توصیه می‌شود تغییر دهند.
+</div>
+
+<div style="display:flex;gap:.6rem">
+  <a href="{% url 'admin_panel:user-list' %}" class="btn btn-outline">← بازگشت به کاربران</a>
+  <a href="{% url 'admin_panel:provision-players' %}" class="btn btn-navy">⚡ ایجاد بیشتر</a>
+</div>
+
+{% endblock %}

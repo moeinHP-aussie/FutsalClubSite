@@ -84,12 +84,41 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 .order_by("-registration_date")[:5]
             )
 
+            # ── آمار رده‌های سنی ─────────────────────────────────
+            from ..models import PlayerChangeLog
+            from collections import Counter
+            approved_players = Player.objects.filter(status="approved", is_archived=False).exclude(dob__isnull=True)
+            age_cat_counts = Counter()
+            for p in approved_players:
+                age_cat_counts[p.get_age_category()] += 1
+            # مرتب‌سازی: زیر 8، زیر 9، ... ، بزرگسال
+            def sort_key(item):
+                cat = item[0]
+                if cat.startswith('زیر '):
+                    try: return int(cat.split()[1])
+                    except: return 99
+                return 100
+            total = sum(age_cat_counts.values()) or 1
+            ctx["age_category_stats"] = [
+                (cat, cnt, round(cnt * 100 / total))
+                for cat, cnt in sorted(age_cat_counts.items(), key=sort_key)
+            ]
+
+            # ── فید تغییرات اخیر ─────────────────────────────────
+            ctx["recent_changes"] = PlayerChangeLog.objects.select_related(
+                "player", "changed_by"
+            ).order_by("-created_at")[:15]
+
+            # ── اعلان‌های خوانده‌نشده مدیر فنی ──────────────────
+            ctx["unread_notifications"] = user.notifications.filter(
+                is_read=False
+            ).order_by("-created_at")[:10]
+
         # ── آمار مالی ─────────────────────────────────────────────
         if user.is_finance_manager:
             from ..models import PlayerInvoice, CoachSalary
             ctx["pending_invoices"] = PlayerInvoice.objects.filter(status="pending").count()
-            # ✅ اصلاح: status="pending" در CoachSalary وجود ندارد — مقدار صحیح "calculated" است
-            ctx["pending_salaries"] = CoachSalary.objects.filter(status="calculated").count()
+            ctx["pending_salaries"] = CoachSalary.objects.filter(status="pending").count()
             ctx["total_debt"]       = (
                 PlayerInvoice.objects
                 .filter(status="debtor")
@@ -99,6 +128,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # ── آمار مربی ─────────────────────────────────────────────
         if user.is_coach:
             try:
+                from ..models import PlayerChangeLog
                 coach = user.coach_profile
                 ctx["my_categories"] = coach.categories.filter(is_active=True)
                 ctx["total_players_coached"] = (
@@ -107,6 +137,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     .distinct()
                     .count()
                 )
+                # تغییرات اخیر بازیکنان مربی
+                my_player_ids = Player.objects.filter(
+                    categories__in=ctx["my_categories"], is_archived=False
+                ).values_list("pk", flat=True)
+                ctx["recent_changes"] = PlayerChangeLog.objects.filter(
+                    player__pk__in=my_player_ids
+                ).select_related("player", "changed_by").order_by("-created_at")[:10]
+                ctx["unread_notifications"] = user.notifications.filter(
+                    is_read=False
+                ).order_by("-created_at")[:8]
             except Exception:
                 pass
 

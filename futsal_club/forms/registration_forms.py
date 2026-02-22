@@ -198,9 +198,11 @@ class ExerciseUploadForm(forms.Form):
         choices=[("video","ویدیو"), ("image","تصویر"), ("gif","گیف"), ("document","سند")]
     )
     file            = forms.FileField(label="فایل تمرین")
-    thumbnail       = forms.ImageField(label="تصویر بندانگشتی", required=False)
-    duration_minutes = forms.IntegerField(label="مدت زمان (دقیقه)", required=False, min_value=1)
-    is_public       = forms.BooleanField(label="قابل مشاهده برای همه مربیان", required=False)
+    is_public       = forms.BooleanField(
+        label="قابل مشاهده برای همه مربیان",
+        required=False,
+        help_text="اگر فعال باشد، سایر مربیان هم می‌توانند این تمرین را ببینند"
+    )
     categories      = forms.MultipleChoiceField(
         label="دسته‌های مرتبط", required=False,
         widget=forms.CheckboxSelectMultiple

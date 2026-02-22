@@ -26,7 +26,11 @@ from ..views.zarinpal_views import (
     PaymentSuccessView,          # ← اضافه شد
 )
 
-from ..views.expense_views import ExpenseListView, ExpenseCreateView
+from ..views.coach_payroll_view import CoachPayrollSummaryView, PayCoachSalaryView
+from ..views.expense_views import (
+    ExpenseListView, ExpenseCreateView,
+    ExpenseCategoryCreateView, ExpenseCategoryListView,
+)
 
 app_name = "payroll"
 
@@ -69,9 +73,19 @@ urlpatterns = [
     path("invoices/<int:category_pk>/payment-success/",
          PaymentSuccessView.as_view(), name="payment-success"),
 
+    # ── خلاصه حقوق مربیان ─────────────────────────────────────────
+    path("coach-payroll/",
+         CoachPayrollSummaryView.as_view(), name="coach-payroll-summary"),
+    path("coach-payroll/pay/",
+         PayCoachSalaryView.as_view(),      name="coach-payroll-pay"),
+
     # ── هزینه‌ها و درآمدها ─────────────────────────────────────────
     path("expenses/",
-         ExpenseListView.as_view(),  name="expense-list"),
+         ExpenseListView.as_view(),         name="expense-list"),
     path("expenses/create/",
-         ExpenseCreateView.as_view(), name="expense-create"),
+         ExpenseCreateView.as_view(),        name="expense-create"),
+    path("expenses/categories/",
+         ExpenseCategoryListView.as_view(),  name="expense-category-list"),
+    path("expenses/categories/create/",
+         ExpenseCategoryCreateView.as_view(),name="expense-category-create"),
 ]

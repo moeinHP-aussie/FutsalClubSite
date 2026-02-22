@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}ویرایش کاربر — {{ u.username }}{% endblock %}
+{% block nav_admin_users %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'admin_panel:user-list' %}" style="text-decoration:none;color:inherit">مدیریت کاربران</a>
+  <span class="sep">›</span><span class="cur">{{ u.username }}</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.section-title {
+  font-size:.72rem; font-weight:800; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--text-muted);
+  padding-bottom:.4rem; border-bottom:1px solid var(--surface-2); margin-bottom:.85rem;
+}
+.role-toggle { display:flex; align-items:center; justify-content:space-between; padding:.6rem 0; border-bottom:1px solid var(--surface-2); }
+.role-toggle:last-child { border-bottom:none; }
+.toggle-label { font-size:.875rem; font-weight:700; }
+.toggle-desc  { font-size:.72rem; color:var(--text-muted); margin-top:.1rem; }
+
+/* pill toggle switch */
+.pill-toggle { position:relative; width:44px; height:24px; cursor:pointer; }
+.pill-toggle input { opacity:0; width:0; height:0; }
+.pill-slider {
+  position:absolute; inset:0; background:#e2e8f0; border-radius:99px;
+  transition:.2s; cursor:pointer;
+}
+.pill-slider::before {
+  content:""; position:absolute; height:18px; width:18px; border-radius:50%;
+  background:#fff; left:3px; bottom:3px; transition:.2s;
+  box-shadow:0 2px 4px rgba(0,0,0,.15);
+}
+input:checked + .pill-slider { background:var(--navy); }
+input:checked + .pill-slider::before { transform:translateX(20px); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% for msg in messages %}
+<div style="background:{% if msg.level == 25 %}#d1fae5{% else %}#fee2e2{% endif %};border-radius:8px;padding:.65rem 1rem;margin-bottom:.85rem;font-size:.875rem;font-weight:600">
+  {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+
+<div style="max-width:620px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:1.25rem">
+    <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--navy));display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:900;color:#fff;flex-shrink:0">
+      {{ u.first_name|slice:":1"|default:u.username|slice:":1"|upper }}
+    </div>
+    <div>
+      <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">{{ u.first_name }} {{ u.last_name }}</h1>
+      <div style="font-size:.8rem;font-family:monospace;color:var(--text-muted)">@{{ u.username }}</div>
+    </div>
+    {% if player %}
+    <a href="{% url 'training:player-profile' player.pk %}" class="btn btn-outline btn-sm" style="margin-right:auto">⚽ پروفایل بازیکن</a>
+    {% endif %}
+    {% if coach %}
+    <a href="{% url 'training:coach-detail' coach.pk %}" class="btn btn-outline btn-sm" style="margin-right:auto">🎯 پروفایل مربی</a>
+    {% endif %}
+  </div>
+
+  <!-- اطلاعات -->
+  {% if player %}
+  <div class="card" style="margin-bottom:.85rem;padding:.75rem 1rem">
+    <div style="font-size:.72rem;font-weight:800;color:var(--text-muted);margin-bottom:.5rem">📋 اطلاعات بازیکن</div>
+    <div style="display:flex;gap:1.5rem;font-size:.82rem;flex-wrap:wrap">
+      <span>کد ملی: <strong style="font-family:monospace">{{ player.national_id }}</strong></span>
+      <span>موبایل: <strong>{{ player.phone }}</strong></span>
+      <span>رده: <strong>{{ player.get_age_category }}</strong></span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- نقش‌ها -->
+  <div class="card" style="margin-bottom:.85rem">
+    <div style="padding:1rem 1.25rem">
+      <div class="section-title">🏷️ نقش‌ها و دسترسی‌ها</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="roles">
+
+        <div class="role-toggle">
+          <div>
+            <div class="toggle-label">🔧 مدیر فنی</div>
+            <div class="toggle-desc">دسترسی کامل به بازیکنان، رده‌ها، و گزارش‌ها</div>
+          </div>
+          <label class="pill-toggle">
+            <input type="checkbox" name="is_technical_director" {% if u.is_technical_director %}checked{% endif %}>
+            <span class="pill-slider"></span>
+          </label>
+        </div>
+
+        <div class="role-toggle">
+          <div>
+            <div class="toggle-label">💰 مدیر مالی</div>
+            <div class="toggle-desc">فاکتورها، حقوق مربیان، گزارش مالی</div>
+          </div>
+          <label class="pill-toggle">
+            <input type="checkbox" name="is_finance_manager" {% if u.is_finance_manager %}checked{% endif %}>
+            <span class="pill-slider"></span>
+          </label>
+        </div>
+
+        <div class="role-toggle">
+          <div>
+            <div class="toggle-label">🎯 مربی</div>
+            <div class="toggle-desc">مشاهده بازیکنان رده خود، ثبت حضور</div>
+          </div>
+          <label class="pill-toggle">
+            <input type="checkbox" name="is_coach" {% if u.is_coach %}checked{% endif %}>
+            <span class="pill-slider"></span>
+          </label>
+        </div>
+
+        <div class="role-toggle">
+          <div>
+            <div class="toggle-label">⚽ بازیکن</div>
+            <div class="toggle-desc">دسترسی به پروفایل شخصی و فاکتورها</div>
+          </div>
+          <label class="pill-toggle">
+            <input type="checkbox" name="is_player" {% if u.is_player %}checked{% endif %}>
+            <span class="pill-slider"></span>
+          </label>
+        </div>
+
+        <div class="role-toggle">
+          <div>
+            <div class="toggle-label" style="color:{% if u.is_active %}#065f46{% else %}#991b1b{% endif %}">
+              {% if u.is_active %}✅ حساب فعال{% else %}🔴 حساب غیرفعال{% endif %}
+            </div>
+            <div class="toggle-desc">غیرفعال = نمی‌تواند وارد سیستم شود</div>
+          </div>
+          <label class="pill-toggle">
+            <input type="checkbox" name="is_active" {% if u.is_active %}checked{% endif %}>
+            <span class="pill-slider"></span>
+          </label>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+          <button type="submit" class="btn btn-navy">💾 ذخیره نقش‌ها</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ریست رمز -->
+  <div class="card" style="margin-bottom:.85rem">
+    <div style="padding:1rem 1.25rem">
+      <div class="section-title">🔑 تغییر رمز عبور</div>
+      <form method="post" style="display:flex;gap:.6rem;align-items:flex-end;flex-wrap:wrap">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reset_password">
+        <div style="flex:1;min-width:200px">
+          <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:.25rem">رمز جدید *</label>
+          <input type="text" name="new_password" id="new-pw" placeholder="حداقل ۶ کاراکتر"
+                 style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:monospace;font-size:.875rem">
+        </div>
+        <button type="button" onclick="genPass()" class="btn btn-outline btn-sm">🎲</button>
+        <button type="submit" class="btn btn-amber">تغییر رمز</button>
+      </form>
+      {% if player %}
+      <div style="margin-top:.6rem;font-size:.75rem;color:var(--text-muted)">
+        💡 رمز پیشنهادی: کد ملی بازیکن
+        <code style="background:var(--surface-2);padding:.1rem .4rem;border-radius:4px;cursor:pointer"
+              onclick="document.getElementById('new-pw').value='{{ player.national_id }}'">
+          {{ player.national_id }}
+        </code>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-start">
+    <a href="{% url 'admin_panel:user-list' %}" class="btn btn-outline">← بازگشت</a>
+  </div>
+</div>
+
+<script>
+function genPass() {
+  const c = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let p = '';
+  for (let i=0; i<8; i++) p += c[Math.floor(Math.random()*c.length)];
+  document.getElementById('new-pw').value = p;
+}
+</script>
+{% endblock %}

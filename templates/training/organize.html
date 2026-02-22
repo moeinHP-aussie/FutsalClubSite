@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+{% block title %}سازماندهی رده‌ها{% endblock %}
+{% block nav_organize %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">سازماندهی رده‌ها</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ═══════════════════════════════════════════════════
+   ORGANIZE — Phase 1: selector  /  Phase 2: board
+═══════════════════════════════════════════════════ */
+
+/* ── Phase 1: Category Selector ──────────────────── */
+.phase { display: none; }
+.phase.active { display: block; }
+
+.cat-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: .85rem;
+  margin-bottom: 1.5rem;
+}
+.cat-sel-card {
+  border: 2px solid var(--surface-2);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+  transition: .15s;
+  background: var(--white);
+  user-select: none;
+  position: relative;
+}
+.cat-sel-card:hover { border-color: var(--navy); box-shadow: 0 4px 14px rgba(0,0,0,.07); }
+.cat-sel-card.selected {
+  border-color: var(--amber);
+  background: #fffbeb;
+  box-shadow: 0 0 0 3px rgba(245,158,11,.15);
+}
+.cat-sel-card.selected::after {
+  content: "✓";
+  position: absolute; top: .6rem; left: .75rem;
+  width: 22px; height: 22px;
+  background: var(--amber); color: #fff;
+  border-radius: 50%; font-size: .75rem; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 22px; text-align: center;
+}
+.cat-sel-name  { font-size: .9rem; font-weight: 800; color: var(--navy); margin-bottom: .3rem; }
+.cat-sel-count { font-size: .78rem; color: var(--text-muted); }
+.cat-sel-sched { font-size: .72rem; color: var(--teal); margin-top: .3rem; }
+
+/* ── Phase 2: Board ──────────────────────────────── */
+.org-toolbar {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  padding: .75rem 1rem; background: var(--white);
+  border: 1px solid var(--surface-2); border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+.org-search {
+  flex: 1; min-width: 160px; max-width: 260px;
+  padding: .5rem .8rem; border: 1.5px solid var(--surface-2); border-radius: 8px;
+  font-size: .85rem; font-family: inherit;
+}
+.org-search:focus { outline: none; border-color: var(--navy); }
+.fc-chip {
+  padding: .3rem .7rem; border-radius: 99px;
+  border: 1.5px solid var(--surface-2); font-size: .75rem; font-weight: 700;
+  cursor: pointer; transition: .12s; color: var(--text-muted);
+  background: none; font-family: inherit;
+}
+.fc-chip.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+.board-wrap { overflow-x: auto; padding-bottom: 1.5rem; }
+.board { display: flex; gap: .85rem; align-items: flex-start; min-width: max-content; }
+
+.col {
+  width: 300px; flex-shrink: 0; border-radius: 12px;
+  border: 1.5px solid var(--surface-2); background: #f8fafc;
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: border-color .15s;
+}
+.col.drag-target { border-color: var(--amber); background: #fffbeb; }
+
+.col-header {
+  padding: .75rem 1rem; background: var(--navy); color: #fff;
+  display: flex; align-items: center; justify-content: space-between; gap: .4rem;
+  position: sticky; top: 0; z-index: 2;
+}
+.col-header.unassigned { background: #64748b; }
+.col-name  { font-size: .85rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex:1; }
+.col-count { background: rgba(255,255,255,.2); border-radius: 99px; padding: .1rem .45rem; font-size: .72rem; font-weight: 700; flex-shrink:0; }
+
+.col-meta { padding: .3rem .85rem .45rem; background: rgba(13,27,42,.88); display: flex; gap: .35rem; flex-wrap: wrap; }
+.col-sched { font-size: .65rem; color: rgba(255,255,255,.6); background: rgba(255,255,255,.1); border-radius: 4px; padding: .1rem .35rem; }
+
+.col-body { padding: .45rem; min-height: 140px; display: flex; flex-direction: column; gap: .3rem; }
+.col-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem 1rem; color:var(--text-light); font-size:.78rem; gap:.4rem; }
+
+/* ── Player Card ─────────────────────────────── */
+.p-card {
+  background: #fff; border: 1.5px solid var(--surface-2); border-radius: 8px;
+  padding: .5rem .65rem; cursor: grab;
+  transition: box-shadow .12s, transform .12s, border-color .12s;
+  user-select: none;
+}
+.p-card:hover { border-color: var(--amber); box-shadow: 0 3px 10px rgba(0,0,0,.09); transform: translateY(-1px); }
+.p-card.dragging { opacity: .35; cursor: grabbing; }
+.p-card.filtered-out { display: none; }
+
+.p-card-top { display: flex; align-items: center; gap: .5rem; }
+.p-av {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 900; color: #fff;
+}
+.p-name { font-size: .8rem; font-weight: 700; color: var(--navy); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.p-badges { display: flex; flex-wrap: wrap; gap: .22rem; margin-top: .25rem; padding-right: 34px; }
+.bx { font-size: .62rem; font-weight: 700; padding: .08rem .35rem; border-radius: 4px; white-space: nowrap; }
+.bx-age  { background:#dbeafe;color:#1e3a8a; }
+.bx-foot { background:#d1fae5;color:#065f46; }
+.bx-pos  { background:#ede9fe;color:#4c1d95; }
+.bx-sk   { background:#fef3c7;color:#92400e; }
+.bx-ins-ok   { background:#d1fae5;color:#065f46; }
+.bx-ins-warn { background:#fef3c7;color:#b45309; }
+.bx-ins-none { background:#fee2e2;color:#991b1b; }
+.bx-ins-exp  { background:#fee2e2;color:#991b1b; }
+
+/* ── Toast ─────────────────────────────────── */
+.toast-wrap { position:fixed; bottom:1.25rem; left:50%; transform:translateX(-50%); z-index:9999; pointer-events:none; }
+.toast {
+  padding: .55rem 1.2rem; border-radius: 99px; color:#fff;
+  font-size: .83rem; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.2);
+  animation: tin .2s ease, tout .3s ease 2.2s forwards; white-space: nowrap; margin-bottom: .3rem;
+}
+.toast.ok  { background: #10b981; }
+.toast.err { background: #ef4444; }
+@keyframes tin  { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none} }
+@keyframes tout { to{opacity:0;transform:translateY(5px);pointer-events:none} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 1 — انتخاب رده‌ها
+═══════════════════════════════════════════════════════════ -->
+<div class="phase active" id="phase1">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.1rem">
+    <div>
+      <h1 style="font-size:1.15rem;font-weight:900;color:var(--navy)">🔀 سازماندهی رده‌ها</h1>
+      <p style="font-size:.8rem;color:var(--text-muted);margin-top:.15rem">
+        رده‌هایی که می‌خواهید کار کنید را انتخاب کنید
+      </p>
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <span style="font-size:.8rem;color:var(--text-muted)" id="sel-count-label">هیچ رده‌ای انتخاب نشده</span>
+      <button class="btn btn-amber" id="start-btn" disabled onclick="openBoard()">
+        شروع سازماندهی →
+      </button>
+    </div>
+  </div>
+
+  <!-- همه / بدون دسته -->
+  <div style="display:flex;gap:.5rem;margin-bottom:.85rem;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" onclick="selectAll()">انتخاب همه</button>
+    <button class="btn btn-outline btn-sm" onclick="clearAll()">حذف انتخاب</button>
+    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.82rem;color:var(--text-muted)">
+      <input type="checkbox" id="include-unassigned" style="accent-color:var(--navy)">
+      شامل بازیکنان بدون دسته
+    </label>
+  </div>
+
+  <div class="cat-selector-grid" id="cat-selector">
+    {% for cat in categories %}
+    <div class="cat-sel-card" data-id="{{ cat.id }}" onclick="toggleCat(this, {{ cat.id }})">
+      <div class="cat-sel-name">{{ cat.name }}</div>
+      <div class="cat-sel-count">{{ cat.players.all.count }} بازیکن</div>
+      {% with schedules=cat.schedules.all %}
+      {% if schedules %}
+      <div class="cat-sel-sched">
+        {% for s in schedules %}📅 {{ s.get_weekday_display }} {{ s.start_time|time:"H:i" }}{% if not forloop.last %} · {% endif %}{% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+    {% empty %}
+    <p style="color:var(--text-muted)">هنوز دسته‌ای تعریف نشده.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 2 — بورد drag-and-drop
+═══════════════════════════════════════════════════════════ -->
+<div class="phase" id="phase2">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.85rem">
+    <div>
+      <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">🔀 سازماندهی</h1>
+      <p style="font-size:.78rem;color:var(--text-muted)" id="board-subtitle"></p>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="backToSelector()">← تغییر رده‌ها</button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="org-toolbar">
+    <input type="text" class="org-search" id="search-input"
+           placeholder="🔍 جستجو..." oninput="filterCards(this.value)">
+    <button class="fc-chip on" onclick="setFoot('',this)">همه</button>
+    <button class="fc-chip" onclick="setFoot('R',this)">👉 راست</button>
+    <button class="fc-chip" onclick="setFoot('L',this)">👈 چپ</button>
+    <button class="fc-chip on" onclick="setPos('',this)" style="margin-right:auto">همه پست‌ها</button>
+    <button class="fc-chip" onclick="setPos('gk',this)">🥅</button>
+    <button class="fc-chip" onclick="setPos('pivot',this)">⚡</button>
+    <button class="fc-chip" onclick="setPos('winger',this)">💨</button>
+    <button class="fc-chip" onclick="setPos('fixo',this)">🛡️</button>
+    <label style="font-size:.75rem;cursor:pointer;display:flex;align-items:center;gap:.3rem;color:var(--text-muted)">
+      <input type="checkbox" id="hl-ins" onchange="hlIns(this.checked)" style="accent-color:var(--amber)">
+      بیمه منقضی
+    </label>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ALL_CATEGORIES = {{ categories_json|safe }};
+const ALL_UNASSIGNED = {{ unassigned_json|safe }};
+const MOVE_URL       = "{% url 'training:player-move' %}";
+const CSRF           = "{{ csrf_token }}";
+
+const AV_COLORS = ["#0d1b2a","#0891b2","#0f766e","#7c3aed","#b45309","#be185d","#1d4ed8","#0369a1"];
+
+let selectedCatIds = new Set();
+let includeUnassigned = false;
+let state = { cats: {}, unassigned: [] };
+let activeSearch = "", activeFoot = "", activePos = "";
+let dragging = null;
+
+// ────────────────────────────────────────────────
+//  Phase 1: Selector
+// ────────────────────────────────────────────────
+function toggleCat(el, id) {
+  if (selectedCatIds.has(id)) {
+    selectedCatIds.delete(id);
+    el.classList.remove("selected");
+  } else {
+    selectedCatIds.add(id);
+    el.classList.add("selected");
+  }
+  updateSelLabel();
+}
+function selectAll() {
+  document.querySelectorAll(".cat-sel-card").forEach(el => {
+    const id = parseInt(el.dataset.id);
+    selectedCatIds.add(id);
+    el.classList.add("selected");
+  });
+  updateSelLabel();
+}
+function clearAll() {
+  selectedCatIds.clear();
+  document.querySelectorAll(".cat-sel-card").forEach(el => el.classList.remove("selected"));
+  updateSelLabel();
+}
+function updateSelLabel() {
+  const n   = selectedCatIds.size;
+  const btn = document.getElementById("start-btn");
+  const lbl = document.getElementById("sel-count-label");
+  btn.disabled = (n === 0 && !document.getElementById("include-unassigned").checked);
+  lbl.textContent = n > 0 ? `${n} رده انتخاب شده` : "هیچ رده‌ای انتخاب نشده";
+}
+document.getElementById("include-unassigned").addEventListener("change", updateSelLabel);
+
+function openBoard() {
+  includeUnassigned = document.getElementById("include-unassigned").checked;
+  buildState();
+  renderBoard();
+  document.getElementById("phase1").classList.remove("active");
+  document.getElementById("phase2").classList.add("active");
+  const names = ALL_CATEGORIES.filter(c => selectedCatIds.has(c.id)).map(c => c.name).join("، ");
+  document.getElementById("board-subtitle").textContent = names;
+}
+function backToSelector() {
+  document.getElementById("phase2").classList.remove("active");
+  document.getElementById("phase1").classList.add("active");
+}
+
+// ────────────────────────────────────────────────
+//  State
+// ────────────────────────────────────────────────
+function buildState() {
+  state = { cats: {}, unassigned: [] };
+  ALL_CATEGORIES.filter(c => selectedCatIds.has(c.id)).forEach(c => {
+    state.cats[c.id] = { meta: c, players: [...c.players] };
+  });
+  if (includeUnassigned) {
+    state.unassigned = [...ALL_UNASSIGNED];
+  }
+}
+
+// ────────────────────────────────────────────────
+//  Render
+// ────────────────────────────────────────────────
+function renderBoard() {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  if (includeUnassigned) {
+    const col = buildCol(null, { meta: { name: "بدون دسته", schedules: [] }, players: state.unassigned });
+    col.querySelector(".col-header").classList.add("unassigned");
+    board.appendChild(col);
+  }
+  ALL_CATEGORIES.filter(c => selectedCatIds.has(c.id)).forEach(c => {
+    board.appendChild(buildCol(c.id, state.cats[c.id]));
+  });
+  setupDrag();
+  applyFilters();
+}
+
+function buildCol(catId, { meta, players }) {
+  const col = document.createElement("div");
+  col.className   = "col";
+  col.dataset.cat = catId ?? "null";
+
+  const schedHTML = (meta.schedules || []).map(s => `<span class="col-sched">📅 ${s}</span>`).join("");
+
+  col.innerHTML = `
+    <div class="col-header">
+      <span class="col-name">${meta.name}</span>
+      <span class="col-count" id="cnt-${catId??'null'}">${players.length}</span>
+    </div>
+    ${schedHTML ? `<div class="col-meta">${schedHTML}</div>` : ""}
+    <div class="col-body" id="body-${catId??'null'}">
+      ${players.map(p => pCard(p, catId)).join("")}
+      ${players.length === 0 ? `<div class="col-empty"><span style="font-size:1.5rem;opacity:.3">🏃</span><span>اینجا رها کنید</span></div>` : ""}
+    </div>`;
+  return col;
+}
+
+function pCard(p, catId) {
+  const bg  = AV_COLORS[p.id % AV_COLORS.length];
+  const ini = (p.name||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+  let ins = "";
+  if      (p.ins_expired)  ins = `<span class="bx bx-ins-exp">❌ منقضی</span>`;
+  else if (p.ins_expiring) ins = `<span class="bx bx-ins-warn">⚠️ رو به انقضا</span>`;
+  else if (p.insurance==="active") ins = `<span class="bx bx-ins-ok">🛡️</span>`;
+  else                     ins = `<span class="bx bx-ins-none">❌ بدون بیمه</span>`;
+
+  return `<div class="p-card" draggable="true" id="pc-${p.id}"
+       data-pid="${p.id}" data-cat="${catId??'null'}"
+       data-name="${p.name.toLowerCase()}"
+       data-foot="${p.foot_val}" data-pos="${p.position_val}"
+       data-ie="${p.ins_expiring?1:0}" data-ix="${p.ins_expired?1:0}">
+    <div class="p-card-top">
+      <div class="p-av" style="background:${bg}">${ini}</div>
+      <span class="p-name" title="${p.name}">${p.name}</span>
+    </div>
+    <div class="p-badges">
+      ${p.age_category?`<span class="bx bx-age">${p.age_category}</span>`:""}
+      ${p.foot_val?`<span class="bx bx-foot">${p.foot_val==="L"?"👈 چپ":"👉 راست"}</span>`:""}
+      ${p.position&&p.position!=="—"?`<span class="bx bx-pos">${p.position}</span>`:""}
+      ${p.skill_level?`<span class="bx bx-sk">سطح ${p.skill_level}</span>`:""}
+      ${ins}
+    </div>
+  </div>`;
+}
+
+// ────────────────────────────────────────────────
+//  Drag & Drop
+// ────────────────────────────────────────────────
+function setupDrag() {
+  document.querySelectorAll(".p-card").forEach(c => {
+    c.addEventListener("dragstart", e => {
+      dragging = { pid: +c.dataset.pid, fromCat: c.dataset.cat==="null"?null:+c.dataset.cat };
+      c.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+    c.addEventListener("dragend", () => {
+      c.classList.remove("dragging");
+      document.querySelectorAll(".col").forEach(col => col.classList.remove("drag-target"));
+      dragging = null;
+    });
+  });
+  document.querySelectorAll(".col-body").forEach(body => {
+    body.addEventListener("dragover", e => { e.preventDefault(); body.closest(".col").classList.add("drag-target"); });
+    body.addEventListener("dragleave", e => { if (!body.contains(e.relatedTarget)) body.closest(".col").classList.remove("drag-target"); });
+    body.addEventListener("drop", async e => {
+      e.preventDefault();
+      body.closest(".col").classList.remove("drag-target");
+      if (!dragging) return;
+      const toCat = body.closest(".col").dataset.cat;
+      const toId  = toCat==="null"?null:+toCat;
+      if (dragging.fromCat === toId) return;
+
+      moveLocally(dragging.pid, dragging.fromCat, toId);
+      renderBoard();
+
+      try {
+        const res  = await fetch(MOVE_URL, {
+          method:"POST",
+          headers:{"Content-Type":"application/json","X-CSRFToken":CSRF},
+          body: JSON.stringify({ player_id: dragging.pid, from_cat: dragging.fromCat, to_cat: toId }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        toast(`✅ ${data.player.name} جابجا شد`, "ok");
+      } catch (err) {
+        toast(`❌ ${err.message}`, "err");
+        moveLocally(dragging.pid, toId, dragging.fromCat);
+        renderBoard();
+      }
+    });
+  });
+}
+
+function moveLocally(pid, from, to) {
+  let player = null;
+  const src  = from===null ? state.unassigned : (state.cats[from]?.players ?? []);
+  const idx  = src.findIndex(p => p.id===pid);
+  if (idx !== -1) player = src.splice(idx, 1)[0];
+  if (!player) return;
+  const dest = to===null ? state.unassigned : (state.cats[to]?.players ?? []);
+  dest.push(player);
+}
+
+// ────────────────────────────────────────────────
+//  Filters
+// ────────────────────────────────────────────────
+function filterCards(q) { activeSearch = q.trim().toLowerCase(); applyFilters(); }
+
+function setFoot(v, btn) {
+  activeFoot = v;
+  btn.closest(".org-toolbar").querySelectorAll(".fc-chip").forEach(b => {
+    if (["همه","👉 راست","👈 چپ"].some(t => b.textContent.trim() === t)) b.classList.remove("on");
+  });
+  btn.classList.add("on"); applyFilters();
+}
+function setPos(v, btn) {
+  activePos = v;
+  btn.closest(".org-toolbar").querySelectorAll(".fc-chip").forEach(b => {
+    if (["همه پست‌ها","🥅","⚡","💨","🛡️"].includes(b.textContent.trim())) b.classList.remove("on");
+  });
+  btn.classList.add("on"); applyFilters();
+}
+function hlIns(on) {
+  document.querySelectorAll(".p-card").forEach(c => {
+    c.style.borderColor = (on && (c.dataset.ie==="1"||c.dataset.ix==="1")) ? "#ef4444" : "";
+    c.style.background  = (on && (c.dataset.ie==="1"||c.dataset.ix==="1")) ? "#fff5f5" : "";
+  });
+}
+function applyFilters() {
+  document.querySelectorAll(".p-card").forEach(c => {
+    const ok = (!activeSearch || c.dataset.name.includes(activeSearch))
+            && (!activeFoot   || c.dataset.foot === activeFoot)
+            && (!activePos    || c.dataset.pos  === activePos);
+    c.classList.toggle("filtered-out", !ok);
+  });
+}
+
+// ────────────────────────────────────────────────
+//  Toast
+// ────────────────────────────────────────────────
+function toast(msg, type="ok") {
+  const wrap = document.getElementById("toast-wrap");
+  const el   = document.createElement("div");
+  el.className   = `toast ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 2700);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}سطل زباله — بازیکنان{% endblock %}
+{% block nav_players %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'training:player-list' %}" style="text-decoration:none;color:inherit">بازیکنان</a>
+  <span class="sep">›</span><span class="cur">سطل زباله</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.rb-card {
+  background: var(--white); border: 1.5px solid var(--surface-2);
+  border-radius: var(--radius); padding: 1rem 1.1rem;
+  display: flex; align-items: center; gap: .85rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+.rb-card:hover { border-color: #fca5a5; box-shadow: 0 3px 12px rgba(0,0,0,.07); }
+.rb-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: #fee2e2; color: #991b1b;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 900; flex-shrink: 0;
+}
+.rb-info { flex: 1; min-width: 0; }
+.rb-name { font-size: .9rem; font-weight: 800; color: var(--navy); }
+.rb-meta { font-size: .75rem; color: var(--text-muted); margin-top: .2rem; }
+.rb-reason {
+  font-size: .72rem; background: #fef3c7; color: #92400e;
+  border-radius: 6px; padding: .15rem .5rem; margin-top: .3rem; display: inline-block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.2rem;font-weight:900;color:var(--navy);display:flex;align-items:center;gap:.5rem">
+      🗑️ سطل زباله
+    </h1>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-top:.15rem">
+      {{ total_archived }} بازیکن بایگانی‌شده — می‌توانید آن‌ها را بازگردانید
+    </p>
+  </div>
+  <a href="{% url 'training:player-list' %}" class="btn btn-outline btn-sm">← بازگشت به بازیکنان</a>
+</div>
+
+<!-- Info banner -->
+<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem;font-size:.85rem;color:#065f46">
+  <span style="font-size:1.2rem">♻️</span>
+  <span>بازیکنان در این بخش <strong>از سیستم حذف نشده‌اند</strong>. با کلیک «بازگردانی» دوباره فعال می‌شوند.</span>
+</div>
+
+<!-- Search -->
+<form method="get" style="margin-bottom:1rem;display:flex;gap:.5rem">
+  <input type="text" name="q" value="{{ search_query }}"
+         placeholder="🔍 جستجو نام، کد ملی..."
+         style="padding:.55rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem;flex:1;max-width:320px">
+  <button type="submit" class="btn btn-outline btn-sm">جستجو</button>
+  {% if search_query %}<a href="?" class="btn btn-outline btn-sm">✕ پاک</a>{% endif %}
+</form>
+
+{% if players %}
+<!-- Select All bar -->
+<div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem">
+  <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.85rem;font-weight:700">
+    <input type="checkbox" id="sel-all" onclick="selAll(this)" style="accent-color:var(--navy);width:15px;height:15px">
+    انتخاب همه
+  </label>
+  <div id="bulk-restore-bar" style="display:none;gap:.4rem;align-items:center">
+    <span style="font-size:.8rem;color:var(--text-muted)" id="bulk-lbl"></span>
+    <button class="btn btn-sm" style="background:#d1fae5;color:#065f46;border:none;font-weight:700"
+            onclick="bulkRestore()">♻️ بازگردانی انتخاب‌شده‌ها</button>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:.75rem;margin-bottom:1.5rem">
+  {% for player in players %}
+  <div class="rb-card" id="rbc-{{ player.pk }}">
+    <input type="checkbox" class="rb-cb" value="{{ player.pk }}"
+           onchange="onCbChange()"
+           style="accent-color:var(--navy);width:15px;height:15px;flex-shrink:0">
+    <div class="rb-avatar">{{ player.first_name|slice:":1" }}{{ player.last_name|slice:":1" }}</div>
+    <div class="rb-info">
+      <div class="rb-name">{{ player.first_name }} {{ player.last_name }}</div>
+      <div class="rb-meta">
+        <span style="font-family:monospace">{{ player.national_id }}</span>
+        {% if player.archived_at %}
+        &nbsp;·&nbsp; بایگانی: {{ player.archived_at|date:"Y/m/d" }}
+        {% endif %}
+      </div>
+      {% if player.archive_reason %}
+      <span class="rb-reason">{{ player.archive_reason }}</span>
+      {% endif %}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.35rem;flex-shrink:0">
+      <form method="post" action="{% url 'registration:restore-player' player.pk %}" style="margin:0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm"
+                style="background:#d1fae5;color:#065f46;border:1.5px solid #86efac;font-weight:700;white-space:nowrap"
+                onclick="return confirm('{{ player.first_name }} {{ player.last_name }} بازگردانی شود؟')">
+          ♻️ بازگردانی
+        </button>
+      </form>
+      <button class="btn btn-sm"
+              style="border:1.5px solid var(--red);color:var(--red);font-size:.72rem"
+              onclick="confirmPermanentDelete({{ player.pk }}, '{{ player.first_name }} {{ player.last_name }}')">
+        🗑️ حذف دائم
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display:flex;justify-content:center;gap:.4rem;margin-top:.5rem">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-outline btn-sm">← قبلی</a>
+  {% endif %}
+  <span style="padding:.5rem .85rem;font-size:.82rem;color:var(--text-muted)">
+    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-outline btn-sm">بعدی →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="text-align:center;padding:3.5rem">
+  <div style="font-size:3.5rem;margin-bottom:1rem;opacity:.5">🗑️</div>
+  <h3 style="font-weight:800;margin-bottom:.5rem">سطل زباله خالی است</h3>
+  <p style="color:var(--text-muted);font-size:.875rem">
+    {% if search_query %}نتیجه‌ای برای «{{ search_query }}» یافت نشد{% else %}هیچ بازیکنی بایگانی نشده{% endif %}
+  </p>
+</div>
+{% endif %}
+
+<!-- Permanent Delete Confirm Modal -->
+<div id="del-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <h3 style="font-size:1rem;font-weight:900;color:#991b1b;margin-bottom:.75rem">⚠️ حذف دائمی</h3>
+    <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1.25rem" id="del-modal-msg"></p>
+    <div style="background:#fee2e2;border-radius:8px;padding:.65rem .85rem;font-size:.82rem;color:#991b1b;margin-bottom:1.25rem">
+      ⚠️ این عمل <strong>کاملاً غیرقابل بازگشت</strong> است. تمام اطلاعات این بازیکن پاک می‌شود.
+    </div>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="document.getElementById('del-modal').style.display='none'">انصراف</button>
+      <form id="del-form" method="post" style="margin:0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-red">🗑️ بله، حذف دائمی</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const RESTORE_BULK_URL = "{% url 'registration:player-bulk-action' %}";
+const CSRF = "{{ csrf_token }}";
+let selectedIds = new Set();
+
+function selAll(cb) {
+  document.querySelectorAll(".rb-cb").forEach(c => {
+    c.checked = cb.checked;
+    const id = parseInt(c.value);
+    if (cb.checked) selectedIds.add(id);
+    else selectedIds.delete(id);
+  });
+  updateBar();
+}
+
+function onCbChange() {
+  selectedIds.clear();
+  document.querySelectorAll(".rb-cb:checked").forEach(c => selectedIds.add(parseInt(c.value)));
+  updateBar();
+}
+
+function updateBar() {
+  const bar = document.getElementById("bulk-restore-bar");
+  bar.style.display = selectedIds.size > 0 ? "flex" : "none";
+  document.getElementById("bulk-lbl").textContent = `${selectedIds.size} نفر انتخاب شده`;
+}
+
+async function bulkRestore() {
+  if (selectedIds.size === 0) return;
+  if (!confirm(`${selectedIds.size} بازیکن بازگردانی شود؟`)) return;
+  try {
+    const res = await fetch(RESTORE_BULK_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json", "X-CSRFToken": CSRF},
+      body: JSON.stringify({action: "restore", player_ids: [...selectedIds]}),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    selectedIds.forEach(id => {
+      const card = document.getElementById("rbc-" + id);
+      if (card) { card.style.opacity = "0"; card.style.transform = "scale(.95)"; card.style.transition = ".3s"; setTimeout(() => card.remove(), 300); }
+    });
+    selectedIds.clear();
+    updateBar();
+    showToast(`✅ ${data.count} بازیکن بازگردانی شد`);
+  } catch(e) { showToast("❌ " + e.message, "err"); }
+}
+
+function confirmPermanentDelete(pk, name) {
+  document.getElementById("del-modal-msg").textContent = `آیا مطمئن هستید که می‌خواهید «${name}» را برای همیشه حذف کنید؟`;
+  document.getElementById("del-form").action = `/registration/players/${pk}/permanent-delete/`;
+  document.getElementById("del-modal").style.display = "flex";
+}
+
+function showToast(msg, type="ok") {
+  const el = document.createElement("div");
+  el.textContent = msg;
+  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:${type==="ok"?"#10b981":"#ef4444"};color:#fff;padding:.6rem 1.25rem;border-radius:99px;font-size:.85rem;font-weight:700;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+{% endblock %}

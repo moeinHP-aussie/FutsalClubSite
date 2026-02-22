@@ -138,3 +138,42 @@ class ExpenseCreateView(FinanceAccessMixin, CreateView):
         ctx = super().get_context_data(**kwargs)
         ctx["has_categories"] = ExpenseCategory.objects.exists()
         return ctx
+
+
+# ──────────────────────────────────────────────────────────────────
+#  ایجاد دسته هزینه توسط مدیر مالی (بدون نیاز به ادمین)
+# ──────────────────────────────────────────────────────────────────
+class ExpenseCategoryForm(forms.ModelForm):
+    class Meta:
+        model  = ExpenseCategory
+        fields = ["name", "description", "is_active"]
+        widgets = {
+            "name":        forms.TextInput(attrs={"placeholder": "مثال: اجاره سالن"}),
+            "description": forms.Textarea(attrs={"rows": 2, "placeholder": "توضیحات اختیاری"}),
+        }
+        labels = {
+            "name":        "نام دسته",
+            "description": "توضیحات",
+            "is_active":   "فعال",
+        }
+
+
+class ExpenseCategoryCreateView(FinanceAccessMixin, CreateView):
+    model         = ExpenseCategory
+    form_class    = ExpenseCategoryForm
+    template_name = "payroll/expense_category_form.html"
+    success_url   = reverse_lazy("payroll:expense-create")
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, f"دسته «{form.instance.name}» ساخته شد.")
+        return super().form_valid(form)
+
+
+class ExpenseCategoryListView(FinanceAccessMixin, ListView):
+    model               = ExpenseCategory
+    template_name       = "payroll/expense_category_list.html"
+    context_object_name = "categories"
+    
+    def get_queryset(self):
+        return ExpenseCategory.objects.order_by("name")

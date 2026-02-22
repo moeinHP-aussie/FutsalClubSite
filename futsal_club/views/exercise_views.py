@@ -24,6 +24,55 @@ from ..models import Exercise, ExerciseTag, TrainingCategory
 
 logger = logging.getLogger(__name__)
 
+# ── Auto Thumbnail Generator ─────────────────────────────────────────
+
+def _generate_thumbnail(exercise: "Exercise") -> None:
+    """
+    تولید خودکار تصویر بندانگشتی بر اساس نوع رسانه.
+    - تصویر/گیف: resize به ۳۲۰×۲۴۰
+    - ویدیو: اولین فریم با ffmpeg (اگر موجود باشد)
+    - سند: thumbnail نمی‌سازد
+    """
+    import io, subprocess, tempfile, os
+    from django.core.files.base import ContentFile
+
+    media = exercise.media_type
+    if not exercise.file:
+        return
+
+    try:
+        if media in ("image", "gif"):
+            from PIL import Image
+            img = Image.open(exercise.file.path)
+            img.thumbnail((320, 240), Image.LANCZOS)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=75)
+            buf.seek(0)
+            thumb_name = f"thumb_{os.path.basename(exercise.file.name)}.jpg"
+            exercise.thumbnail.save(thumb_name, ContentFile(buf.read()), save=True)
+
+        elif media == "video":
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                tmp_path = tmp.name
+            result = subprocess.run(
+                ["ffmpeg", "-y", "-i", exercise.file.path,
+                 "-ss", "00:00:01", "-vframes", "1",
+                 "-vf", "scale=320:240:force_original_aspect_ratio=decrease",
+                 tmp_path],
+                capture_output=True, timeout=30,
+            )
+            if result.returncode == 0 and os.path.exists(tmp_path):
+                with open(tmp_path, "rb") as f:
+                    thumb_name = f"thumb_{exercise.pk}.jpg"
+                    exercise.thumbnail.save(thumb_name, ContentFile(f.read()), save=True)
+                os.unlink(tmp_path)
+    except Exception as e:
+        logger.warning("Thumbnail generation failed for exercise %s: %s", exercise.pk, e)
+
+
+
 ALLOWED_MIME_TYPES = {
     "video":    ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"],
     "image":    ["image/jpeg", "image/png", "image/webp", "image/heic"],
@@ -130,15 +179,16 @@ class ExerciseUploadView(LoginRequiredMixin, RoleRequiredMixin, View):
 
         # ── ایجاد رکورد ──────────────────────────────────────────
         exercise = Exercise.objects.create(
-            title            = data["title"],
-            description      = data.get("description", ""),
-            media_type       = data["media_type"],
-            file             = uploaded_file,
-            thumbnail        = data.get("thumbnail"),
-            uploaded_by      = coach,
-            duration_minutes = data.get("duration_minutes"),
-            is_public        = data.get("is_public", False),
+            title       = data["title"],
+            description = data.get("description", ""),
+            media_type  = data["media_type"],
+            file        = uploaded_file,
+            uploaded_by = coach,
+            is_public   = data.get("is_public", False),
         )
+
+        # ── تولید خودکار تصویر بندانگشتی ─────────────────────────
+        _generate_thumbnail(exercise)
 
         cat_ids = data.get("categories", [])
         if cat_ids:

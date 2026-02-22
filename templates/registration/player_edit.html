@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}ویرایش اطلاعات {{ player.first_name }} {{ player.last_name }}{% endblock %}
+{% block nav_players %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'training:player-profile' player.pk %}" style="text-decoration:none;color:inherit">{{ player.first_name }} {{ player.last_name }}</a>
+  <span class="sep">›</span><span class="cur">ویرایش</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="height:4px;background:linear-gradient(90deg,var(--navy),var(--teal))"></div>
+    <div style="padding:1.5rem 1.75rem">
+
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+        <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--navy),var(--teal));border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:1rem">
+          {{ player.first_name|slice:":1" }}{{ player.last_name|slice:":1" }}
+        </div>
+        <div>
+          <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">
+            ویرایش: {{ player.first_name }} {{ player.last_name }}
+          </h1>
+          <p style="font-size:.78rem;color:var(--text-muted);font-family:monospace">{{ player.player_id }}</p>
+        </div>
+      </div>
+
+      {% if form.errors %}
+      <div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#991b1b">
+        ⚠️ {% for field in form %}{% for err in field.errors %}<div>• {{ field.label }}: {{ err }}</div>{% endfor %}{% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- اطلاعات پایه -->
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.6rem;padding-bottom:.3rem;border-bottom:1px solid var(--surface-2)">
+          👤 اطلاعات شخصی
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">نام</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<div style="color:#ef4444;font-size:.72rem">{{ form.first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">نام خانوادگی</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}<div style="color:#ef4444;font-size:.72rem">{{ form.last_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">نام پدر</label>
+            {{ form.father_name }}
+          </div>
+        </div>
+
+        <!-- تماس -->
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.6rem;padding-bottom:.3rem;border-bottom:1px solid var(--surface-2);margin-top:1.25rem">
+          📞 اطلاعات تماس
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">موبایل بازیکن</label>
+            {{ form.phone }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">موبایل پدر</label>
+            {{ form.father_phone }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">موبایل مادر</label>
+            {{ form.mother_phone }}
+          </div>
+        </div>
+        <div style="margin-bottom:1rem">
+          <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">آدرس</label>
+          {{ form.address }}
+        </div>
+
+        <!-- جسمانی -->
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.6rem;padding-bottom:.3rem;border-bottom:1px solid var(--surface-2);margin-top:1.25rem">
+          📏 اطلاعات جسمانی
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.8rem;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">قد (cm)</label>
+            {{ form.height }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">وزن (kg)</label>
+            {{ form.weight }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">دست برتر</label>
+            {{ form.preferred_hand }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">پای برتر</label>
+            {{ form.preferred_foot }}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">سابقه پزشکی</label>
+            {{ form.medical_history }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">سابقه آسیب‌دیدگی</label>
+            {{ form.injury_history }}
+          </div>
+        </div>
+
+        <!-- بیمه -->
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.6rem;padding-bottom:.3rem;border-bottom:1px solid var(--surface-2);margin-top:1.25rem">
+          🛡️ بیمه
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.25rem">
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">وضعیت بیمه</label>
+            {{ form.insurance_status }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">تاریخ انقضا (شمسی)</label>
+            {{ form.insurance_expiry_jalali }}
+            <span style="font-size:.72rem;color:var(--text-muted)">مثال: ۱۴۰۴/۰۶/۳۰</span>
+            {% if form.insurance_expiry_jalali.errors %}
+            <div style="font-size:.72rem;color:var(--red)">{{ form.insurance_expiry_jalali.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- خانوادگی -->
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.6rem;padding-bottom:.3rem;border-bottom:1px solid var(--surface-2);margin-top:1.25rem">
+          👨‍👩‍👦 اطلاعات خانوادگی
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.8rem;margin-bottom:1.5rem">
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">تحصیلات پدر</label>
+            {{ form.father_education }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">شغل پدر</label>
+            {{ form.father_job }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">تحصیلات مادر</label>
+            {{ form.mother_education }}
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">شغل مادر</label>
+            {{ form.mother_job }}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.6rem;justify-content:flex-end">
+          <a href="{% url 'training:player-profile' player.pk %}" class="btn btn-outline">انصراف</a>
+          <button type="submit" class="btn btn-navy">💾 ذخیره تغییرات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

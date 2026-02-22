@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}ایجاد حساب بازیکنان{% endblock %}
+{% block nav_admin_users %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'admin_panel:user-list' %}" style="text-decoration:none;color:inherit">مدیریت کاربران</a>
+  <span class="sep">›</span><span class="cur">ایجاد حساب بازیکنان</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.info-banner {
+  background:linear-gradient(135deg,#0f172a,#1e3a5f);
+  color:#fff; border-radius:var(--radius); padding:1.25rem 1.5rem;
+  margin-bottom:1.25rem;
+}
+.prev-row { display:flex; align-items:center; gap:.65rem; padding:.5rem 0; border-bottom:1px solid var(--surface-2); }
+.prev-row:last-child { border-bottom:none; }
+.cb-all-selected { background:#fffbeb !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="info-banner">
+  <div style="font-size:1rem;font-weight:900;margin-bottom:.35rem">⚡ ایجاد دسته‌جمعی حساب بازیکنان</div>
+  <div style="font-size:.85rem;opacity:.85;line-height:1.6">
+    برای <strong>{{ count }} بازیکن</strong> که هنوز حساب کاربری ندارند، اکانت ساخته می‌شود.<br>
+    🔑 <strong>نام کاربری = کد ملی</strong> &nbsp;·&nbsp; <strong>رمز عبور = کد ملی</strong><br>
+    بازیکنان می‌توانند پس از ورود، رمز خود را تغییر دهند.
+  </div>
+</div>
+
+{% if count == 0 %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:.75rem">✅</div>
+  <h3 style="font-weight:800;margin-bottom:.5rem">همه بازیکنان حساب دارند</h3>
+  <p style="color:var(--text-muted);font-size:.875rem">همه بازیکنان تأیید‌شده در سیستم حساب کاربری دارند.</p>
+  <a href="{% url 'admin_panel:user-list' %}" class="btn btn-navy" style="margin-top:1rem">← بازگشت</a>
+</div>
+{% else %}
+
+<form method="post" id="provision-form">
+  {% csrf_token %}
+  <input type="hidden" name="mode" id="mode-input" value="all">
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-header" style="justify-content:space-between">
+      <span class="card-title">📋 پیش‌نمایش — {{ count }} بازیکن</span>
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <label style="font-size:.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.35rem">
+          <input type="checkbox" id="sel-all" onchange="toggleAll(this)" style="accent-color:var(--navy)">
+          انتخاب همه
+        </label>
+      </div>
+    </div>
+
+    <div style="padding:.5rem .85rem;max-height:420px;overflow-y:auto">
+      {% for item in preview %}
+      <div class="prev-row" id="row-{{ item.player.pk }}">
+        <input type="checkbox" name="player_ids" value="{{ item.player.pk }}"
+               class="player-cb" onchange="onCbChange()"
+               style="accent-color:var(--navy);width:14px;height:14px;flex-shrink:0">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--navy));display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:900;color:#fff;flex-shrink:0">
+          {{ item.player.first_name|slice:":1" }}{{ item.player.last_name|slice:":1" }}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.85rem;font-weight:700">{{ item.player.first_name }} {{ item.player.last_name }}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ item.player.get_age_category }}</div>
+        </div>
+        <div style="text-align:left;font-family:monospace;font-size:.78rem">
+          <div style="color:var(--navy);font-weight:700">{{ item.username }}</div>
+          <div style="color:var(--text-muted)">🔑 {{ item.password }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Action bar -->
+  <div style="background:#fff;border:1.5px solid var(--amber);border-radius:var(--radius);padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+    <div>
+      <div style="font-size:.875rem;font-weight:700" id="action-label">
+        همه {{ count }} بازیکن انتخاب شده
+      </div>
+      <div style="font-size:.75rem;color:var(--text-muted)">
+        پس از ایجاد می‌توانید فایل CSV اعتبارنامه‌ها را دانلود کنید
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <a href="{% url 'admin_panel:user-list' %}" class="btn btn-outline">انصراف</a>
+      <button type="button" class="btn btn-amber" onclick="doProvision('all')">
+        ⚡ ایجاد همه {{ count }} حساب
+      </button>
+      <button type="button" class="btn btn-navy" id="sel-btn" style="display:none" onclick="doProvision('selected')">
+        ✅ ایجاد <span id="sel-count">0</span> حساب انتخابی
+      </button>
+    </div>
+  </div>
+</form>
+
+{% endif %}
+
+<!-- Confirm modal -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <h3 style="font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:.75rem">⚡ تأیید ایجاد حساب</h3>
+    <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:.5rem" id="confirm-msg"></p>
+    <div style="background:#fef3c7;border-radius:8px;padding:.65rem .85rem;font-size:.82rem;color:#92400e;margin-bottom:1.25rem">
+      🔑 نام کاربری و رمز عبور = <strong>کد ملی</strong> هر بازیکن
+    </div>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="document.getElementById('confirm-modal').style.display='none'">انصراف</button>
+      <button class="btn btn-navy" id="confirm-btn" onclick="submitForm()">✅ بله، ایجاد کن</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let pendingMode = 'all';
+
+function toggleAll(cb) {
+  document.querySelectorAll('.player-cb').forEach(c => c.checked = cb.checked);
+  onCbChange();
+}
+
+function onCbChange() {
+  const sel = document.querySelectorAll('.player-cb:checked').length;
+  document.getElementById('sel-count').textContent = sel;
+  document.getElementById('sel-btn').style.display = sel > 0 ? 'inline-flex' : 'none';
+}
+
+function doProvision(mode) {
+  pendingMode = mode;
+  const cnt = mode === 'all' ? {{ count }} :
+    document.querySelectorAll('.player-cb:checked').length;
+  document.getElementById('confirm-msg').textContent =
+    `برای ${cnt} بازیکن حساب کاربری ایجاد می‌شود.`;
+  document.getElementById('confirm-modal').style.display = 'flex';
+}
+
+function submitForm() {
+  document.getElementById('mode-input').value = pendingMode;
+  document.getElementById('confirm-btn').disabled = true;
+  document.getElementById('confirm-btn').textContent = '⏳ در حال ایجاد...';
+  document.getElementById('provision-form').submit();
+}
+</script>
+
+{% endblock %}

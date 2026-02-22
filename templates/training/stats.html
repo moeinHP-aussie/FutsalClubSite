@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block title %}آمارگیری بازیکنان{% endblock %}
+{% block nav_stats %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">آمارگیری</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ═══════════════════════════════════════
+   STATS DASHBOARD
+═══════════════════════════════════════ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: .85rem;
+  margin-bottom: 1.5rem;
+}
+.stat-card {
+  background: var(--white);
+  border: 1.5px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform .15s, box-shadow .15s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+.stat-card::before {
+  content: "";
+  position: absolute; top: 0; right: 0;
+  width: 100%; height: 3px;
+}
+.stat-card.c-navy::before   { background: var(--navy); }
+.stat-card.c-teal::before   { background: var(--teal); }
+.stat-card.c-amber::before  { background: var(--amber); }
+.stat-card.c-green::before  { background: #10b981; }
+.stat-card.c-red::before    { background: #ef4444; }
+.stat-card.c-purple::before { background: #7c3aed; }
+.stat-card.c-gray::before   { background: #64748b; }
+
+.stat-num  { font-size: 2rem; font-weight: 900; line-height: 1; color: var(--navy); }
+.stat-label{ font-size: .75rem; color: var(--text-muted); margin-top: .3rem; font-weight: 600; }
+.stat-icon { font-size: 1.5rem; position: absolute; top: .85rem; left: 1rem; opacity: .12; }
+
+/* ── Chart containers ──────────────────── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.chart-card {
+  background: var(--white);
+  border: 1.5px solid var(--surface-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.chart-head {
+  padding: .75rem 1.1rem;
+  border-bottom: 1px solid var(--surface-2);
+  font-size: .85rem; font-weight: 800; color: var(--navy);
+  display: flex; align-items: center; gap: .5rem;
+}
+.chart-body { padding: 1rem 1.1rem; }
+
+/* ── Bar chart (CSS-only) ──────────────── */
+.bar-row {
+  display: flex; align-items: center; gap: .6rem;
+  margin-bottom: .5rem; font-size: .8rem;
+}
+.bar-label { min-width: 85px; text-align: right; color: var(--text-muted); font-size: .75rem; }
+.bar-track { flex: 1; background: var(--surface-2); border-radius: 99px; height: 18px; overflow: hidden; }
+.bar-fill  {
+  height: 100%; border-radius: 99px;
+  display: flex; align-items: center; justify-content: flex-end; padding-left: .4rem;
+  font-size: .68rem; font-weight: 800; color: #fff;
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+  min-width: 22px;
+}
+.bar-val { font-size: .78rem; font-weight: 700; color: var(--navy); min-width: 28px; text-align: left; }
+
+/* ── Donut (CSS conic) ─────────────────── */
+.donut-wrap { display: flex; align-items: center; gap: 1.25rem; }
+.donut {
+  width: 100px; height: 100px; border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(var(--donut-stops, #e2e8f0 0%));
+  position: relative;
+}
+.donut::after {
+  content: "";
+  position: absolute; inset: 22px;
+  background: var(--white); border-radius: 50%;
+}
+.donut-legend { display: flex; flex-direction: column; gap: .35rem; }
+.dl-row { display: flex; align-items: center; gap: .45rem; font-size: .75rem; }
+.dl-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* ── Insurance alert banner ────────────── */
+.ins-alert {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .85rem 1.1rem;
+  border-radius: var(--radius);
+  margin-bottom: .75rem;
+  font-size: .85rem;
+}
+.ins-alert.warn { background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; }
+.ins-alert.danger { background: #fee2e2; border: 1.5px solid #fca5a5; color: #991b1b; }
+
+/* ── Category table ────────────────────── */
+.cat-row { display: flex; align-items: center; gap: .5rem; padding: .55rem 0; border-bottom: 1px solid var(--surface-2); }
+.cat-row:last-child { border-bottom: none; }
+.cat-pct-bar { flex: 1; height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.cat-pct-fill { height: 100%; background: var(--teal); border-radius: 99px; }
+
+@media (max-width: 700px) {
+  .charts-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.2rem;font-weight:900;color:var(--navy)">📊 آمارگیری بازیکنان</h1>
+    <p style="font-size:.8rem;color:var(--text-muted)">تحلیل کامل وضعیت باشگاه</p>
+  </div>
+  {% if request.user.is_technical_director %}
+  <a href="{% url 'training:organize' %}" class="btn btn-outline btn-sm">🔀 سازماندهی رده‌ها</a>
+  {% endif %}
+</div>
+
+<!-- ── هشدار بیمه ──────────────────────────────────────────── -->
+{% if ins_expiring %}
+<div class="ins-alert warn">
+  <span style="font-size:1.3rem">⚠️</span>
+  <div>
+    <strong>{{ ins_expiring }} بازیکن</strong> بیمه‌شان ظرف کمتر از ۱ ماه منقضی می‌شود.
+  </div>
+  <a href="{% url 'training:player-list' %}?ins=expiring" class="btn btn-amber btn-sm" style="margin-right:auto">مشاهده</a>
+</div>
+{% endif %}
+{% if ins_expired %}
+<div class="ins-alert danger">
+  <span style="font-size:1.3rem">🚨</span>
+  <div>
+    <strong>{{ ins_expired }} بازیکن</strong> بیمه‌شان منقضی شده است.
+  </div>
+</div>
+{% endif %}
+
+<!-- ── کارت‌های خلاصه ──────────────────────────────────────── -->
+<div class="stat-grid">
+  <div class="stat-card c-navy">
+    <div class="stat-num">{{ total_players }}</div>
+    <div class="stat-label">بازیکن فعال</div>
+    <div class="stat-icon">👥</div>
+  </div>
+  <div class="stat-card c-teal">
+    <div class="stat-num">{{ ins_active }}</div>
+    <div class="stat-label">دارای بیمه</div>
+    <div class="stat-icon">🛡️</div>
+  </div>
+  <div class="stat-card c-red">
+    <div class="stat-num">{{ ins_none }}</div>
+    <div class="stat-label">بدون بیمه</div>
+    <div class="stat-icon">❌</div>
+  </div>
+  <div class="stat-card c-amber">
+    <div class="stat-num">{{ ins_expiring }}</div>
+    <div class="stat-label">بیمه رو به انقضا</div>
+    <div class="stat-icon">⚠️</div>
+  </div>
+  <div class="stat-card c-green">
+    <div class="stat-num">{{ foot_left }}</div>
+    <div class="stat-label">پای چپ</div>
+    <div class="stat-icon">🦶</div>
+  </div>
+  <div class="stat-card c-purple">
+    <div class="stat-num">{{ pos_gk }}</div>
+    <div class="stat-label">دروازه‌بان</div>
+    <div class="stat-icon">🥅</div>
+  </div>
+  <div class="stat-card c-teal">
+    <div class="stat-num">{{ under_16 }}</div>
+    <div class="stat-label">زیر ۱۶ سال</div>
+    <div class="stat-icon">🧒</div>
+  </div>
+  <div class="stat-card c-gray">
+    <div class="stat-num">{{ unassigned_count }}</div>
+    <div class="stat-label">بدون دسته</div>
+    <div class="stat-icon">📭</div>
+  </div>
+</div>
+
+<!-- ── نمودارها ────────────────────────────────────────────── -->
+<div class="charts-grid">
+
+  <!-- رده سنی -->
+  <div class="chart-card">
+    <div class="chart-head">🧒 توزیع رده‌های سنی</div>
+    <div class="chart-body" id="age-chart"></div>
+  </div>
+
+  <!-- پای غالب + پست -->
+  <div class="chart-card">
+    <div class="chart-head">🦶 پای غالب</div>
+    <div class="chart-body" id="foot-chart"></div>
+  </div>
+
+  <!-- پست -->
+  <div class="chart-card">
+    <div class="chart-head">⚽ توزیع پست‌ها</div>
+    <div class="chart-body" id="pos-chart"></div>
+  </div>
+
+  <!-- سطح مهارت -->
+  <div class="chart-card">
+    <div class="chart-head">🏅 سطح مهارت</div>
+    <div class="chart-body" id="skill-chart"></div>
+  </div>
+
+</div>
+
+<!-- ── بیمه تفصیلی ─────────────────────────────────────────── -->
+<div class="chart-card" style="margin-bottom:1.25rem">
+  <div class="chart-head">🛡️ وضعیت بیمه</div>
+  <div class="chart-body" id="ins-chart"></div>
+</div>
+
+<!-- ── دسته‌های آموزشی ─────────────────────────────────────── -->
+<div class="chart-card" style="margin-bottom:1.25rem">
+  <div class="chart-head">🗂️ بازیکنان در هر دسته</div>
+  <div class="chart-body">
+    {% for cat in category_stats %}
+    {% if cat.pc > 0 %}
+    <div class="cat-row">
+      <span style="font-size:.82rem;font-weight:700;min-width:140px;text-align:right">{{ cat.name }}</span>
+      <div class="cat-pct-bar">
+        <div class="cat-pct-fill"
+             style="width: {% if total_players %}{% widthratio cat.pc total_players 100 %}%{% else %}0%{% endif %}">
+        </div>
+      </div>
+      <span style="font-size:.82rem;font-weight:800;min-width:32px;color:var(--navy)">{{ cat.pc }}</span>
+    </div>
+    {% endif %}
+    {% empty %}
+    <p style="color:var(--text-muted);font-size:.85rem">هنوز دسته‌ای تعریف نشده.</p>
+    {% endfor %}
+    {% if unassigned_count %}
+    <div class="cat-row">
+      <span style="font-size:.82rem;min-width:140px;text-align:right;color:var(--text-muted)">بدون دسته</span>
+      <div class="cat-pct-bar">
+        <div class="cat-pct-fill" style="background:#94a3b8;width:{% if total_players %}{% widthratio unassigned_count total_players 100 %}%{% else %}0%{% endif %}"></div>
+      </div>
+      <span style="font-size:.82rem;font-weight:800;min-width:32px;color:#64748b">{{ unassigned_count }}</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── جدول متقاضیان ───────────────────────────────────────── -->
+<div class="chart-card">
+  <div class="chart-head">📋 وضعیت ثبت‌نام‌ها</div>
+  <div class="chart-body">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem">
+      {% for label, val, color in pending_stats %}
+      <div style="text-align:center;padding:.75rem;background:{{ color }};border-radius:10px">
+        <div style="font-size:1.5rem;font-weight:900">{{ val }}</div>
+        <div style="font-size:.72rem;margin-top:.2rem;opacity:.8">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const DATA = {{ charts_json|safe }};
+const TOTAL = {{ total_players }};
+
+/* ── رندر bar chart ──────────────────── */
+function renderBars(containerId, rows, colors) {
+  const max = Math.max(...rows.map(r => r[1]), 1);
+  const html = rows.map(([label, val], i) => {
+    const pct   = Math.round(val / max * 100);
+    const color = Array.isArray(colors) ? colors[i % colors.length] : colors;
+    return `
+    <div class="bar-row">
+      <span class="bar-label">${label}</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${color}">${val > 0 ? val : ''}</div>
+      </div>
+      <span class="bar-val">${val}</span>
+    </div>`;
+  }).join("");
+  document.getElementById(containerId).innerHTML = html || "<p style='color:#94a3b8;font-size:.82rem'>داده‌ای وجود ندارد</p>";
+}
+
+/* ── رندر donut ──────────────────────── */
+function renderDonut(containerId, rows, colors) {
+  const total  = rows.reduce((s, r) => s + r[1], 0) || 1;
+  let stops    = [];
+  let cum      = 0;
+  const legend = rows.map(([lbl, val], i) => {
+    const pct = val / total * 100;
+    stops.push(`${colors[i % colors.length]} ${cum.toFixed(1)}% ${(cum + pct).toFixed(1)}%`);
+    cum += pct;
+    const pctStr = total ? Math.round(val / total * 100) + "%" : "—";
+    return `<div class="dl-row">
+      <div class="dl-dot" style="background:${colors[i % colors.length]}"></div>
+      <span style="flex:1">${lbl}</span>
+      <span style="font-weight:700">${val}</span>
+      <span style="color:#94a3b8;margin-right:.25rem">${pctStr}</span>
+    </div>`;
+  }).join("");
+
+  document.getElementById(containerId).innerHTML = `
+    <div class="donut-wrap">
+      <div class="donut" style="--donut-stops:${stops.join(",")}"></div>
+      <div class="donut-legend">${legend}</div>
+    </div>`;
+}
+
+/* ── چارت‌ها ─────────────────────────── */
+renderBars("age-chart", DATA.age,
+  ["#0d1b2a","#0891b2","#0f766e","#7c3aed","#b45309","#be185d","#1d4ed8"]);
+
+renderDonut("foot-chart", DATA.foot,
+  ["#10b981", "#3b82f6"]);
+
+renderDonut("pos-chart", DATA.position,
+  ["#7c3aed","#f59e0b","#06b6d4","#10b981","#94a3b8"]);
+
+renderBars("skill-chart", DATA.categories && DATA.categories.length ?
+  Object.entries({{ skill_counts|safe }}).filter(([k,v]) => v > 0) : [],
+  "#f59e0b");
+
+// skill chart از context مستقیم
+const skillData = [
+  {% for lvl, cnt in skill_counts.items %}{% if cnt > 0 %}["{{ lvl }}", {{ cnt }}],{% endif %}{% endfor %}
+];
+renderBars("skill-chart", skillData, "#f59e0b");
+
+renderDonut("ins-chart", DATA.insurance,
+  ["#10b981","#94a3b8","#f59e0b","#ef4444"]);
+</script>
+{% endblock %}

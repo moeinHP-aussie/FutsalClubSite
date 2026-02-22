@@ -252,32 +252,35 @@ class Player(models.Model):
         self.archive_reason = reason
         self.save(update_fields=['is_archived', 'status', 'archived_at', 'archive_reason'])
 
-    def get_age_category(self):
+    def get_age_on_reference(self):
         """
-        محاسبه رده سنی بر اساس تاریخ ۱۱ دی ماه سال جاری شمسی.
-        مرجع: روز یازدهم ماه دهم (دی) سال جاری.
+        سن بازیکن در تاریخ مرجع ۱۱ دی ماه سال جاری.
+        این مقدار هر سال به‌صورت خودکار تغییر می‌کند.
         """
         try:
             from jdatetime import date as jdate
-            today = jdate.today()
-            reference = jdate(today.year, 10, 11)   # ۱۱ دی ماه سال جاری
-            birth     = jdate(self.dob.year, self.dob.month, self.dob.day)
-            # ✅ برای مقایسه صحیح از تاریخ میلادی استفاده می‌کنیم
-            reference_g = reference.togregorian()
-            birth_g     = birth.togregorian()
+            today       = jdate.today()
+            reference_g = jdate(today.year, 10, 11).togregorian()
+            birth_g     = self.dob.togregorian()
             age = reference_g.year - birth_g.year
             if (birth_g.month, birth_g.day) > (reference_g.month, reference_g.day):
                 age -= 1
-
-            if age < 8:   return _('زیر ۸ سال')
-            elif age <= 10: return _('خردسال (۸-۱۰)')
-            elif age <= 12: return _('نونهال (۱۱-۱۲)')
-            elif age <= 14: return _('نوجوان (۱۳-۱۴)')
-            elif age <= 17: return _('جوان (۱۵-۱۷)')
-            elif age <= 21: return _('امید (۱۸-۲۱)')
-            else:           return _('بزرگسال (بالای ۲۱)')
+            return age
         except Exception:
-            return _('نامشخص')
+            return None
+
+    def get_age_category(self):
+        """
+        رده سنی به فرمت «زیر X» — به‌صورت خودکار هر سال به‌روز می‌شود.
+        مبنا: سن در ۱۱ دی ماه سال جاری.
+        """
+        age = self.get_age_on_reference()
+        if age is None:
+            return 'نامشخص'
+        for limit in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]:
+            if age < limit:
+                return 'زیر ' + str(limit)
+        return 'بزرگسال'
 
     def is_insurance_expiring_soon(self, days=30):
         """آیا بیمه ظرف X روز آینده منقضی می‌شود؟"""
@@ -808,6 +811,7 @@ class Notification(models.Model):
         INSURANCE_EXPIRY = 'insurance_expiry', _('انقضای بیمه')
         INVOICE_DUE      = 'invoice_due',      _('سررسید فاکتور')
         SALARY_READY     = 'salary_ready',     _('آماده بودن حقوق')
+        PLAYER_CHANGE    = 'player_change',    _('تغییر اطلاعات بازیکن')
         GENERAL          = 'general',          _('عمومی')
 
     recipient   = models.ForeignKey(
@@ -837,6 +841,42 @@ class Notification(models.Model):
         self.is_read = True
         self.read_at = timezone.now()
         self.save(update_fields=['is_read', 'read_at'])
+
+
+# ─────────────────────────────────────────────
+#  Player Change Log
+# ─────────────────────────────────────────────
+class PlayerChangeLog(models.Model):
+    """
+    ثبت تغییرات روی اطلاعات بازیکن برای نمایش در داشبورد.
+    """
+    class ChangeType(models.TextChoices):
+        PROFILE     = 'profile',     _('ویرایش اطلاعات شخصی')
+        INSURANCE   = 'insurance',   _('بروزرسانی بیمه')
+        TECH        = 'tech',        _('ویرایش پروفایل فنی')
+        SOFT_TRAITS = 'soft_traits', _('ویرایش ویژگی نرم')
+        ARCHIVE     = 'archive',     _('بایگانی')
+        RESTORE     = 'restore',     _('بازگردانی')
+
+    player      = models.ForeignKey(
+        Player, on_delete=models.CASCADE,
+        related_name='change_logs', verbose_name=_('بازیکن')
+    )
+    changed_by  = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True,
+        related_name='player_changes', verbose_name=_('توسط')
+    )
+    change_type = models.CharField(_('نوع تغییر'), max_length=20, choices=ChangeType.choices)
+    description = models.TextField(_('توضیح'), blank=True)
+    created_at  = jmodels.jDateTimeField(_('زمان'), auto_now_add=True)
+
+    class Meta:
+        verbose_name        = _('تغییر بازیکن')
+        verbose_name_plural = _('تغییرات بازیکنان')
+        ordering            = ['-created_at']
+
+    def __str__(self):
+        return f'{self.player} — {self.get_change_type_display()}'
 
 
 # ─────────────────────────────────────────────
@@ -927,3 +967,45 @@ class PaymentLog(models.Model):
 
     def __str__(self):
         return f'{self.invoice} — {self.authority} ({self.get_result_display()})'
+
+
+# ─────────────────────────────────────────────
+#  Player Activity Log (فید تغییرات)
+# ─────────────────────────────────────────────
+class PlayerActivityLog(models.Model):
+    """
+    ثبت خودکار تمام تغییرات مرتبط به بازیکن.
+    برای نمایش در داشبورد مربی/مدیر فنی.
+    """
+
+    class ActionType(models.TextChoices):
+        INSURANCE_UPDATED  = 'insurance_updated',  _('بروزرسانی بیمه')
+        PROFILE_UPDATED    = 'profile_updated',    _('ویرایش اطلاعات')
+        TECH_UPDATED       = 'tech_updated',       _('ویرایش پروفایل فنی')
+        TRAITS_UPDATED     = 'traits_updated',     _('ویرایش ویژگی‌های نرم')
+        CATEGORY_CHANGED   = 'category_changed',   _('تغییر دسته')
+        ARCHIVED           = 'archived',           _('بایگانی')
+        RESTORED           = 'restored',           _('بازگردانی')
+        APPROVED           = 'approved',           _('تأیید ثبت‌نام')
+
+    player     = models.ForeignKey(
+        Player, on_delete=models.CASCADE,
+        related_name='activity_logs', verbose_name=_('بازیکن')
+    )
+    actor      = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='player_actions', verbose_name=_('انجام‌دهنده')
+    )
+    action     = models.CharField(
+        _('نوع عملیات'), max_length=30, choices=ActionType.choices
+    )
+    detail     = models.CharField(_('جزئیات'), max_length=500, blank=True)
+    created_at = jmodels.jDateTimeField(_('زمان'), auto_now_add=True)
+
+    class Meta:
+        verbose_name        = _('لاگ فعالیت بازیکن')
+        verbose_name_plural = _('لاگ‌های فعالیت بازیکنان')
+        ordering            = ['-created_at']
+
+    def __str__(self):
+        return f'{self.player} — {self.get_action_display()} توسط {self.actor}'

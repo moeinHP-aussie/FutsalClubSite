@@ -105,6 +105,9 @@
            class="btn btn-navy btn-sm">✏️ ویرایش</a>
         <a href="{% url 'training:attendance-select' %}?cat={{ cat.pk }}"
            class="btn btn-amber btn-sm">📅 حضور</a>
+        <a href="{% url 'training:category-delete' cat.pk %}"
+           class="btn btn-sm" style="border:1.5px solid var(--red);color:var(--red)"
+           onclick="return confirm('دسته «{{ cat.name }}» حذف شود؟')">🗑️</a>
         {% endif %}
       </div>
     </div>

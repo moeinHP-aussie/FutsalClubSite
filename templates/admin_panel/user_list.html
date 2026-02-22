@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}مدیریت کاربران{% endblock %}
+{% block nav_admin_users %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">مدیریت کاربران</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.stat-pill {
+  display:inline-flex; align-items:center; gap:.45rem;
+  padding:.5rem 1rem; border-radius:99px;
+  font-size:.82rem; font-weight:800; cursor:pointer; text-decoration:none;
+  transition:.12s;
+}
+.sp-total   { background:#f0f9ff; color:#0369a1; border:1.5px solid #bae6fd; }
+.sp-player  { background:#d1fae5; color:#065f46; border:1.5px solid #6ee7b7; }
+.sp-coach   { background:#ede9fe; color:#4c1d95; border:1.5px solid #c4b5fd; }
+.sp-staff   { background:#fef3c7; color:#92400e; border:1.5px solid #fde68a; }
+.sp-inactive{ background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; }
+.sp-warn    { background:#fff7ed; color:#9a3412; border:1.5px dashed #fdba74; }
+.sp-total:hover,.sp-player:hover,.sp-coach:hover,.sp-staff:hover,
+.sp-inactive:hover,.sp-warn:hover { filter:brightness(.95); transform:translateY(-1px); }
+
+.role-badge {
+  display:inline-flex; align-items:center; gap:.2rem;
+  font-size:.67rem; font-weight:800; padding:.12rem .45rem; border-radius:4px;
+}
+.rb-td      { background:#fef3c7; color:#92400e; }
+.rb-coach   { background:#ede9fe; color:#4c1d95; }
+.rb-finance { background:#d1fae5; color:#065f46; }
+.rb-player  { background:#dbeafe; color:#1e3a8a; }
+.rb-super   { background:#fce7f3; color:#9d174d; }
+.rb-off     { background:#f1f5f9; color:#94a3b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.2rem;font-weight:900;color:var(--navy)">👥 مدیریت کاربران</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">پنل ادمین سیستم</p>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <a href="{% url 'admin_panel:provision-players' %}" class="btn btn-amber">
+      ⚡ ایجاد حساب بازیکنان
+      {% if stats.no_account %}
+      <span style="background:#ef4444;color:#fff;border-radius:99px;padding:.1rem .4rem;font-size:.7rem;margin-right:.25rem">{{ stats.no_account }}</span>
+      {% endif %}
+    </a>
+    <a href="{% url 'admin_panel:user-create' %}" class="btn btn-navy">+ کاربر جدید</a>
+  </div>
+</div>
+
+<!-- Stats pills -->
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.1rem">
+  <a href="?" class="stat-pill sp-total">👥 {{ stats.total }} کل</a>
+  <a href="?role=player" class="stat-pill sp-player">⚽ {{ stats.players }} بازیکن</a>
+  <a href="?role=coach"  class="stat-pill sp-coach">🎯 {{ stats.coaches }} مربی</a>
+  <a href="?role=td"     class="stat-pill sp-staff">🔧 مدیران</a>
+  <a href="?role=no_player_link" class="stat-pill sp-warn">
+    ⚠️ {{ stats.no_account }} بازیکن بدون حساب
+  </a>
+  {% if stats.inactive %}
+  <a href="?role=inactive" class="stat-pill sp-inactive">🔴 {{ stats.inactive }} غیرفعال</a>
+  {% endif %}
+</div>
+
+<!-- Search + filter -->
+<div class="card" style="padding:.75rem 1rem;margin-bottom:.85rem">
+  <form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+    <input type="text" name="q" value="{{ q }}"
+           placeholder="🔍 نام، نام کاربری..."
+           style="flex:1;min-width:180px;max-width:280px;padding:.5rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
+    {% if role %}<input type="hidden" name="role" value="{{ role }}">{% endif %}
+    <button type="submit" class="btn btn-outline btn-sm">جستجو</button>
+    {% if q or role %}<a href="?" class="btn btn-outline btn-sm">✕ پاک</a>{% endif %}
+  </form>
+</div>
+
+{% if page_obj %}
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>نام کاربری</th>
+          <th>نام کامل</th>
+          <th>نقش‌ها</th>
+          <th>وضعیت</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in page_obj %}
+        <tr>
+          <td style="font-family:monospace;font-size:.82rem;font-weight:700">{{ u.username }}</td>
+          <td style="font-size:.875rem">
+            {% if u.first_name or u.last_name %}
+              {{ u.first_name }} {{ u.last_name }}
+            {% else %}
+              <span style="color:var(--text-muted)">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;flex-wrap:wrap;gap:.2rem">
+              {% if u.is_superuser %}
+              <span class="role-badge rb-super">👑 ادمین</span>
+              {% endif %}
+              {% if u.is_technical_director %}
+              <span class="role-badge rb-td">🔧 مدیر فنی</span>
+              {% endif %}
+              {% if u.is_finance_manager %}
+              <span class="role-badge rb-finance">💰 مدیر مالی</span>
+              {% endif %}
+              {% if u.is_coach %}
+              <span class="role-badge rb-coach">🎯 مربی</span>
+              {% endif %}
+              {% if u.is_player %}
+              <span class="role-badge rb-player">⚽ بازیکن</span>
+              {% endif %}
+              {% if not u.is_superuser and not u.is_technical_director and not u.is_finance_manager and not u.is_coach and not u.is_player %}
+              <span class="role-badge rb-off">بدون نقش</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            {% if u.is_active %}
+            <span class="badge badge-green" style="font-size:.72rem">فعال</span>
+            {% else %}
+            <span class="badge badge-red" style="font-size:.72rem">غیرفعال</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'admin_panel:user-edit' u.pk %}" class="btn btn-outline btn-sm">✏️ ویرایش</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div style="display:flex;justify-content:center;gap:.4rem;margin-top:.85rem">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if role %}&role={{ role }}{% endif %}" class="btn btn-outline btn-sm">← قبلی</a>
+  {% endif %}
+  <span style="padding:.5rem .85rem;font-size:.82rem;color:var(--text-muted)">
+    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if role %}&role={{ role }}{% endif %}" class="btn btn-outline btn-sm">بعدی →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:1rem">👥</div>
+  <h3 style="font-weight:800">کاربری یافت نشد</h3>
+</div>
+{% endif %}
+
+{% endblock %}

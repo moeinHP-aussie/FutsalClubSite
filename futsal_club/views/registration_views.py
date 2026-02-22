@@ -323,7 +323,7 @@ class ArchivePlayerView(LoginRequiredMixin, RoleRequiredMixin, View):
 class ArchivedPlayerListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     """لیست بازیکنان آرشیو‌شده."""
     allowed_roles       = ["is_technical_director"]
-    template_name       = "registration/archived_players.html"
+    template_name       = "registration/recycle_bin.html"
     context_object_name = "players"
     paginate_by         = 20
 
@@ -372,3 +372,86 @@ class RestorePlayerView(LoginRequiredMixin, RoleRequiredMixin, View):
 
         messages.success(request, f"بازیکن {player} با موفقیت بازگردانی شد.")
         return redirect("registration:archived-players")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  عملیات دسته‌جمعی روی بازیکنان
+# ══════════════════════════════════════════════════════════════════
+
+class BulkPlayerActionView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """
+    POST /registration/players/bulk-action/
+    body: { action: "archive"|"delete", player_ids: [1,2,...], reason: "" }
+    """
+    allowed_roles     = ["is_technical_director"]
+    http_method_names = ["post"]
+
+    def post(self, request):
+        import json
+        try:
+            data       = json.loads(request.body)
+            action     = data.get("action", "")
+            player_ids = [int(x) for x in data.get("player_ids", [])]
+            reason     = data.get("reason", "").strip()
+        except Exception as e:
+            return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+        if not player_ids:
+            return JsonResponse({"ok": False, "error": "هیچ بازیکنی انتخاب نشده"}, status=400)
+
+        players = Player.objects.filter(pk__in=player_ids, is_archived=False)
+        count   = 0
+
+        if action == "archive":
+            # بایگانی = انتقال به سطل زباله
+            for player in players:
+                player.archive(reason=reason or "بایگانی دسته‌جمعی")
+                if player.user:
+                    player.user.is_active = False
+                    player.user.is_player = False
+                    player.user.save(update_fields=["is_active", "is_player"])
+                count += 1
+            return JsonResponse({"ok": True, "count": count, "action": "archive"})
+
+        elif action == "restore":
+            # بازگردانی از سطل زباله
+            restore_qs = Player.objects.filter(pk__in=player_ids, is_archived=True)
+            for player in restore_qs:
+                player.is_archived    = False
+                player.status         = Player.Status.APPROVED
+                player.archived_at    = None
+                player.archive_reason = ""
+                player.save(update_fields=["is_archived", "status", "archived_at", "archive_reason"])
+                if player.user:
+                    player.user.is_active = True
+                    player.user.is_player = True
+                    player.user.save(update_fields=["is_active", "is_player"])
+                count += 1
+            return JsonResponse({"ok": True, "count": count, "action": "restore"})
+
+        return JsonResponse({"ok": False, "error": "عملیات نامعتبر"}, status=400)
+
+
+class BulkRestoreView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """
+    POST /registration/players/bulk-action/
+    action="restore" → بازگردانی دسته‌جمعی از سطل زباله
+    (قبلاً فقط archive بود — حالا restore هم ساپورت می‌شه)
+    """
+    pass  # handled in BulkPlayerActionView
+
+
+class PermanentDeletePlayerView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """
+    حذف دائمی یک بازیکن از سطل زباله — فقط superuser یا مدیر فنی.
+    فقط بازیکنانی که is_archived=True هستند قابل حذف دائمی هستند.
+    """
+    allowed_roles     = ["is_technical_director"]
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        player = get_object_or_404(Player, pk=pk, is_archived=True)
+        name   = str(player)
+        player.delete()
+        messages.success(request, f"بازیکن «{name}» به‌طور دائمی حذف شد.")
+        return redirect("registration:recycle-bin")

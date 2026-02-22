@@ -330,9 +330,7 @@ def map_education(raw) -> str:
     if not raw or (isinstance(raw, float) and pd.isna(raw)):
         return ""
     s = str(raw).strip()
-    # ✅ اصلاح: اگر مقدار شناخته‌نشده بود، "" برمی‌گردانیم نه "other"
-    # چون "other" در EducationLevel choices وجود ندارد و field از blank=True پشتیبانی می‌کند
-    return EDUCATION_MAP.get(s, "")
+    return EDUCATION_MAP.get(s, "other" if s else "")
 
 
 def map_hand_foot(raw) -> str:
@@ -372,32 +370,28 @@ def _extract_cell_fills(filepath: str, sheet_name: str, col_idx: int) -> Dict[in
     """
     wb = load_workbook(filepath, read_only=False, data_only=True)
     if sheet_name not in wb.sheetnames:
-        wb.close()
         return {}
 
     ws = wb[sheet_name]
     colours: Dict[int, Optional[str]] = {}
 
-    try:
-        for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):  # skip header
-            cell = row[col_idx - 1] if len(row) >= col_idx else None
-            if cell is None:
+    for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):  # skip header
+        cell = row[col_idx - 1] if len(row) >= col_idx else None
+        if cell is None:
+            colours[row_idx] = None
+            continue
+        try:
+            fill = cell.fill
+            if fill and fill.fgColor and fill.fgColor.type == "rgb":
+                colours[row_idx] = fill.fgColor.rgb
+            elif fill and fill.fgColor and fill.fgColor.type == "theme":
+                colours[row_idx] = None  # theme colour — treat as none
+            else:
                 colours[row_idx] = None
-                continue
-            try:
-                fill = cell.fill
-                if fill and fill.fgColor and fill.fgColor.type == "rgb":
-                    colours[row_idx] = fill.fgColor.rgb
-                elif fill and fill.fgColor and fill.fgColor.type == "theme":
-                    colours[row_idx] = None  # theme colour — treat as none
-                else:
-                    colours[row_idx] = None
-            except Exception:
-                colours[row_idx] = None
-    finally:
-        # ✅ اصلاح: همیشه workbook بسته می‌شود — حتی در صورت exception
-        wb.close()
+        except Exception:
+            colours[row_idx] = None
 
+    wb.close()
     return colours
 
 
@@ -535,13 +529,22 @@ class ExcelImportService:
 
         # ── 1. National ID (dedup key) ─────────────────────────────
         national_id = normalise_national_id(cell(COL["national_id"]))
+        _nid_auto_generated = False
         if not national_id:
-            return RowResult(
-                row_num=row_num, national_id="?",
-                name=f"{cell(COL['first_name'])} {cell(COL['last_name'])}",
-                action="skipped", sheet=sheet_name,
-                message="کد ملی ناقص یا خالی",
-            )
+            # کد ملی خالی یا ناقص → شناسه موقت بر اساس نام + ردیف
+            fn  = (cell(COL["first_name"]) or "").strip()
+            ln  = (cell(COL["last_name"])  or "").strip()
+            if not fn and not ln:
+                return RowResult(
+                    row_num=row_num, national_id="?",
+                    name="?",
+                    action="skipped", sheet=sheet_name,
+                    message="نام و کد ملی هر دو خالی هستند",
+                )
+            # TEMP-NNNN-firstname-lastname  (max 30 chars safe)
+            slug = f"{fn[:4]}{ln[:4]}".replace(" ","").upper() or "XX"
+            national_id = f"TEMP{row_num:04d}{slug}"
+            _nid_auto_generated = True
 
         name = f"{cell(COL['first_name']) or ''} {cell(COL['last_name']) or ''}".strip()
 
@@ -579,12 +582,10 @@ class ExcelImportService:
         # ── 3. Insurance ───────────────────────────────────────────
         insurance_raw  = cell(COL["insurance"])
         ins_info       = detect_insurance(insurance_raw, insurance_fill)
-        # ✅ اصلاح: InsuranceStatus فقط "none" و "active" دارد
-        # "expired" مقدار معتبری نیست — بیمه منقضی‌شده = بدون بیمه فعال
         insurance_status = {
             "active":      "active",
-            "expired":     "none",    # ← بیمه منقضی شده = بدون بیمه فعال
-            "near_expiry": "active",  # ← هنوز فعال است
+            "expired":     "expired",
+            "near_expiry": "active",   # still active, just soon-to-expire
             "none":        "none",
         }.get(ins_info.status, "none")
 
@@ -650,10 +651,11 @@ class ExcelImportService:
                 )
 
             action = "created" if created else "updated"
+            nid_note = " [شناسه موقت]" if _nid_auto_generated else ""
             return RowResult(
                 row_num=row_num, national_id=national_id, name=name,
                 action=action, sheet=sheet_name,
-                message=f"دسته: {category_name} | بیمه: {ins_info.status}",
+                message=f"دسته: {category_name} | بیمه: {ins_info.status}{nid_note}",
             )
 
         except Exception as exc:

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}حذف دسته آموزشی{% endblock %}
+{% block nav_categories %}active{% endblock %}
+
+{% block content %}
+<div style="max-width:520px;margin:3rem auto">
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="height:4px;background:var(--red)"></div>
+    <div style="padding:2rem;text-align:center">
+      <div style="font-size:3rem;margin-bottom:1rem">🗂️🗑️</div>
+      <h2 style="font-size:1.1rem;font-weight:900;color:var(--navy);margin-bottom:.75rem">
+        حذف دسته آموزشی
+      </h2>
+      <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:.5rem">
+        آیا مطمئن هستید که می‌خواهید دسته
+        <strong style="color:var(--navy)">«{{ object.name }}»</strong>
+        را حذف کنید؟
+      </p>
+
+      <!-- هشدار بازیکنان -->
+      {% with player_count=object.players.count %}
+      {% if player_count %}
+      <div style="background:#fef3c7;border:1.5px solid #fde68a;border-radius:10px;padding:.75rem 1rem;margin:.75rem 0;text-align:right;font-size:.85rem;color:#92400e">
+        ⚠️ این دسته <strong>{{ player_count }} بازیکن</strong> دارد.
+        بازیکنان از این دسته حذف می‌شوند ولی از سیستم پاک نمی‌شوند.
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <p style="font-size:.78rem;color:var(--red);margin-bottom:1.5rem">
+        این عمل قابل بازگشت نیست.
+      </p>
+
+      <form method="post" style="display:inline-flex;gap:.75rem;justify-content:center">
+        {% csrf_token %}
+        <a href="{% url 'training:category-list' %}" class="btn btn-outline">انصراف</a>
+        <button type="submit" class="btn btn-red">🗑️ بله، حذف کن</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -18,11 +18,12 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import (
-    CreateView, DetailView, ListView, TemplateView, UpdateView, View,
+    CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView, View,
 )
 from django.utils.translation import gettext_lazy as _
 
 from ..mixins import RoleRequiredMixin
+from ..models import PlayerChangeLog
 from ..models import (
     Coach, CoachCategoryRate, CustomUser,
     Player, TrainingCategory, TrainingSchedule,
@@ -153,6 +154,23 @@ class CategoryToggleActiveView(LoginRequiredMixin, RoleRequiredMixin, View):
         state = "فعال" if cat.is_active else "غیرفعال"
         messages.success(request, f"دسته «{cat.name}» {state} شد.")
         return redirect("training:category-list")
+
+
+class CategoryDeleteView(LoginRequiredMixin, RoleRequiredMixin, DeleteView):
+    """حذف دسته آموزشی — فقط مدیر فنی."""
+    allowed_roles = ["is_technical_director"]
+    model         = TrainingCategory
+    template_name = "training/category_confirm_delete.html"
+    success_url   = reverse_lazy("training:category-list")
+
+    def form_valid(self, form):
+        obj = self.get_object()
+        name = obj.name
+        # جدا کردن بازیکنان قبل از حذف
+        obj.players.clear()
+        obj.coaches.clear()
+        messages.success(self.request, f"دسته «{name}» حذف شد.")
+        return super().form_valid(form)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -342,19 +360,38 @@ class PlayerProfileView(LoginRequiredMixin, TemplateView):
         if pk:
             player = get_object_or_404(Player, pk=pk, status="approved")
         else:
-            # بازیکن پروفایل خودش رو می‌بینه
             try:
                 player = self.request.user.player_profile
             except Player.DoesNotExist:
                 player = None
 
-        ctx["player"]     = player
+        ctx["player"] = player
         if player:
-            ctx["categories"] = player.categories.filter(is_active=True)
-            # آخرین فاکتورها
-            ctx["recent_invoices"] = player.invoices.order_by(
-                "-created_at"
-            )[:5] if hasattr(player, "invoices") else []
+            ctx["categories"]       = player.categories.filter(is_active=True)
+            ctx["recent_invoices"]  = player.invoices.order_by("-created_at")[:5] if hasattr(player, "invoices") else []
+
+            # پروفایل فنی
+            from ..models import TechnicalProfile, SoftTraitType, PlayerSoftTrait
+            tp, _ = TechnicalProfile.objects.get_or_create(player=player)
+            ctx["tech_profile"] = tp
+
+            # ویژگی‌های نرم — همه انواع فعال + امتیاز موجود
+            all_trait_types = SoftTraitType.objects.filter(is_active=True).order_by("name")
+            existing_traits = {t.trait_type_id: t for t in tp.soft_traits.select_related("trait_type").all()}
+            ctx["soft_traits"]      = [
+                {
+                    "type":  tt,
+                    "trait": existing_traits.get(tt.pk),
+                    "score": existing_traits[tt.pk].score if tt.pk in existing_traits else 0,
+                }
+                for tt in all_trait_types
+            ]
+            ctx["soft_trait_types"] = all_trait_types
+            ctx["can_edit_tech"]    = (
+                self.request.user.is_technical_director or
+                self.request.user.is_coach or
+                self.request.user.is_superuser
+            )
         return ctx
 
 
@@ -367,7 +404,7 @@ class PlayerListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     allowed_roles = ["is_technical_director", "is_coach", "is_finance_manager"]
 
     def get_queryset(self):
-        qs = Player.objects.filter(status="approved").order_by("last_name", "first_name")
+        qs = Player.objects.filter(status="approved", is_archived=False).order_by("last_name", "first_name")
         q = self.request.GET.get("q", "").strip()
         if q:
             qs = qs.filter(
@@ -379,12 +416,209 @@ class PlayerListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
         category = self.request.GET.get("category", "")
         if category:
             qs = qs.filter(categories__pk=category)
-        return qs
+        foot = self.request.GET.get("foot", "")
+        if foot:
+            qs = qs.filter(preferred_foot=foot)
+        return qs.prefetch_related("technical_profile")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["q"]              = self.request.GET.get("q", "")
         ctx["category_filter"]= self.request.GET.get("category", "")
+        ctx["foot_filter"]    = self.request.GET.get("foot", "")
         ctx["all_categories"] = TrainingCategory.objects.filter(is_active=True).order_by("name")
-        ctx["total_count"]    = Player.objects.filter(status="approved").count()
+        ctx["total_count"]    = Player.objects.filter(status="approved", is_archived=False).count()
+
+        # ── آمار رده سنی برای نوار فیلتر ─────────────────────
+        from collections import Counter
+        all_players = Player.objects.filter(status="approved", is_archived=False).exclude(dob__isnull=True)
+        age_cnt = Counter()
+        for p in all_players:
+            age_cnt[p.get_age_category()] += 1
+        def _sort_key(t):
+            c = t[0]
+            if c.startswith("زیر "):
+                try: return int(c.split()[1])
+                except: pass
+            return 100
+        ctx["age_category_counts"] = sorted(age_cnt.items(), key=_sort_key)
+        ctx["age_filter"] = self.request.GET.get("age_cat", "")
         return ctx
+
+
+# ══════════════════════════════════════════════════════════════════
+#  ویرایش پروفایل فنی بازیکن
+# ══════════════════════════════════════════════════════════════════
+
+class TechnicalProfileUpdateView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """
+    POST /training/players/<pk>/tech/
+    ویرایش inline پروفایل فنی: شماره پیراهن، پست، سطح، دوپا، یادداشت
+    """
+    allowed_roles     = ["is_technical_director", "is_coach"]
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        from ..models import TechnicalProfile
+        import json
+        player = get_object_or_404(Player, pk=pk, status="approved")
+        tp, _  = TechnicalProfile.objects.get_or_create(player=player)
+
+        tp.shirt_number  = request.POST.get("shirt_number") or None
+        tp.position      = request.POST.get("position", "-")
+        tp.skill_level   = request.POST.get("skill_level", "")
+        tp.is_two_footed = request.POST.get("is_two_footed") == "on"
+        tp.coach_notes   = request.POST.get("coach_notes", "")
+        tp.updated_by    = request.user
+        tp.save()
+
+        from ..models import PlayerChangeLog
+        from ..views.player_edit_views import _notify_about_player_change
+        PlayerChangeLog.objects.create(
+            player=player, changed_by=request.user,
+            change_type=PlayerChangeLog.ChangeType.TECH,
+            description="ویرایش پروفایل فنی (پست، سطح، شماره پیراهن)",
+        )
+        _notify_about_player_change(request.user, player, "ویرایش پروفایل فنی ⚽")
+
+        messages.success(request, "پروفایل فنی بروز شد.")
+        return redirect("training:player-profile", pk=pk)
+
+
+class SoftTraitUpdateView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """
+    POST /training/players/<pk>/soft-traits/
+    ذخیره/بروزرسانی تمام ویژگی‌های نرم یک بازیکن
+    """
+    allowed_roles     = ["is_technical_director", "is_coach"]
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        from ..models import TechnicalProfile, SoftTraitType, PlayerSoftTrait
+        player = get_object_or_404(Player, pk=pk, status="approved")
+        tp, _  = TechnicalProfile.objects.get_or_create(player=player)
+
+        for key, val in request.POST.items():
+            if key.startswith("trait_"):
+                try:
+                    trait_id = int(key.split("_")[1])
+                    score    = int(val)
+                    if 0 < score <= 10:
+                        PlayerSoftTrait.objects.update_or_create(
+                            technical_profile=tp,
+                            trait_type_id=trait_id,
+                            defaults={"score": score, "evaluated_by": request.user},
+                        )
+                except (ValueError, IndexError):
+                    pass
+        from ..models import PlayerChangeLog
+        from ..views.player_edit_views import _notify_about_player_change
+        PlayerChangeLog.objects.create(
+            player=player, changed_by=request.user,
+            change_type=PlayerChangeLog.ChangeType.SOFT_TRAITS,
+            description="ویرایش ویژگی‌های نرم",
+        )
+        _notify_about_player_change(request.user, player, "ویرایش ویژگی‌های نرم 🧠")
+
+        try:
+            from ..services.activity_service import log_player_change
+            from ..models import PlayerActivityLog
+            log_player_change(
+                player=player, actor=request.user,
+                action=PlayerActivityLog.ActionType.TRAITS_UPDATED,
+            )
+        except Exception:
+            pass
+        messages.success(request, "ویژگی‌های نرم ذخیره شد.")
+        return redirect("training:player-profile", pk=pk)
+
+
+class SoftTraitTypeView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """
+    GET  → لیست انواع ویژگی نرم
+    POST → ایجاد نوع جدید
+    """
+    allowed_roles = ["is_technical_director"]
+
+    def get(self, request):
+        from ..models import SoftTraitType
+        from django.shortcuts import render
+        traits = SoftTraitType.objects.order_by("name")
+        return render(request, "training/soft_trait_types.html", {"traits": traits})
+
+    def post(self, request):
+        from ..models import SoftTraitType
+        name = request.POST.get("name", "").strip()
+        desc = request.POST.get("description", "").strip()
+        if name:
+            SoftTraitType.objects.get_or_create(
+                name=name,
+                defaults={"description": desc, "created_by": request.user}
+            )
+            messages.success(request, f"ویژگی «{name}» اضافه شد.")
+        return redirect("training:soft-trait-types")
+
+
+class SoftTraitTypeDeleteView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """حذف یک نوع ویژگی نرم"""
+    allowed_roles     = ["is_technical_director"]
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        from ..models import SoftTraitType
+        obj = get_object_or_404(SoftTraitType, pk=pk)
+        obj.is_active = False
+        obj.save()
+        messages.success(request, f"ویژگی «{obj.name}» غیرفعال شد.")
+        return redirect("training:soft-trait-types")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  مدیریت زمان‌بندی تمرین (TrainingSchedule)
+# ══════════════════════════════════════════════════════════════════
+
+class ScheduleManageView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """
+    مدیریت جلسات تمرینی یک دسته — بدون نیاز به ادمین.
+    GET  → صفحه مدیریت (در category_detail)
+    POST → افزودن یک جلسه
+    """
+    allowed_roles = ["is_technical_director"]
+
+    def post(self, request, cat_pk):
+        from ..models import TrainingSchedule
+        cat = get_object_or_404(TrainingCategory, pk=cat_pk, is_active=True)
+        weekday    = request.POST.get("weekday", "").strip()
+        start_time = request.POST.get("start_time", "").strip()
+        end_time   = request.POST.get("end_time", "").strip() or None
+        location   = request.POST.get("location", "").strip()
+
+        if weekday and start_time:
+            obj, created = TrainingSchedule.objects.get_or_create(
+                category=cat,
+                weekday=weekday,
+                start_time=start_time,
+                defaults={"end_time": end_time, "location": location},
+            )
+            if created:
+                messages.success(request, f"جلسه {obj.get_weekday_display()} {start_time} اضافه شد.")
+            else:
+                messages.info(request, "این جلسه قبلاً ثبت شده.")
+        else:
+            messages.error(request, "روز و ساعت شروع الزامی است.")
+
+        return redirect("training:category-detail", pk=cat_pk)
+
+
+class ScheduleDeleteView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """حذف یک جلسه تمرینی"""
+    allowed_roles     = ["is_technical_director"]
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        from ..models import TrainingSchedule
+        sch = get_object_or_404(TrainingSchedule, pk=pk)
+        cat_pk = sch.category.pk
+        sch.delete()
+        messages.success(request, "جلسه حذف شد.")
+        return redirect("training:category-detail", pk=cat_pk)

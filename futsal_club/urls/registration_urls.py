@@ -14,8 +14,11 @@ from ..views.registration_views import (
     RejectApplicantView,
     RegistrationSuccessView,
     RestorePlayerView,
+    BulkPlayerActionView,
+    PermanentDeletePlayerView,
 )
 from ..views.import_views import BulkImportView, ImportSheetPreviewView
+from ..views.player_edit_views import PlayerEditView, InsuranceImageUploadView
 
 app_name = "registration"
 
@@ -34,6 +37,22 @@ urlpatterns = [
     path("players/<int:pk>/archive/",  ArchivePlayerView.as_view(),    name="archive-player"),
     path("players/archived/",          ArchivedPlayerListView.as_view(),name="archived-players"),
     path("players/<int:pk>/restore/",  RestorePlayerView.as_view(),    name="restore-player"),
+
+    # ── ویرایش بازیکن (مربی / مدیر فنی) ────────────────────────────
+    path("players/<int:pk>/edit/",
+         PlayerEditView.as_view(),             name="player-edit"),
+    path("players/<int:pk>/insurance-upload/",
+         InsuranceImageUploadView.as_view(),   name="insurance-upload"),
+
+    # ── عملیات دسته‌جمعی ────────────────────────────────────────────
+    path("players/bulk-action/",
+         BulkPlayerActionView.as_view(), name="player-bulk-action"),
+
+    # ── سطل زباله (Recycle Bin) ──────────────────────────────────────
+    path("players/recycle-bin/",
+         ArchivedPlayerListView.as_view(),     name="recycle-bin"),
+    path("players/<int:pk>/permanent-delete/",
+         PermanentDeletePlayerView.as_view(),  name="player-permanent-delete"),
 
     # ── ایمپورت دسته‌جمعی ────────────────────────────────────────────
     path("import/",         BulkImportView.as_view(),         name="bulk-import"),

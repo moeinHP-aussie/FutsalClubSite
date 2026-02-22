@@ -626,6 +626,33 @@
        class="nav-item {% block nav_import %}{% endblock %}">
       <span class="nav-icon">📥</span> ایمپورت از اکسل
     </a>
+    <a href="{% url 'training:organize' %}"
+       class="nav-item {% block nav_organize %}{% endblock %}">
+      <span class="nav-icon">🔀</span> سازماندهی رده‌ها
+    </a>
+    <a href="{% url 'registration:recycle-bin' %}"
+       class="nav-item {% block nav_recycle %}{% endblock %}">
+      <span class="nav-icon">🗑️</span> سطل زباله
+    </a>
+    {% if request.user.is_superuser %}
+    <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:.6rem 1rem .2rem;margin-top:.4rem">ادمین سیستم</div>
+    <a href="{% url 'admin_panel:user-list' %}"
+       class="nav-item {% block nav_admin_users %}{% endblock %}">
+      <span class="nav-icon">👥</span> مدیریت کاربران
+    </a>
+    <a href="{% url 'admin_panel:provision-players' %}"
+       class="nav-item {% block nav_provision %}{% endblock %}">
+      <span class="nav-icon">⚡</span> ایجاد حساب بازیکنان
+    </a>
+    {% endif %}
+    <a href="{% url 'training:soft-trait-types' %}"
+       class="nav-item {% block nav_traits %}{% endblock %}">
+      <span class="nav-icon">🧠</span> ویژگی‌های نرم
+    </a>
+    <a href="{% url 'training:stats' %}"
+       class="nav-item {% block nav_stats %}{% endblock %}">
+      <span class="nav-icon">📊</span> آمارگیری
+    </a>
     <a href="{% url 'exercises:gallery' %}"
        class="nav-item {% block nav_exercises %}{% endblock %}">
       <span class="nav-icon">🎯</span> مخزن تمرین‌ها
@@ -656,6 +683,10 @@
     <a href="{% url 'payroll:finance-dashboard' %}"
        class="nav-item {% block nav_finance %}{% endblock %}">
       <span class="nav-icon">💰</span> داشبورد مالی
+    </a>
+    <a href="{% url 'payroll:coach-payroll-summary' %}"
+       class="nav-item {% block nav_coach_payroll %}{% endblock %}">
+      <span class="nav-icon">🧾</span> پرداخت حقوق مربیان
     </a>
     {# فاکتورها و حقوق نیاز به category_pk دارند — از داشبورد مالی انتخاب می‌شود #}
     <a href="{% url 'payroll:finance-dashboard' %}#invoices"

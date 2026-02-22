@@ -70,14 +70,15 @@ def generate_monthly_invoices_task(self):
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def check_insurance_expiry_task(self):
     """
-    بررسی روزانه بیمه‌های در حال انقضا.
+    بررسی ماهانه بیمه‌های در حال انقضا (اول هر ماه اجرا می‌شود).
+    بیمه‌هایی که کمتر از ۱ ماه (۳۰ روز) به انقضایشان مانده هشدار می‌دهند.
     اعلان به بازیکن، مربی و مدیر فنی.
     """
     from .services.payroll_service import PayrollService
 
     try:
         count = PayrollService.send_insurance_expiry_notifications(days_ahead=30)
-        logger.info("[بررسی بیمه] %d اعلان ارسال شد.", count)
+        logger.info("[بررسی ماهانه بیمه] %d اعلان ارسال شد.", count)
         return {"notifications_sent": count}
 
     except Exception as exc:
@@ -146,4 +147,9 @@ def calculate_all_salaries_for_month_task(category_pk: int, year: int, month: in
     except Exception as exc:
         logger.exception("خطا در تسک محاسبه حقوق: %s", exc)
         raise
-# ✅ اصلاح: check_insurance_task تکراری حذف شد — از check_insurance_expiry_task بالا استفاده کنید
+
+# در tasks.py اضافه کنید:
+@shared_task
+def check_insurance_task():
+    from .signals import run_insurance_expiry_check
+    return run_insurance_expiry_check(warn_days=30)
