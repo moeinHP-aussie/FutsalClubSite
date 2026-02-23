@@ -38,6 +38,9 @@ urlpatterns = [
     # ── ارتباطات ──────────────────────────────────────────────────────
     path("comms/", include("futsal_club.urls.comms_urls", namespace="comms")),
 
+    # ── آموزش / رده‌ها / بازیکنان ────────────────────────────────────
+    path("training/", include("futsal_club.urls.training_urls", namespace="training")),
+
     # ── مخزن تمرین‌ها ─────────────────────────────────────────────────
     path("exercises/", include("futsal_club.urls.exercise_urls", namespace="exercises")),
 
