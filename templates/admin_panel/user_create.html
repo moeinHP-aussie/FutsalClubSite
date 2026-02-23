@@ -95,6 +95,17 @@
         </div>
       </div>
 
+      <!-- شماره کارت — برای مربی و مدیران با حقوق -->
+      <div id="card-field" style="margin-bottom:.75rem">
+        <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">
+          💳 شماره کارت بانکی
+          <span style="font-size:.72rem;font-weight:400;color:var(--text-muted)">(برای واریز حقوق)</span>
+        </label>
+        <input type="text" name="bank_card_number" maxlength="16" placeholder="16 رقم بدون خط تیره"
+               style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:monospace;font-size:.875rem;letter-spacing:.08em"
+               oninput="this.value=this.value.replace(/\D/g,'').slice(0,16)">
+      </div>
+
       <!-- مدرک مربیگری — فقط برای مربی -->
       <div id="coach-extras" style="display:none;margin-bottom:1rem">
         <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">مدرک مربیگری</label>

@@ -135,12 +135,13 @@ class UserCreateView(SuperuserRequiredMixin, LoginRequiredMixin, View):
 
     @transaction.atomic
     def post(self, request):
-        username  = request.POST.get("username", "").strip()
-        password  = request.POST.get("password", "").strip()
-        first     = request.POST.get("first_name", "").strip()
-        last      = request.POST.get("last_name", "").strip()
-        role      = request.POST.get("role", "")
-        phone     = request.POST.get("phone", "").strip()
+        username   = request.POST.get("username", "").strip()
+        password   = request.POST.get("password", "").strip()
+        first      = request.POST.get("first_name", "").strip()
+        last       = request.POST.get("last_name", "").strip()
+        role       = request.POST.get("role", "")
+        phone      = request.POST.get("phone", "").strip()
+        bank_card  = request.POST.get("bank_card_number", "").replace("-", "").strip()
         # coach extras
         coach_degree = request.POST.get("degree", "")
 
@@ -183,6 +184,7 @@ class UserCreateView(SuperuserRequiredMixin, LoginRequiredMixin, View):
                 last_name=last,
                 phone=phone or "09000000000",
                 degree=coach_degree or Coach.Degree.OTHER,
+                bank_card_number=bank_card or "",
             )
 
         messages.success(request, f"کاربر «{username}» با موفقیت ایجاد شد.")

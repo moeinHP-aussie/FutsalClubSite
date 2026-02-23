@@ -23,23 +23,6 @@
 .tab-pane { display: none; }
 .tab-pane.active { display: block; }
 
-/* star-rating slider for traits */
-.trait-row { display: flex; align-items: center; gap: .75rem; padding: .55rem 0; border-bottom: 1px solid var(--surface-2); }
-.trait-row:last-child { border-bottom: none; }
-.trait-name { font-size: .82rem; font-weight: 700; min-width: 130px; }
-.trait-stars { display: flex; gap: .2rem; }
-.star { font-size: 1.1rem; cursor: pointer; opacity: .25; transition: opacity .1s; }
-.star.lit { opacity: 1; }
-.trait-score-val { font-size: .75rem; font-weight: 800; color: var(--navy); min-width: 24px; text-align: center; }
-input[type=range].trait-slider {
-  flex: 1; accent-color: var(--amber);
-  -webkit-appearance: none; height: 6px; background: var(--surface-2); border-radius: 99px; outline: none;
-}
-input[type=range].trait-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
-  background: var(--amber); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.15);
-}
-
 /* schedule table */
 .sch-row { display: flex; align-items: center; gap: .6rem; padding: .5rem 0; border-bottom: 1px solid var(--surface-2); }
 .sch-row:last-child { border-bottom: none; }
@@ -276,28 +259,20 @@ input[type=range].trait-slider::-webkit-slider-thumb {
       {% if soft_traits %}
       <form method="post" action="{% url 'training:soft-traits-update' player.pk %}">
         {% csrf_token %}
-        {% for item in soft_traits %}
-        <div class="trait-row">
-          <span class="trait-name">{{ item.type.name }}</span>
-          <input type="range" class="trait-slider" min="0" max="10" step="1"
-                 name="trait_{{ item.type.pk }}"
-                 value="{{ item.score }}"
-                 id="slider-{{ item.type.pk }}"
-                 oninput="updSlider({{ item.type.pk }}, this.value)">
-          <span class="trait-score-val" id="sv-{{ item.type.pk }}">
-            {{ item.score|default:"0" }}
-          </span>
-          <!-- stars display -->
-          <div class="trait-stars" id="stars-{{ item.type.pk }}">
-            {% for i in "12345678910"|make_list %}
-            <span class="star {% if item.score >= forloop.counter %}lit{% endif %}"
-                  onclick="setSlider({{ item.type.pk }}, {{ forloop.counter }})">★</span>
-            {% endfor %}
-          </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem">
+          {% for item in soft_traits %}
+          <label style="display:flex;align-items:center;gap:.45rem;padding:.45rem .85rem;border-radius:99px;cursor:pointer;transition:.12s;
+            {% if item.score %}background:#eef2ff;border:1.5px solid #818cf8;color:#3730a3;{% else %}background:var(--surface-2);border:1.5px solid var(--surface-2);color:var(--text-muted);{% endif %}">
+            <input type="checkbox" name="trait_{{ item.type.pk }}" value="1"
+                   {% if item.score %}checked{% endif %}
+                   style="accent-color:#4f46e5;width:14px;height:14px"
+                   onchange="this.closest('label').style.background=this.checked?'#eef2ff':'var(--surface-2)';this.closest('label').style.borderColor=this.checked?'#818cf8':'var(--surface-2)';this.closest('label').style.color=this.checked?'#3730a3':'var(--text-muted)'">
+            <span style="font-size:.82rem;font-weight:700">{{ item.type.name }}</span>
+          </label>
+          {% endfor %}
         </div>
-        {% endfor %}
-        <div style="display:flex;justify-content:flex-end;margin-top:1rem">
-          <button type="submit" class="btn btn-navy">💾 ذخیره ویژگی‌ها</button>
+        <div style="display:flex;justify-content:flex-end">
+          <button type="submit" class="btn btn-navy">💾 ذخیره</button>
         </div>
       </form>
       {% else %}
@@ -393,15 +368,6 @@ function showTab(name, btn) {
   btn.classList.add("active");
 }
 
-function updSlider(id, val) {
-  document.getElementById("sv-" + id).textContent = val;
-  const stars = document.getElementById("stars-" + id)?.querySelectorAll(".star");
-  stars?.forEach((s, i) => s.classList.toggle("lit", i < parseInt(val)));
-}
 
-function setSlider(id, val) {
-  const sl = document.getElementById("slider-" + id);
-  if (sl) { sl.value = val; updSlider(id, val); }
-}
 </script>
 {% endblock %}

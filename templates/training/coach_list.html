@@ -16,7 +16,7 @@
     </p>
   </div>
   {% if request.user.is_technical_director or request.user.is_superuser %}
-  <a href="{% url 'training:coach-create' %}" class="btn btn-amber">➕ مربی جدید</a>
+  <a href="{% url 'admin_panel:user-create' %}" class="btn btn-amber">➕ مربی جدید</a>
   {% endif %}
 </div>
 
@@ -109,7 +109,7 @@
   <div style="font-size:3rem;margin-bottom:1rem">🏃</div>
   <h3 style="font-weight:800;margin-bottom:.5rem">هیچ مربی‌ای پیدا نشد</h3>
   {% if request.user.is_technical_director or request.user.is_superuser %}
-  <a href="{% url 'training:coach-create' %}" class="btn btn-amber" style="margin-top:1rem">➕ مربی جدید</a>
+  <a href="{% url 'admin_panel:user-create' %}" class="btn btn-amber" style="margin-top:1rem">➕ مربی جدید</a>
   {% endif %}
 </div>
 {% endif %}

@@ -416,10 +416,40 @@ class PlayerListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
         category = self.request.GET.get("category", "")
         if category:
             qs = qs.filter(categories__pk=category)
-        foot = self.request.GET.get("foot", "")
+
+        # فیلترهای پیشرفته
+        position = self.request.GET.get("position", "")
+        if position:
+            qs = qs.filter(technical_profile__position=position)
+
+        skill = self.request.GET.get("skill_level", "")
+        if skill:
+            qs = qs.filter(technical_profile__skill_level=skill)
+
+        foot = self.request.GET.get("preferred_foot", "")
         if foot:
             qs = qs.filter(preferred_foot=foot)
-        return qs.prefetch_related("technical_profile")
+
+        two_footed = self.request.GET.get("two_footed", "")
+        if two_footed == "1":
+            qs = qs.filter(technical_profile__is_two_footed=True)
+        elif two_footed == "0":
+            qs = qs.filter(technical_profile__is_two_footed=False)
+
+        insurance = self.request.GET.get("insurance", "")
+        if insurance:
+            qs = qs.filter(insurance_status=insurance)
+
+        # فیلتر رده سنی - در memory
+        age_filter = self.request.GET.get("age_cat", "").strip()
+        if age_filter:
+            filtered_ids = [
+                p.pk for p in qs.exclude(dob__isnull=True)
+                if p.get_age_category() == age_filter
+            ]
+            qs = qs.filter(pk__in=filtered_ids)
+
+        return qs.select_related("technical_profile").prefetch_related("categories").distinct()
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -442,7 +472,17 @@ class PlayerListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
                 except: pass
             return 100
         ctx["age_category_counts"] = sorted(age_cnt.items(), key=_sort_key)
-        ctx["age_filter"] = self.request.GET.get("age_cat", "")
+        ctx["age_filter"]       = self.request.GET.get("age_cat", "")
+        ctx["filter_position"]  = self.request.GET.get("position", "")
+        ctx["filter_skill"]     = self.request.GET.get("skill_level", "")
+        ctx["filter_foot"]      = self.request.GET.get("preferred_foot", "")
+        ctx["filter_two_footed"]= self.request.GET.get("two_footed", "")
+        ctx["filter_insurance"] = self.request.GET.get("insurance", "")
+        ctx["has_adv_filter"]   = any([
+            ctx["filter_position"], ctx["filter_skill"],
+            ctx["filter_foot"], ctx["filter_two_footed"],
+            ctx["filter_insurance"],
+        ])
         return ctx
 
 
@@ -498,19 +538,27 @@ class SoftTraitUpdateView(LoginRequiredMixin, RoleRequiredMixin, View):
         player = get_object_or_404(Player, pk=pk, status="approved")
         tp, _  = TechnicalProfile.objects.get_or_create(player=player)
 
-        for key, val in request.POST.items():
+        # جمع‌آوری trait_id های تیک‌خورده
+        checked_ids = set()
+        for key in request.POST:
             if key.startswith("trait_"):
                 try:
-                    trait_id = int(key.split("_")[1])
-                    score    = int(val)
-                    if 0 < score <= 10:
-                        PlayerSoftTrait.objects.update_or_create(
-                            technical_profile=tp,
-                            trait_type_id=trait_id,
-                            defaults={"score": score, "evaluated_by": request.user},
-                        )
+                    checked_ids.add(int(key.split("_")[1]))
                 except (ValueError, IndexError):
                     pass
+
+        all_types = SoftTraitType.objects.filter(is_active=True)
+        for tt in all_types:
+            if tt.pk in checked_ids:
+                PlayerSoftTrait.objects.update_or_create(
+                    technical_profile=tp,
+                    trait_type_id=tt.pk,
+                    defaults={"score": 1, "evaluated_by": request.user},
+                )
+            else:
+                PlayerSoftTrait.objects.filter(
+                    technical_profile=tp, trait_type_id=tt.pk
+                ).delete()
         from ..models import PlayerChangeLog
         from ..views.player_edit_views import _notify_about_player_change
         PlayerChangeLog.objects.create(

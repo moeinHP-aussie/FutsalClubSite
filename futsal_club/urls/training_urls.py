@@ -21,7 +21,6 @@ from ..views.category_views import (
     CategoryToggleActiveView,
     # مربیان
     CoachListView,
-    CoachCreateView,
     CoachUpdateView,
     CoachDetailView,
     CoachToggleActiveView,
@@ -59,8 +58,7 @@ urlpatterns = [
     # ── مربیان ───────────────────────────────────────────────────
     path("coaches/",
          CoachListView.as_view(),             name="coach-list"),
-    path("coaches/create/",
-         CoachCreateView.as_view(),           name="coach-create"),
+    # coach-create removed — use admin_panel/users/create/ instead
     path("coaches/<int:pk>/",
          CoachDetailView.as_view(),           name="coach-detail"),
     path("coaches/<int:pk>/edit/",

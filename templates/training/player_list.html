@@ -1,568 +1,288 @@
 {% extends "base.html" %}
-{% block title %}بازیکنان
-<!-- Bulk Action Modal -->
-<div id="bulk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-    <h3 style="font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:1rem" id="modal-title">بایگانی بازیکنان</h3>
-    <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1rem" id="modal-desc"></p>
-    <div style="margin-bottom:1.25rem">
-      <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">دلیل (اختیاری)</label>
-      <textarea id="bulk-reason" rows="2" placeholder="دلیل بایگانی..."
-                style="width:100%;padding:.6rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.85rem;resize:none"></textarea>
-    </div>
-    <div style="display:flex;gap:.6rem;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal()">انصراف</button>
-      <button class="btn btn-red" id="modal-confirm-btn" onclick="confirmBulk()">تأیید</button>
-    </div>
-  </div>
-</div>
-
-{% if request.user.is_technical_director or request.user.is_superuser %}
-<script>
-const BULK_URL = "{% url 'registration:player-bulk-action' %}";
-const CSRF     = "{{ csrf_token }}";
-let selectedIds  = new Set();
-let pendingAction = "";
-
-function onCheck(cb) {
-  const id = parseInt(cb.value);
-  if (cb.checked) selectedIds.add(id);
-  else            selectedIds.delete(id);
-  updateBulkBar();
-  document.getElementById("row-" + id).style.background = cb.checked ? "#fffbeb" : "";
-}
-
-function toggleAll(masterCb) {
-  document.querySelectorAll(".row-check").forEach(cb => {
-    cb.checked = masterCb.checked;
-    onCheck(cb);
-  });
-}
-
-function rowClick(e, id) {
-  // فقط وقتی روی ردیف کلیک می‌شه (نه دکمه پروفایل)
-  if (e.target.tagName === "A" || e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
-  const cb = document.querySelector(`.row-check[value="${id}"]`);
-  if (cb) { cb.checked = !cb.checked; onCheck(cb); }
-}
-
-function clearSelection() {
-  selectedIds.clear();
-  document.querySelectorAll(".row-check").forEach(cb => {
-    cb.checked = false;
-    document.getElementById("row-" + cb.value).style.background = "";
-  });
-  const master = document.getElementById("check-all");
-  if (master) master.checked = false;
-  updateBulkBar();
-}
-
-function updateBulkBar() {
-  const bar = document.getElementById("bulk-bar");
-  const lbl = document.getElementById("sel-label");
-  bar.style.display = selectedIds.size > 0 ? "flex" : "none";
-  lbl.textContent   = `${selectedIds.size} بازیکن انتخاب شده`;
-}
-
-function bulkAction(action) {
-  if (selectedIds.size === 0) return;
-  pendingAction = action;
-  const modal = document.getElementById("bulk-modal");
-  const title = document.getElementById("modal-title");
-  const desc  = document.getElementById("modal-desc");
-  const btn   = document.getElementById("modal-confirm-btn");
-
-  if (action === "archive") {
-    title.textContent = "📦 بایگانی بازیکنان";
-    desc.textContent  = `${selectedIds.size} بازیکن به سطل زباله منتقل می‌شوند. می‌توانید آن‌ها را از بخش «سطل زباله» بازگردانید.`;
-    btn.textContent   = "📦 انتقال به سطل زباله";
-    btn.className     = "btn btn-red";
-    document.getElementById("bulk-reason").style.display = "block";
-  } else {
-    title.textContent = "🗑️ حذف دائمی بازیکنان";
-    desc.textContent  = `${selectedIds.size} بازیکن کاملاً از سیستم حذف می‌شوند. این عمل قابل بازگشت نیست!`;
-    btn.textContent   = "🗑️ حذف کن";
-    btn.className     = "btn btn-red";
-    document.getElementById("bulk-reason").style.display = "none";
-  }
-  modal.style.display = "flex";
-}
-
-function closeModal() { document.getElementById("bulk-modal").style.display = "none"; }
-
-async function confirmBulk() {
-  const reason = document.getElementById("bulk-reason").value.trim();
-  closeModal();
-  try {
-    const res = await fetch(BULK_URL, {
-      method:  "POST",
-      headers: { "Content-Type":"application/json","X-CSRFToken":CSRF },
-      body:    JSON.stringify({
-        action:     pendingAction,
-        player_ids: [...selectedIds],
-        reason:     reason,
-      }),
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
-
-    const msg = data.action === "archive"
-      ? `${data.count} بازیکن بایگانی شد`
-      : `${data.count} بازیکن حذف شد`;
-
-    // حذف ردیف‌های مربوطه از DOM
-    selectedIds.forEach(id => {
-      const row = document.getElementById("row-" + id);
-      if (row) {
-        row.style.transition = "opacity .3s, transform .3s";
-        row.style.opacity    = "0";
-        row.style.transform  = "translateX(20px)";
-        setTimeout(() => row.remove(), 300);
-      }
-    });
-
-    clearSelection();
-    showToast("✅ " + msg, "ok");
-    setTimeout(() => location.reload(), 1200);
-
-  } catch (err) {
-    showToast("❌ " + err.message, "err");
-  }
-}
-
-function showToast(msg, type) {
-  const el = document.createElement("div");
-  el.textContent = msg;
-  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
-    background:${type==="ok"?"#10b981":"#ef4444"};color:#fff;
-    padding:.6rem 1.25rem;border-radius:99px;font-size:.85rem;font-weight:700;
-    z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap`;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2700);
-}
-</script>
-{% endif %}
-
-{% endblock %}
-{% block nav_players %}active
-<!-- Bulk Action Modal -->
-<div id="bulk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-    <h3 style="font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:1rem" id="modal-title">بایگانی بازیکنان</h3>
-    <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1rem" id="modal-desc"></p>
-    <div style="margin-bottom:1.25rem">
-      <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">دلیل (اختیاری)</label>
-      <textarea id="bulk-reason" rows="2" placeholder="دلیل بایگانی..."
-                style="width:100%;padding:.6rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.85rem;resize:none"></textarea>
-    </div>
-    <div style="display:flex;gap:.6rem;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal()">انصراف</button>
-      <button class="btn btn-red" id="modal-confirm-btn" onclick="confirmBulk()">تأیید</button>
-    </div>
-  </div>
-</div>
-
-{% if request.user.is_technical_director or request.user.is_superuser %}
-<script>
-const BULK_URL = "{% url 'registration:player-bulk-action' %}";
-const CSRF     = "{{ csrf_token }}";
-let selectedIds  = new Set();
-let pendingAction = "";
-
-function onCheck(cb) {
-  const id = parseInt(cb.value);
-  if (cb.checked) selectedIds.add(id);
-  else            selectedIds.delete(id);
-  updateBulkBar();
-  document.getElementById("row-" + id).style.background = cb.checked ? "#fffbeb" : "";
-}
-
-function toggleAll(masterCb) {
-  document.querySelectorAll(".row-check").forEach(cb => {
-    cb.checked = masterCb.checked;
-    onCheck(cb);
-  });
-}
-
-function rowClick(e, id) {
-  // فقط وقتی روی ردیف کلیک می‌شه (نه دکمه پروفایل)
-  if (e.target.tagName === "A" || e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
-  const cb = document.querySelector(`.row-check[value="${id}"]`);
-  if (cb) { cb.checked = !cb.checked; onCheck(cb); }
-}
-
-function clearSelection() {
-  selectedIds.clear();
-  document.querySelectorAll(".row-check").forEach(cb => {
-    cb.checked = false;
-    document.getElementById("row-" + cb.value).style.background = "";
-  });
-  const master = document.getElementById("check-all");
-  if (master) master.checked = false;
-  updateBulkBar();
-}
-
-function updateBulkBar() {
-  const bar = document.getElementById("bulk-bar");
-  const lbl = document.getElementById("sel-label");
-  bar.style.display = selectedIds.size > 0 ? "flex" : "none";
-  lbl.textContent   = `${selectedIds.size} بازیکن انتخاب شده`;
-}
-
-function bulkAction(action) {
-  if (selectedIds.size === 0) return;
-  pendingAction = action;
-  const modal = document.getElementById("bulk-modal");
-  const title = document.getElementById("modal-title");
-  const desc  = document.getElementById("modal-desc");
-  const btn   = document.getElementById("modal-confirm-btn");
-
-  if (action === "archive") {
-    title.textContent = "📦 بایگانی بازیکنان";
-    desc.textContent  = `${selectedIds.size} بازیکن به سطل زباله منتقل می‌شوند. می‌توانید آن‌ها را از بخش «سطل زباله» بازگردانید.`;
-    btn.textContent   = "📦 انتقال به سطل زباله";
-    btn.className     = "btn btn-red";
-    document.getElementById("bulk-reason").style.display = "block";
-  } else {
-    title.textContent = "🗑️ حذف دائمی بازیکنان";
-    desc.textContent  = `${selectedIds.size} بازیکن کاملاً از سیستم حذف می‌شوند. این عمل قابل بازگشت نیست!`;
-    btn.textContent   = "🗑️ حذف کن";
-    btn.className     = "btn btn-red";
-    document.getElementById("bulk-reason").style.display = "none";
-  }
-  modal.style.display = "flex";
-}
-
-function closeModal() { document.getElementById("bulk-modal").style.display = "none"; }
-
-async function confirmBulk() {
-  const reason = document.getElementById("bulk-reason").value.trim();
-  closeModal();
-  try {
-    const res = await fetch(BULK_URL, {
-      method:  "POST",
-      headers: { "Content-Type":"application/json","X-CSRFToken":CSRF },
-      body:    JSON.stringify({
-        action:     pendingAction,
-        player_ids: [...selectedIds],
-        reason:     reason,
-      }),
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
-
-    const msg = data.action === "archive"
-      ? `${data.count} بازیکن بایگانی شد`
-      : `${data.count} بازیکن حذف شد`;
-
-    // حذف ردیف‌های مربوطه از DOM
-    selectedIds.forEach(id => {
-      const row = document.getElementById("row-" + id);
-      if (row) {
-        row.style.transition = "opacity .3s, transform .3s";
-        row.style.opacity    = "0";
-        row.style.transform  = "translateX(20px)";
-        setTimeout(() => row.remove(), 300);
-      }
-    });
-
-    clearSelection();
-    showToast("✅ " + msg, "ok");
-    setTimeout(() => location.reload(), 1200);
-
-  } catch (err) {
-    showToast("❌ " + err.message, "err");
-  }
-}
-
-function showToast(msg, type) {
-  const el = document.createElement("div");
-  el.textContent = msg;
-  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
-    background:${type==="ok"?"#10b981":"#ef4444"};color:#fff;
-    padding:.6rem 1.25rem;border-radius:99px;font-size:.85rem;font-weight:700;
-    z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap`;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2700);
-}
-</script>
-{% endif %}
-
-{% endblock %}
+{% block title %}بازیکنان{% endblock %}
+{% block nav_players %}active{% endblock %}
 
 {% block breadcrumb %}
   <span class="sep">›</span><span class="cur">بازیکنان</span>
+{% endblock %}
 
-<!-- Bulk Action Modal -->
-<div id="bulk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-    <h3 style="font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:1rem" id="modal-title">بایگانی بازیکنان</h3>
-    <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1rem" id="modal-desc"></p>
-    <div style="margin-bottom:1.25rem">
-      <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">دلیل (اختیاری)</label>
-      <textarea id="bulk-reason" rows="2" placeholder="دلیل بایگانی..."
-                style="width:100%;padding:.6rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.85rem;resize:none"></textarea>
-    </div>
-    <div style="display:flex;gap:.6rem;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal()">انصراف</button>
-      <button class="btn btn-red" id="modal-confirm-btn" onclick="confirmBulk()">تأیید</button>
-    </div>
-  </div>
-</div>
-
-{% if request.user.is_technical_director or request.user.is_superuser %}
-<script>
-const BULK_URL = "{% url 'registration:player-bulk-action' %}";
-const CSRF     = "{{ csrf_token }}";
-let selectedIds  = new Set();
-let pendingAction = "";
-
-function onCheck(cb) {
-  const id = parseInt(cb.value);
-  if (cb.checked) selectedIds.add(id);
-  else            selectedIds.delete(id);
-  updateBulkBar();
-  document.getElementById("row-" + id).style.background = cb.checked ? "#fffbeb" : "";
+{% block extra_head %}
+<style>
+/* فیلتر پیشرفته */
+.adv-filter-panel {
+  display:none; background:#f8fafc; border:1.5px solid var(--surface-2);
+  border-radius:var(--radius); padding:1rem 1.25rem; margin-bottom:.85rem;
+}
+.adv-filter-panel.open { display:block; }
+.filter-row { display:flex; flex-wrap:wrap; gap:.65rem; align-items:flex-end; margin-bottom:.65rem; }
+.filter-row:last-child { margin-bottom:0; }
+.filter-group { display:flex; flex-direction:column; gap:.2rem; }
+.filter-label { font-size:.72rem; font-weight:800; color:var(--text-muted); }
+.filter-select {
+  padding:.4rem .65rem; border:1.5px solid var(--surface-2); border-radius:8px;
+  font-family:inherit; font-size:.82rem; background:#fff; cursor:pointer;
 }
 
-function toggleAll(masterCb) {
-  document.querySelectorAll(".row-check").forEach(cb => {
-    cb.checked = masterCb.checked;
-    onCheck(cb);
-  });
+/* تنظیم ستون‌ها */
+.col-toggle-bar {
+  display:flex; flex-wrap:wrap; gap:.3rem; align-items:center;
+  padding:.6rem .85rem; background:#fff; border:1.5px solid var(--surface-2);
+  border-radius:var(--radius); margin-bottom:.75rem;
 }
-
-function rowClick(e, id) {
-  // فقط وقتی روی ردیف کلیک می‌شه (نه دکمه پروفایل)
-  if (e.target.tagName === "A" || e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
-  const cb = document.querySelector(`.row-check[value="${id}"]`);
-  if (cb) { cb.checked = !cb.checked; onCheck(cb); }
+.col-chip {
+  display:flex; align-items:center; gap:.25rem; padding:.2rem .55rem;
+  border-radius:99px; font-size:.72rem; font-weight:700; cursor:pointer;
+  border:1.5px solid var(--surface-2); background:var(--surface-2);
+  color:var(--text-muted); transition:.12s; user-select:none;
 }
+.col-chip.active { background:#dbeafe; border-color:#93c5fd; color:#1e3a8a; }
 
-function clearSelection() {
-  selectedIds.clear();
-  document.querySelectorAll(".row-check").forEach(cb => {
-    cb.checked = false;
-    document.getElementById("row-" + cb.value).style.background = "";
-  });
-  const master = document.getElementById("check-all");
-  if (master) master.checked = false;
-  updateBulkBar();
+/* رده سنی chip */
+.age-chip {
+  display:inline-flex; align-items:center; gap:.25rem;
+  padding:.25rem .7rem; border-radius:99px; font-size:.75rem; font-weight:700;
+  text-decoration:none; border:1.5px solid var(--surface-2);
+  background:var(--surface-2); color:var(--text-muted); transition:.12s;
 }
+.age-chip:hover { border-color:var(--navy); color:var(--navy); }
+.age-chip.active { background:var(--navy); border-color:var(--navy); color:#fff; }
 
-function updateBulkBar() {
-  const bar = document.getElementById("bulk-bar");
-  const lbl = document.getElementById("sel-label");
-  bar.style.display = selectedIds.size > 0 ? "flex" : "none";
-  lbl.textContent   = `${selectedIds.size} بازیکن انتخاب شده`;
+/* bulk bar */
+#bulk-bar {
+  display:none; position:sticky; top:0; z-index:100;
+  background:#fffbeb; border:1.5px solid var(--amber);
+  border-radius:var(--radius); padding:.65rem 1rem;
+  margin-bottom:.75rem; align-items:center; gap:.6rem; flex-wrap:wrap;
 }
-
-function bulkAction(action) {
-  if (selectedIds.size === 0) return;
-  pendingAction = action;
-  const modal = document.getElementById("bulk-modal");
-  const title = document.getElementById("modal-title");
-  const desc  = document.getElementById("modal-desc");
-  const btn   = document.getElementById("modal-confirm-btn");
-
-  if (action === "archive") {
-    title.textContent = "📦 بایگانی بازیکنان";
-    desc.textContent  = `${selectedIds.size} بازیکن به سطل زباله منتقل می‌شوند. می‌توانید آن‌ها را از بخش «سطل زباله» بازگردانید.`;
-    btn.textContent   = "📦 انتقال به سطل زباله";
-    btn.className     = "btn btn-red";
-    document.getElementById("bulk-reason").style.display = "block";
-  } else {
-    title.textContent = "🗑️ حذف دائمی بازیکنان";
-    desc.textContent  = `${selectedIds.size} بازیکن کاملاً از سیستم حذف می‌شوند. این عمل قابل بازگشت نیست!`;
-    btn.textContent   = "🗑️ حذف کن";
-    btn.className     = "btn btn-red";
-    document.getElementById("bulk-reason").style.display = "none";
-  }
-  modal.style.display = "flex";
-}
-
-function closeModal() { document.getElementById("bulk-modal").style.display = "none"; }
-
-async function confirmBulk() {
-  const reason = document.getElementById("bulk-reason").value.trim();
-  closeModal();
-  try {
-    const res = await fetch(BULK_URL, {
-      method:  "POST",
-      headers: { "Content-Type":"application/json","X-CSRFToken":CSRF },
-      body:    JSON.stringify({
-        action:     pendingAction,
-        player_ids: [...selectedIds],
-        reason:     reason,
-      }),
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
-
-    const msg = data.action === "archive"
-      ? `${data.count} بازیکن بایگانی شد`
-      : `${data.count} بازیکن حذف شد`;
-
-    // حذف ردیف‌های مربوطه از DOM
-    selectedIds.forEach(id => {
-      const row = document.getElementById("row-" + id);
-      if (row) {
-        row.style.transition = "opacity .3s, transform .3s";
-        row.style.opacity    = "0";
-        row.style.transform  = "translateX(20px)";
-        setTimeout(() => row.remove(), 300);
-      }
-    });
-
-    clearSelection();
-    showToast("✅ " + msg, "ok");
-    setTimeout(() => location.reload(), 1200);
-
-  } catch (err) {
-    showToast("❌ " + err.message, "err");
-  }
-}
-
-function showToast(msg, type) {
-  const el = document.createElement("div");
-  el.textContent = msg;
-  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
-    background:${type==="ok"?"#10b981":"#ef4444"};color:#fff;
-    padding:.6rem 1.25rem;border-radius:99px;font-size:.85rem;font-weight:700;
-    z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap`;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2700);
-}
-</script>
-{% endif %}
-
+</style>
 {% endblock %}
 
 {% block content %}
 
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
-  <div>
-    <h1 style="font-size:1.25rem;font-weight:900;color:var(--navy)">👥 بازیکنان</h1>
-    <p style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">{{ total_count }} بازیکن تأییدشده</p>
+<!-- Bulk Archive Modal -->
+<div id="bulk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <h3 style="font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:1rem">📦 انتقال به سطل زباله</h3>
+    <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1rem" id="modal-desc"></p>
+    <div style="margin-bottom:1.25rem">
+      <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">دلیل (اختیاری)</label>
+      <textarea id="bulk-reason" rows="2" placeholder="دلیل بایگانی..."
+                style="width:100%;padding:.6rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.85rem;resize:none"></textarea>
+    </div>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeBulkModal()">انصراف</button>
+      <button class="btn btn-red" onclick="confirmBulk()">تأیید</button>
+    </div>
   </div>
-  <div style="display:flex;gap:.5rem">
-    <a href="{% url 'registration:applicant-list' %}" class="btn btn-outline btn-sm">📋 متقاضیان جدید</a>
+</div>
+
+<!-- ── Header ──────────────────────────────────────────────────── -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">⚽ بازیکنان</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">{{ total_count }} بازیکن فعال</p>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    {% if request.user.is_technical_director or request.user.is_superuser %}
     <a href="{% url 'registration:bulk-import' %}" class="btn btn-navy btn-sm">📥 ایمپورت اکسل</a>
+    {% endif %}
     <a href="{% url 'registration:recycle-bin' %}" class="btn btn-sm" style="border:1.5px solid #ef4444;color:#ef4444">🗑️ سطل زباله</a>
   </div>
 </div>
 
-{% if request.user.is_technical_director or request.user.is_superuser %}
-<!-- Bulk action bar - initially hidden -->
-<div id="bulk-bar" style="display:none;background:#fff;border:1.5px solid var(--amber);border-radius:var(--radius);padding:.65rem 1rem;margin-bottom:.85rem;align-items:center;gap:.75rem;flex-wrap:wrap">
-  <span style="font-weight:700;font-size:.85rem;color:var(--navy)" id="sel-label">۰ بازیکن انتخاب شده</span>
-  <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-right:auto">
-    <button class="btn btn-sm" style="border:1.5px solid var(--red);color:var(--red)"
-            onclick="bulkAction('archive')">📦 انتقال به سطل زباله</button>
-
-    <button class="btn btn-outline btn-sm" onclick="clearSelection()">✕ لغو انتخاب</button>
-  </div>
-</div>
-{% endif %}
-
-<!-- Filter -->
-<div class="card" style="padding:.85rem 1rem;margin-bottom:1rem">
-  <form method="get" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+<!-- ── جستجو + فیلتر ──────────────────────────────────────────── -->
+<form method="get" id="filter-form">
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.65rem">
     <input type="text" name="q" value="{{ q }}"
-           placeholder="نام، کد ملی، موبایل..."
-           style="padding:.55rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem;flex:1;min-width:180px">
-    <select name="category"
-            style="padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
+           placeholder="🔍 نام، کد ملی، موبایل..."
+           style="flex:1;min-width:180px;max-width:260px;padding:.55rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
+
+    <select name="category" class="filter-select" style="min-width:140px">
       <option value="">همه دسته‌ها</option>
       {% for cat in all_categories %}
-      <option value="{{ cat.pk }}" {% if category_filter == cat.pk|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
+      <option value="{{ cat.pk }}" {% if category_filter == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
       {% endfor %}
     </select>
-    <button type="submit" class="btn btn-primary btn-sm">🔍 جستجو</button>
-    {% if q or category_filter %}<a href="?" class="btn btn-outline btn-sm">✕ پاک</a>{% endif %}
-  </form>
-</div>
 
-<!-- فیلتر رده سنی -->
+    <button type="button" class="btn btn-outline btn-sm"
+            onclick="document.getElementById('adv-filter').classList.toggle('open')">
+      ⚙️ فیلتر پیشرفته {% if has_adv_filter %}●{% endif %}
+    </button>
+    <button type="submit" class="btn btn-primary btn-sm">جستجو</button>
+    {% if q or category_filter or has_adv_filter %}<a href="?" class="btn btn-outline btn-sm">✕ پاک</a>{% endif %}
+  </div>
+
+  <!-- ── فیلتر پیشرفته ──────────────────────────────────────── -->
+  <div class="adv-filter-panel {% if has_adv_filter %}open{% endif %}" id="adv-filter">
+    <div style="font-size:.75rem;font-weight:800;color:var(--navy);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.06em">⚙️ فیلتر پیشرفته</div>
+    <div class="filter-row">
+      <div class="filter-group">
+        <span class="filter-label">پست</span>
+        <select name="position" class="filter-select">
+          <option value="">همه پست‌ها</option>
+          <option value="gk" {% if filter_position == 'gk' %}selected{% endif %}>🥅 دروازه‌بان</option>
+          <option value="fixo" {% if filter_position == 'fixo' %}selected{% endif %}>🛡️ فیکسو</option>
+          <option value="winger" {% if filter_position == 'winger' %}selected{% endif %}>💨 وینگر</option>
+          <option value="pivot" {% if filter_position == 'pivot' %}selected{% endif %}>⚡ پیوت</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">سطح مهارت</span>
+        <select name="skill_level" class="filter-select">
+          <option value="">همه سطوح</option>
+          {% for lv in "ABCDEF" %}
+          <option value="{{ lv }}" {% if filter_skill == lv %}selected{% endif %}>{{ lv }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">پای برتر</span>
+        <select name="preferred_foot" class="filter-select">
+          <option value="">همه</option>
+          <option value="right" {% if filter_foot == 'right' %}selected{% endif %}>راست</option>
+          <option value="left" {% if filter_foot == 'left' %}selected{% endif %}>چپ</option>
+          <option value="both" {% if filter_foot == 'both' %}selected{% endif %}>هر دو</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">دو‌پا</span>
+        <select name="two_footed" class="filter-select">
+          <option value="">همه</option>
+          <option value="1" {% if filter_two_footed == '1' %}selected{% endif %}>بله</option>
+          <option value="0" {% if filter_two_footed == '0' %}selected{% endif %}>خیر</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">وضعیت بیمه</span>
+        <select name="insurance" class="filter-select">
+          <option value="">همه</option>
+          <option value="active" {% if filter_insurance == 'active' %}selected{% endif %}>✅ فعال</option>
+          <option value="none" {% if filter_insurance == 'none' %}selected{% endif %}>❌ ندارد</option>
+          <option value="expired" {% if filter_insurance == 'expired' %}selected{% endif %}>⚠️ منقضی</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem">
+      <button type="submit" class="btn btn-navy btn-sm">اعمال فیلتر</button>
+    </div>
+  </div>
+</form>
+
+<!-- ── فیلتر رده سنی ──────────────────────────────────────────── -->
 {% if age_category_counts %}
-<div style="margin-bottom:.75rem;display:flex;gap:.35rem;flex-wrap:wrap;align-items:center">
-  <span style="font-size:.75rem;font-weight:700;color:var(--text-muted)">🧒 رده سنی:</span>
-  <a href="{% url 'training:player-list' %}{% if q or category_filter %}?{% if q %}q={{ q }}&{% endif %}{% if category_filter %}category={{ category_filter }}{% endif %}{% endif %}"
-     class="btn btn-sm {% if not age_filter %}btn-navy{% else %}btn-outline{% endif %}"
-     style="border-radius:99px;padding:.25rem .7rem;font-size:.75rem">همه</a>
+<div style="display:flex;gap:.3rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem">
+  <span style="font-size:.75rem;font-weight:800;color:var(--text-muted)">🧒 رده سنی:</span>
+  <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_filter %}category={{ category_filter }}&{% endif %}"
+     class="age-chip {% if not age_filter %}active{% endif %}">همه</a>
   {% for cat, cnt in age_category_counts %}
   <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_filter %}category={{ category_filter }}&{% endif %}age_cat={{ cat }}"
-     class="btn btn-sm {% if age_filter == cat %}btn-navy{% else %}btn-outline{% endif %}"
-     style="border-radius:99px;padding:.25rem .7rem;font-size:.75rem">
+     class="age-chip {% if age_filter == cat %}active{% endif %}">
     {{ cat }} <span style="opacity:.7">({{ cnt }})</span>
   </a>
   {% endfor %}
 </div>
 {% endif %}
 
-<!-- Table -->
+<!-- ── تنظیم ستون‌های نمایش ─────────────────────────────────── -->
+<div class="col-toggle-bar" id="col-toggle-bar">
+  <span style="font-size:.72rem;font-weight:800;color:var(--text-muted)">ستون‌ها:</span>
+  <span class="col-chip active" data-col="national_id" onclick="toggleCol(this)">کد ملی</span>
+  <span class="col-chip active" data-col="phone" onclick="toggleCol(this)">موبایل</span>
+  <span class="col-chip active" data-col="father" onclick="toggleCol(this)">پدر</span>
+  <span class="col-chip active" data-col="age_cat" onclick="toggleCol(this)">رده سنی</span>
+  <span class="col-chip active" data-col="category" onclick="toggleCol(this)">دسته</span>
+  <span class="col-chip active" data-col="insurance" onclick="toggleCol(this)">بیمه</span>
+  <span class="col-chip" data-col="position" onclick="toggleCol(this)">پست</span>
+  <span class="col-chip" data-col="skill" onclick="toggleCol(this)">سطح</span>
+  <span class="col-chip" data-col="shirt" onclick="toggleCol(this)">شماره پیراهن</span>
+  <span class="col-chip" data-col="foot" onclick="toggleCol(this)">پای برتر</span>
+</div>
+
+<!-- ── Bulk bar ──────────────────────────────────────────────── -->
+{% if request.user.is_technical_director or request.user.is_superuser %}
+<div id="bulk-bar" style="display:none;background:#fffbeb;border:1.5px solid var(--amber);border-radius:var(--radius);padding:.65rem 1rem;margin-bottom:.75rem;align-items:center;gap:.6rem;flex-wrap:wrap">
+  <span id="bulk-label" style="font-size:.85rem;font-weight:700">۰ نفر انتخاب</span>
+  <button class="btn btn-amber btn-sm" onclick="bulkAction('archive')">📦 انتقال به سطل زباله</button>
+  <button class="btn btn-outline btn-sm" onclick="clearSelection()">✕ لغو</button>
+</div>
+{% endif %}
+
+<!-- ── جدول ─────────────────────────────────────────────────── -->
 {% if players %}
 <div class="card">
   <div class="table-wrap">
-    <table class="data-table">
+    <table class="data-table" id="players-table">
       <thead>
         <tr>
+          {% if request.user.is_technical_director or request.user.is_superuser %}
           <th style="width:36px">
-            {% if request.user.is_technical_director or request.user.is_superuser %}
             <input type="checkbox" id="check-all" onclick="toggleAll(this)"
                    style="accent-color:var(--navy);width:15px;height:15px">
-            {% endif %}
           </th>
+          {% endif %}
           <th>#</th>
-          <th>نام و نام خانوادگی</th>
-          <th>کد ملی</th>
-          <th>موبایل</th>
-          <th>پدر</th>
-          <th>رده سنی</th>
-          <th>دسته</th>
-          <th>بیمه</th>
+          <th>نام</th>
+          <th class="col-national_id">کد ملی</th>
+          <th class="col-phone">موبایل</th>
+          <th class="col-father">پدر</th>
+          <th class="col-age_cat">رده سنی</th>
+          <th class="col-category">دسته</th>
+          <th class="col-insurance">بیمه</th>
+          <th class="col-position" style="display:none">پست</th>
+          <th class="col-skill" style="display:none">سطح</th>
+          <th class="col-shirt" style="display:none">پیراهن</th>
+          <th class="col-foot" style="display:none">پا</th>
           <th>عملیات</th>
         </tr>
       </thead>
       <tbody>
         {% for player in players %}
-        <tr id="row-{{ player.pk }}" onclick="rowClick(event, {{ player.pk }})">
+        <tr id="row-{{ player.pk }}" onclick="rowClick(event, {{ player.pk }})" style="cursor:pointer">
+          {% if request.user.is_technical_director or request.user.is_superuser %}
           <td>
-            {% if request.user.is_technical_director or request.user.is_superuser %}
             <input type="checkbox" class="row-check" value="{{ player.pk }}"
                    onclick="event.stopPropagation();onCheck(this)"
                    style="accent-color:var(--navy);width:15px;height:15px">
-            {% endif %}
           </td>
-          <td style="color:var(--text-muted);font-size:.8rem">
-            {{ page_obj.start_index|add:forloop.counter0 }}
-          </td>
+          {% endif %}
+          <td style="color:var(--text-muted);font-size:.78rem">{{ forloop.counter }}</td>
           <td>
-            <strong>{{ player.first_name }} {{ player.last_name }}</strong>
-            <div style="font-size:.72rem;color:var(--text-muted)">{{ player.father_name }}</div>
+            <strong style="font-size:.875rem">{{ player.first_name }} {{ player.last_name }}</strong>
           </td>
-          <td style="font-family:monospace;font-size:.82rem">{{ player.national_id }}</td>
-          <td style="font-size:.82rem">{{ player.phone }}</td>
-          <td style="font-size:.82rem">{{ player.father_phone }}</td>
-          <td style="font-size:.78rem;font-weight:700;color:var(--navy)">
+          <td class="col-national_id" style="font-family:monospace;font-size:.8rem">{{ player.national_id }}</td>
+          <td class="col-phone" style="font-size:.82rem">{{ player.phone }}</td>
+          <td class="col-father" style="font-size:.78rem;color:var(--text-muted)">{{ player.father_phone }}</td>
+          <td class="col-age_cat" style="font-size:.78rem;font-weight:700;color:var(--navy)">
             {% if player.dob %}{{ player.get_age_category }}{% else %}—{% endif %}
           </td>
-          <td>
+          <td class="col-category">
             {% for cat in player.categories.all %}
-            <span style="background:rgba(14,165,233,.1);color:var(--teal);border-radius:6px;padding:.15rem .5rem;font-size:.7rem;font-weight:600">{{ cat.name }}</span>
-            {% empty %}<span style="color:var(--text-muted);font-size:.75rem">—</span>
+            <span style="background:rgba(14,165,233,.1);color:var(--teal);border-radius:6px;padding:.1rem .4rem;font-size:.68rem;font-weight:600;white-space:nowrap">{{ cat.name }}</span>
+            {% empty %}<span style="color:var(--text-muted);font-size:.72rem">—</span>
             {% endfor %}
           </td>
-          <td>
-            {% if player.insurance_status == 'active' %}
-              <span class="badge badge-green">✅</span>
-            {% else %}
-              <span class="badge badge-red">❌</span>
-            {% endif %}
+          <td class="col-insurance">
+            {% if player.insurance_status == 'active' %}<span class="badge badge-green" style="font-size:.68rem">✅</span>
+            {% else %}<span class="badge badge-red" style="font-size:.68rem">❌</span>{% endif %}
+          </td>
+          <!-- ستون‌های پنهان - فنی -->
+          <td class="col-position" style="display:none;font-size:.78rem">
+            {% if player.technical_profile.position and player.technical_profile.position != '-' %}
+              {{ player.technical_profile.get_position_display }}
+            {% else %}—{% endif %}
+          </td>
+          <td class="col-skill" style="display:none;font-size:.78rem;font-weight:700">
+            {{ player.technical_profile.skill_level|default:"—" }}
+          </td>
+          <td class="col-shirt" style="display:none;font-size:.78rem;font-weight:800;color:var(--navy)">
+            {% if player.technical_profile.shirt_number %}#{{ player.technical_profile.shirt_number }}{% else %}—{% endif %}
+          </td>
+          <td class="col-foot" style="display:none;font-size:.78rem">
+            {{ player.get_preferred_foot_display|default:"—" }}
           </td>
           <td>
             <a href="{% url 'training:player-profile' player.pk %}"
-               class="btn btn-outline btn-sm">👤 پروفایل</a>
+               class="btn btn-outline btn-sm" onclick="event.stopPropagation()">👤</a>
           </td>
         </tr>
         {% endfor %}
@@ -573,171 +293,139 @@ function showToast(msg, type) {
 
 <!-- Pagination -->
 {% if is_paginated %}
-<div style="display:flex;justify-content:center;gap:.4rem;margin-top:1rem">
+<div style="display:flex;justify-content:center;gap:.4rem;margin-top:.85rem">
   {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">← قبلی</a>
+  <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if age_filter %}&age_cat={{ age_filter }}{% endif %}" class="btn btn-outline btn-sm">← قبلی</a>
   {% endif %}
-  <span style="padding:.5rem .85rem;font-size:.82rem;color:var(--text-muted)">
-    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
-  </span>
+  <span style="padding:.5rem .85rem;font-size:.82rem;color:var(--text-muted)">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">بعدی →</a>
+  <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if age_filter %}&age_cat={{ age_filter }}{% endif %}" class="btn btn-outline btn-sm">بعدی →</a>
   {% endif %}
 </div>
 {% endif %}
 
 {% else %}
 <div class="card" style="text-align:center;padding:3rem">
-  <div style="font-size:3rem;margin-bottom:1rem">👥</div>
-  <h3 style="font-weight:800;margin-bottom:.5rem">هیچ بازیکنی یافت نشد</h3>
-  <p style="color:var(--text-muted);font-size:.875rem">
-    {% if q %}نتیجه‌ای برای «{{ q }}» پیدا نشد{% else %}هنوز بازیکن تأییدشده‌ای وجود ندارد{% endif %}
+  <div style="font-size:3rem;opacity:.4;margin-bottom:.75rem">⚽</div>
+  <h3 style="font-weight:800">بازیکنی یافت نشد</h3>
+  <p style="color:var(--text-muted);font-size:.875rem;margin-top:.35rem">
+    {% if q or category_filter or has_adv_filter or age_filter %}فیلترها را تغییر دهید{% else %}هنوز بازیکنی ثبت نشده{% endif %}
   </p>
 </div>
 {% endif %}
 
-
-<!-- Bulk Action Modal -->
-<div id="bulk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-    <h3 style="font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:1rem" id="modal-title">بایگانی بازیکنان</h3>
-    <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1rem" id="modal-desc"></p>
-    <div style="margin-bottom:1.25rem">
-      <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">دلیل (اختیاری)</label>
-      <textarea id="bulk-reason" rows="2" placeholder="دلیل بایگانی..."
-                style="width:100%;padding:.6rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.85rem;resize:none"></textarea>
-    </div>
-    <div style="display:flex;gap:.6rem;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal()">انصراف</button>
-      <button class="btn btn-red" id="modal-confirm-btn" onclick="confirmBulk()">تأیید</button>
-    </div>
-  </div>
-</div>
-
-{% if request.user.is_technical_director or request.user.is_superuser %}
 <script>
+// ── Column visibility ────────────────────────────────────────
+const COL_KEY = 'player_list_cols';
+let activeCols = JSON.parse(localStorage.getItem(COL_KEY) || 'null');
+// default: show all "active" chips
+if (!activeCols) {
+  activeCols = ['national_id','phone','father','age_cat','category','insurance'];
+}
+
+function applyColVisibility() {
+  const allCols = ['national_id','phone','father','age_cat','category','insurance','position','skill','shirt','foot'];
+  allCols.forEach(col => {
+    const show = activeCols.includes(col);
+    document.querySelectorAll(`.col-${col}`).forEach(el => el.style.display = show ? '' : 'none');
+    const chip = document.querySelector(`[data-col="${col}"]`);
+    if (chip) chip.classList.toggle('active', show);
+  });
+}
+
+function toggleCol(chip) {
+  const col = chip.dataset.col;
+  if (activeCols.includes(col)) {
+    activeCols = activeCols.filter(c => c !== col);
+  } else {
+    activeCols.push(col);
+  }
+  localStorage.setItem(COL_KEY, JSON.stringify(activeCols));
+  applyColVisibility();
+}
+
+// ── Bulk actions ─────────────────────────────────────────────
 const BULK_URL = "{% url 'registration:player-bulk-action' %}";
 const CSRF     = "{{ csrf_token }}";
-let selectedIds  = new Set();
-let pendingAction = "";
+let selectedIds = new Set();
 
 function onCheck(cb) {
   const id = parseInt(cb.value);
   if (cb.checked) selectedIds.add(id);
   else            selectedIds.delete(id);
   updateBulkBar();
-  document.getElementById("row-" + id).style.background = cb.checked ? "#fffbeb" : "";
+  document.getElementById('row-' + id).style.background = cb.checked ? '#fffbeb' : '';
 }
 
-function toggleAll(masterCb) {
-  document.querySelectorAll(".row-check").forEach(cb => {
-    cb.checked = masterCb.checked;
-    onCheck(cb);
+function toggleAll(cb) {
+  document.querySelectorAll('.row-check').forEach(c => {
+    c.checked = cb.checked;
+    onCheck(c);
   });
 }
 
 function rowClick(e, id) {
-  // فقط وقتی روی ردیف کلیک می‌شه (نه دکمه پروفایل)
-  if (e.target.tagName === "A" || e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+  if (['A','INPUT','BUTTON','SPAN'].includes(e.target.tagName)) return;
   const cb = document.querySelector(`.row-check[value="${id}"]`);
   if (cb) { cb.checked = !cb.checked; onCheck(cb); }
 }
 
 function clearSelection() {
   selectedIds.clear();
-  document.querySelectorAll(".row-check").forEach(cb => {
-    cb.checked = false;
-    document.getElementById("row-" + cb.value).style.background = "";
-  });
-  const master = document.getElementById("check-all");
-  if (master) master.checked = false;
+  document.querySelectorAll('.row-check').forEach(c => { c.checked = false; });
+  document.querySelectorAll('tr[id^=row-]').forEach(r => r.style.background = '');
+  document.getElementById('check-all').checked = false;
   updateBulkBar();
 }
 
 function updateBulkBar() {
-  const bar = document.getElementById("bulk-bar");
-  const lbl = document.getElementById("sel-label");
-  bar.style.display = selectedIds.size > 0 ? "flex" : "none";
-  lbl.textContent   = `${selectedIds.size} بازیکن انتخاب شده`;
+  const bar = document.getElementById('bulk-bar');
+  if (!bar) return;
+  bar.style.display = selectedIds.size > 0 ? 'flex' : 'none';
+  document.getElementById('bulk-label').textContent = `${selectedIds.size} نفر انتخاب`;
 }
 
 function bulkAction(action) {
-  if (selectedIds.size === 0) return;
-  pendingAction = action;
-  const modal = document.getElementById("bulk-modal");
-  const title = document.getElementById("modal-title");
-  const desc  = document.getElementById("modal-desc");
-  const btn   = document.getElementById("modal-confirm-btn");
-
-  if (action === "archive") {
-    title.textContent = "📦 بایگانی بازیکنان";
-    desc.textContent  = `${selectedIds.size} بازیکن به سطل زباله منتقل می‌شوند. می‌توانید آن‌ها را از بخش «سطل زباله» بازگردانید.`;
-    btn.textContent   = "📦 انتقال به سطل زباله";
-    btn.className     = "btn btn-red";
-    document.getElementById("bulk-reason").style.display = "block";
-  } else {
-    title.textContent = "🗑️ حذف دائمی بازیکنان";
-    desc.textContent  = `${selectedIds.size} بازیکن کاملاً از سیستم حذف می‌شوند. این عمل قابل بازگشت نیست!`;
-    btn.textContent   = "🗑️ حذف کن";
-    btn.className     = "btn btn-red";
-    document.getElementById("bulk-reason").style.display = "none";
-  }
-  modal.style.display = "flex";
+  document.getElementById('modal-desc').textContent =
+    `${selectedIds.size} بازیکن به سطل زباله منتقل می‌شوند. می‌توانید آن‌ها را بازگردانید.`;
+  document.getElementById('bulk-modal').style.display = 'flex';
 }
 
-function closeModal() { document.getElementById("bulk-modal").style.display = "none"; }
+function closeBulkModal() {
+  document.getElementById('bulk-modal').style.display = 'none';
+}
 
 async function confirmBulk() {
-  const reason = document.getElementById("bulk-reason").value.trim();
-  closeModal();
+  const reason = document.getElementById('bulk-reason').value;
+  closeBulkModal();
   try {
     const res = await fetch(BULK_URL, {
-      method:  "POST",
-      headers: { "Content-Type":"application/json","X-CSRFToken":CSRF },
-      body:    JSON.stringify({
-        action:     pendingAction,
-        player_ids: [...selectedIds],
-        reason:     reason,
-      }),
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({action:'archive', player_ids:[...selectedIds], reason}),
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
-
-    const msg = data.action === "archive"
-      ? `${data.count} بازیکن بایگانی شد`
-      : `${data.count} بازیکن حذف شد`;
-
-    // حذف ردیف‌های مربوطه از DOM
     selectedIds.forEach(id => {
-      const row = document.getElementById("row-" + id);
-      if (row) {
-        row.style.transition = "opacity .3s, transform .3s";
-        row.style.opacity    = "0";
-        row.style.transform  = "translateX(20px)";
-        setTimeout(() => row.remove(), 300);
-      }
+      const row = document.getElementById('row-' + id);
+      if (row) { row.style.opacity='0'; row.style.transition='.3s'; setTimeout(()=>row.remove(),300); }
     });
-
-    clearSelection();
-    showToast("✅ " + msg, "ok");
-    setTimeout(() => location.reload(), 1200);
-
-  } catch (err) {
-    showToast("❌ " + err.message, "err");
-  }
+    selectedIds.clear();
+    updateBulkBar();
+    showToast(`✅ ${data.count} بازیکن به سطل زباله منتقل شد`);
+  } catch(e) { showToast('❌ ' + e.message, 'err'); }
 }
 
-function showToast(msg, type) {
-  const el = document.createElement("div");
+function showToast(msg, type='ok') {
+  const el = document.createElement('div');
   el.textContent = msg;
-  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
-    background:${type==="ok"?"#10b981":"#ef4444"};color:#fff;
-    padding:.6rem 1.25rem;border-radius:99px;font-size:.85rem;font-weight:700;
-    z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap`;
+  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:${type==='ok'?'#10b981':'#ef4444'};color:#fff;padding:.6rem 1.25rem;border-radius:99px;font-size:.85rem;font-weight:700;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2)`;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2700);
+  setTimeout(()=>el.remove(), 3000);
 }
+
+// Init
+applyColVisibility();
 </script>
-{% endif %}
 
 {% endblock %}
