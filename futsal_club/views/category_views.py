@@ -135,8 +135,13 @@ class CategoryDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         cat = self.object
-        ctx["players"]   = cat.players.filter(status="approved").order_by("last_name")
-        ctx["schedules"] = cat.schedules.all().order_by("weekday", "start_time")
+        ctx["players"] = (
+            cat.players.filter(status="approved")
+            .select_related("technical_profile")
+            .prefetch_related("technical_profile__soft_traits__trait_type")
+            .order_by("last_name")
+        )
+        ctx["schedules"]   = cat.schedules.all().order_by("weekday", "start_time")
         ctx["coach_rates"] = CoachCategoryRate.objects.filter(
             category=cat, is_active=True
         ).select_related("coach")
@@ -289,7 +294,12 @@ class CoachDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         ctx["coach_rates"] = CoachCategoryRate.objects.filter(
             coach=self.object
-        ).select_related("category")
+        ).select_related("category").order_by("category__name")
+        # دسته‌هایی که مربی هنوز بهشان اضافه نشده
+        assigned_cat_ids = ctx["coach_rates"].values_list("category_id", flat=True)
+        ctx["available_categories"] = TrainingCategory.objects.filter(
+            is_active=True
+        ).exclude(pk__in=assigned_cat_ids).order_by("name")
         return ctx
 
 
@@ -304,6 +314,47 @@ class CoachToggleActiveView(LoginRequiredMixin, RoleRequiredMixin, View):
         messages.success(request,
             f"مربی «{coach.first_name} {coach.last_name}» {state} شد.")
         return redirect("training:coach-list")
+
+class CoachAssignCategoryView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """POST: اختصاص مربی به دسته آموزشی با نرخ جلسه"""
+    allowed_roles = ["is_technical_director", "is_superuser"]
+
+    def post(self, request, pk):
+        coach = get_object_or_404(Coach, pk=pk)
+        cat_id       = request.POST.get("category_id", "").strip()
+        session_rate = request.POST.get("session_rate", "0").replace(",", "").strip()
+
+        if not cat_id:
+            messages.error(request, "دسته آموزشی انتخاب نشده.")
+            return redirect("training:coach-detail", pk=pk)
+
+        cat = get_object_or_404(TrainingCategory, pk=cat_id)
+        try:
+            rate = int(float(session_rate)) if session_rate else 0
+        except ValueError:
+            rate = 0
+
+        obj, created = CoachCategoryRate.objects.update_or_create(
+            coach=coach, category=cat,
+            defaults={"session_rate": rate, "is_active": True},
+        )
+        if created:
+            messages.success(request, f"مربی «{coach}» به دسته «{cat.name}» اضافه شد.")
+        else:
+            messages.success(request, f"نرخ مربی «{coach}» در دسته «{cat.name}» بروز شد.")
+        return redirect("training:coach-detail", pk=pk)
+
+
+class CoachRemoveCategoryView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """POST: حذف مربی از دسته آموزشی"""
+    allowed_roles = ["is_technical_director", "is_superuser"]
+
+    def post(self, request, pk, rate_pk):
+        rate = get_object_or_404(CoachCategoryRate, pk=rate_pk, coach_id=pk)
+        cat_name = rate.category.name
+        rate.delete()
+        messages.success(request, f"مربی از دسته «{cat_name}» حذف شد.")
+        return redirect("training:coach-detail", pk=pk)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -636,10 +687,18 @@ class ScheduleManageView(LoginRequiredMixin, RoleRequiredMixin, View):
     def post(self, request, cat_pk):
         from ..models import TrainingSchedule
         cat = get_object_or_404(TrainingCategory, pk=cat_pk, is_active=True)
-        weekday    = request.POST.get("weekday", "").strip()
-        start_time = request.POST.get("start_time", "").strip()
-        end_time   = request.POST.get("end_time", "").strip() or None
-        location   = request.POST.get("location", "").strip()
+        weekday  = request.POST.get("weekday", "").strip()
+        location = request.POST.get("location", "").strip()
+
+        # ساعت شروع از dropdown
+        start_hour   = request.POST.get("start_hour", "").strip()
+        start_minute = request.POST.get("start_minute", "00").strip()
+        start_time   = f"{start_hour}:{start_minute}" if start_hour else ""
+
+        # ساعت پایان از dropdown
+        end_hour   = request.POST.get("end_hour", "").strip()
+        end_minute = request.POST.get("end_minute", "00").strip()
+        end_time   = f"{end_hour}:{end_minute}" if end_hour else None
 
         if weekday and start_time:
             obj, created = TrainingSchedule.objects.get_or_create(
@@ -649,11 +708,11 @@ class ScheduleManageView(LoginRequiredMixin, RoleRequiredMixin, View):
                 defaults={"end_time": end_time, "location": location},
             )
             if created:
-                messages.success(request, f"جلسه {obj.get_weekday_display()} {start_time} اضافه شد.")
+                messages.success(request, f"جلسه {obj.get_weekday_display()} ساعت {start_time} اضافه شد.")
             else:
                 messages.info(request, "این جلسه قبلاً ثبت شده.")
         else:
-            messages.error(request, "روز و ساعت شروع الزامی است.")
+            messages.error(request, "روز هفته و ساعت شروع الزامی است.")
 
         return redirect("training:category-detail", pk=cat_pk)
 

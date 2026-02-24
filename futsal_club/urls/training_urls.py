@@ -24,6 +24,8 @@ from ..views.category_views import (
     CoachUpdateView,
     CoachDetailView,
     CoachToggleActiveView,
+    CoachAssignCategoryView,
+    CoachRemoveCategoryView,
     # حضور و غیاب
     AttendanceCategorySelectView,
     # بازیکنان
@@ -65,6 +67,10 @@ urlpatterns = [
          CoachUpdateView.as_view(),           name="coach-update"),
     path("coaches/<int:pk>/toggle/",
          CoachToggleActiveView.as_view(),     name="coach-toggle"),
+    path("coaches/<int:pk>/assign-category/",
+         CoachAssignCategoryView.as_view(),   name="coach-assign-category"),
+    path("coaches/<int:pk>/remove-category/<int:rate_pk>/",
+         CoachRemoveCategoryView.as_view(),   name="coach-remove-category"),
 
     # ── انتخاب دسته برای حضور و غیاب ─────────────────────────────
     path("attendance/",

@@ -95,6 +95,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f'{self.first_name} {self.last_name} ({self.username})'
 
+    def get_full_name(self):
+        """سازگاری با Django AbstractUser"""
+        name = f'{self.first_name} {self.last_name}'.strip()
+        return name or self.username
+
+    def get_short_name(self):
+        return self.first_name or self.username
+
     def get_roles(self):
         roles = []
         if self.is_new_applicant:      roles.append(Role.NEW_APPLICANT)

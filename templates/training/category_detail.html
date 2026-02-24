@@ -1,17 +1,39 @@
 {% extends "base.html" %}
-{% block title %}{{ category.name }}<script>
-function toggleForm(id) {
-  const el = document.getElementById(id);
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-</script>
-{% endblock %}
+{% block title %}{{ category.name }}{% endblock %}
 {% block nav_categories %}active{% endblock %}
 
 {% block breadcrumb %}
   <span class="sep">›</span>
   <a href="{% url 'training:category-list' %}" style="text-decoration:none;color:inherit">دسته‌ها</a>
   <span class="sep">›</span><span class="cur">{{ category.name }}</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.col-chip {
+  display:inline-flex; align-items:center; gap:.25rem;
+  padding:.2rem .55rem; border-radius:99px; font-size:.72rem; font-weight:700;
+  cursor:pointer; border:1.5px solid var(--surface-2); background:var(--surface-2);
+  color:var(--text-muted); transition:.12s; user-select:none;
+}
+.col-chip.active { background:#dbeafe; border-color:#93c5fd; color:#1e3a8a; }
+
+.time-picker { display:flex; gap:.3rem; align-items:center; }
+.time-select {
+  padding:.45rem .5rem; border:1.5px solid var(--surface-2); border-radius:8px;
+  font-family:inherit; font-size:.82rem; background:#fff; cursor:pointer; min-width:60px;
+}
+</style>
+<script>
+function toggleScheduleForm() {
+  const el = document.getElementById('sch-add-form');
+  const btn = document.getElementById('sch-toggle-btn');
+  const open = el.style.display === 'none' || el.style.display === '';
+  el.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '✕ بستن' : '+ افزودن جلسه';
+  btn.className = open ? 'btn btn-outline btn-sm' : 'btn btn-amber btn-sm';
+}
+</script>
 {% endblock %}
 
 {% block content %}
@@ -66,50 +88,114 @@ function toggleForm(id) {
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
 
-  <!-- Schedule -->
+  <!-- ── برنامه تمرین ──────────────────────────────────────── -->
   <div class="card">
     <div class="card-header">
       <span class="card-title">📅 برنامه تمرین</span>
       {% if request.user.is_technical_director or request.user.is_superuser %}
-      <button class="btn btn-amber btn-sm" onclick="toggleForm('sch-add-form')">+ افزودن جلسه</button>
+      <button id="sch-toggle-btn" class="btn btn-amber btn-sm"
+              onclick="toggleScheduleForm()">+ افزودن جلسه</button>
       {% endif %}
     </div>
 
     <!-- فرم افزودن جلسه -->
     {% if request.user.is_technical_director or request.user.is_superuser %}
-    <div id="sch-add-form" style="display:none;padding:.85rem 1rem;border-bottom:1px solid var(--surface-2);background:#f8fafc">
-      <form method="post" action="{% url 'training:schedule-add' category.pk %}"
-            style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end">
+    <div id="sch-add-form" style="display:none;padding:.85rem 1rem;border-bottom:2px solid var(--amber);background:#fffbeb">
+      <form method="post" action="{% url 'training:schedule-add' category.pk %}">
         {% csrf_token %}
-        <div>
-          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.2rem">روز هفته *</label>
-          <select name="weekday"
-                  style="padding:.5rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem">
-            <option value="sat">شنبه</option>
-            <option value="sun">یکشنبه</option>
-            <option value="mon">دوشنبه</option>
-            <option value="tue">سه‌شنبه</option>
-            <option value="wed">چهارشنبه</option>
-            <option value="thu">پنجشنبه</option>
-            <option value="fri">جمعه</option>
-          </select>
+
+        <!-- ردیف اول: روز + ساعت شروع + ساعت پایان -->
+        <div style="display:flex;gap:.65rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:.65rem">
+          <div>
+            <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.3rem">روز هفته *</label>
+            <select name="weekday" class="time-select" style="min-width:90px">
+              <option value="sat">شنبه</option>
+              <option value="sun">یکشنبه</option>
+              <option value="mon">دوشنبه</option>
+              <option value="tue">سه‌شنبه</option>
+              <option value="wed">چهارشنبه</option>
+              <option value="thu">پنجشنبه</option>
+              <option value="fri">جمعه</option>
+            </select>
+          </div>
+
+          <!-- ساعت شروع — dropdown ساعت + دقیقه -->
+          <div>
+            <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.3rem">ساعت شروع *</label>
+            <div class="time-picker">
+              <select name="start_hour" class="time-select">
+                <option value="06">۶</option>
+                <option value="07">۷</option>
+                <option value="08">۸</option>
+                <option value="09">۹</option>
+                <option value="10">۱۰</option>
+                <option value="11">۱۱</option>
+                <option value="12">۱۲</option>
+                <option value="13">۱۳</option>
+                <option value="14">۱۴</option>
+                <option value="15">۱۵</option>
+                <option value="16" selected>۱۶</option>
+                <option value="17">۱۷</option>
+                <option value="18">۱۸</option>
+                <option value="19">۱۹</option>
+                <option value="20">۲۰</option>
+                <option value="21">۲۱</option>
+                <option value="22">۲۲</option>
+              </select>
+              <span style="font-size:.85rem;font-weight:700;color:var(--text-muted)">:</span>
+              <select name="start_minute" class="time-select" style="min-width:55px">
+                <option value="00" selected>۰۰</option>
+                <option value="15">۱۵</option>
+                <option value="30">۳۰</option>
+                <option value="45">۴۵</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ساعت پایان -->
+          <div>
+            <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.3rem">ساعت پایان</label>
+            <div class="time-picker">
+              <select name="end_hour" class="time-select">
+                <option value="">—</option>
+                <option value="06">۶</option>
+                <option value="07">۷</option>
+                <option value="08">۸</option>
+                <option value="09">۹</option>
+                <option value="10">۱۰</option>
+                <option value="11">۱۱</option>
+                <option value="12">۱۲</option>
+                <option value="13">۱۳</option>
+                <option value="14">۱۴</option>
+                <option value="15">۱۵</option>
+                <option value="16">۱۶</option>
+                <option value="17">۱۷</option>
+                <option value="18">۱۸</option>
+                <option value="19">۱۹</option>
+                <option value="20">۲۰</option>
+                <option value="21">۲۱</option>
+                <option value="22">۲۲</option>
+              </select>
+              <span style="font-size:.85rem;font-weight:700;color:var(--text-muted)">:</span>
+              <select name="end_minute" class="time-select" style="min-width:55px">
+                <option value="00" selected>۰۰</option>
+                <option value="15">۱۵</option>
+                <option value="30">۳۰</option>
+                <option value="45">۴۵</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div>
-          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.2rem">ساعت شروع *</label>
-          <input type="time" name="start_time" required
-                 style="padding:.5rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem">
+
+        <!-- ردیف دوم: مکان + دکمه -->
+        <div style="display:flex;gap:.65rem;align-items:flex-end">
+          <div style="flex:1">
+            <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.3rem">مکان / سالن</label>
+            <input type="text" name="location" placeholder="مثال: سالن اصلی"
+                   style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem">
+          </div>
+          <button type="submit" class="btn btn-navy btn-sm" style="white-space:nowrap">✅ ذخیره جلسه</button>
         </div>
-        <div>
-          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.2rem">ساعت پایان</label>
-          <input type="time" name="end_time"
-                 style="padding:.5rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem">
-        </div>
-        <div>
-          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.2rem">مکان / سالن</label>
-          <input type="text" name="location" placeholder="مثال: سالن اصلی"
-                 style="padding:.5rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem;width:140px">
-        </div>
-        <button type="submit" class="btn btn-navy btn-sm">✅ ذخیره</button>
       </form>
     </div>
     {% endif %}
@@ -117,7 +203,7 @@ function toggleForm(id) {
     {% if schedules %}
     <div style="padding:.6rem .85rem">
       {% for sch in schedules %}
-      <div class="sch-row" style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
         <span style="font-size:1rem">📅</span>
         <div style="flex:1">
           <strong style="font-size:.875rem">{{ sch.get_weekday_display }}</strong>
@@ -131,13 +217,10 @@ function toggleForm(id) {
         </span>
         {% if request.user.is_technical_director or request.user.is_superuser %}
         <form method="post" action="{% url 'training:schedule-delete' sch.pk %}"
-              onsubmit="return confirm('این جلسه حذف شود؟')"
-              style="margin:0">
+              onsubmit="return confirm('این جلسه حذف شود؟')" style="margin:0">
           {% csrf_token %}
           <button type="submit"
-                  style="background:none;border:none;cursor:pointer;font-size:.85rem;color:#ef4444;padding:.2rem .4rem">
-            ✕
-          </button>
+                  style="background:none;border:none;cursor:pointer;font-size:.85rem;color:#ef4444;padding:.2rem .4rem">✕</button>
         </form>
         {% endif %}
       </div>
@@ -150,7 +233,7 @@ function toggleForm(id) {
     {% endif %}
   </div>
 
-  <!-- Coaches -->
+  <!-- ── مربیان ─────────────────────────────────────────────── -->
   <div class="card">
     <div class="card-header">
       <span class="card-title">🏃 مربیان</span>
@@ -177,7 +260,7 @@ function toggleForm(id) {
   </div>
 </div>
 
-<!-- Players table -->
+<!-- ── جدول بازیکنان ──────────────────────────────────────────── -->
 <div class="card">
   <div class="card-header">
     <span class="card-title">👥 بازیکنان ({{ players|length }})</span>
@@ -185,36 +268,77 @@ function toggleForm(id) {
     <a href="{% url 'training:attendance-select' %}?cat={{ category.pk }}" class="btn btn-amber btn-sm">📅 ثبت حضور</a>
     {% endif %}
   </div>
+
+  <!-- تنظیم ستون‌ها -->
+  <div style="display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;padding:.55rem .85rem;border-bottom:1px solid var(--surface-2)">
+    <span style="font-size:.7rem;font-weight:800;color:var(--text-muted)">ستون‌ها:</span>
+    <span class="col-chip active" data-col="c-national"  onclick="toggleCatCol(this)">کد ملی</span>
+    <span class="col-chip active" data-col="c-insurance" onclick="toggleCatCol(this)">بیمه</span>
+    <span class="col-chip active" data-col="c-skill"     onclick="toggleCatCol(this)">سطح فنی</span>
+    <span class="col-chip active" data-col="c-foot"      onclick="toggleCatCol(this)">پای غالب</span>
+    <span class="col-chip active" data-col="c-traits"    onclick="toggleCatCol(this)">ویژگی نرم</span>
+    <span class="col-chip active" data-col="c-shirt"     onclick="toggleCatCol(this)">شماره پیراهن</span>
+    <span class="col-chip active" data-col="c-position"  onclick="toggleCatCol(this)">پست</span>
+  </div>
+
   {% if players %}
   <div class="table-wrap">
-    <table class="data-table">
+    <table class="data-table" id="cat-players-table">
       <thead>
         <tr>
           <th>#</th>
           <th>نام</th>
-          <th>کد ملی</th>
-          <th>موبایل</th>
-          <th>بیمه</th>
+          <th class="c-national">کد ملی</th>
+          <th class="c-insurance">بیمه</th>
+          <th class="c-skill">سطح فنی</th>
+          <th class="c-foot">پای غالب</th>
+          <th class="c-traits">ویژگی نرم</th>
+          <th class="c-shirt">شماره پیراهن</th>
+          <th class="c-position">پست</th>
           <th>عملیات</th>
         </tr>
       </thead>
       <tbody>
         {% for player in players %}
         <tr>
-          <td style="color:var(--text-muted);font-size:.8rem">{{ forloop.counter }}</td>
-          <td><strong>{{ player.first_name }} {{ player.last_name }}</strong></td>
-          <td style="font-family:monospace;font-size:.82rem">{{ player.national_id }}</td>
-          <td style="font-size:.82rem">{{ player.phone }}</td>
+          <td style="color:var(--text-muted);font-size:.78rem">{{ forloop.counter }}</td>
           <td>
+            <strong style="font-size:.875rem">{{ player.first_name }} {{ player.last_name }}</strong>
+          </td>
+          <td class="c-national" style="font-family:monospace;font-size:.8rem">{{ player.national_id }}</td>
+          <td class="c-insurance">
             {% if player.insurance_status == 'active' %}
-              <span class="badge badge-green">✅ دارد</span>
+              <span class="badge badge-green" style="font-size:.68rem">✅</span>
             {% else %}
-              <span class="badge badge-red">❌ ندارد</span>
+              <span class="badge badge-red" style="font-size:.68rem">❌</span>
             {% endif %}
+          </td>
+          <td class="c-skill" style="font-size:.8rem;font-weight:700">
+            {{ player.technical_profile.skill_level|default:"—" }}
+          </td>
+          <td class="c-foot" style="font-size:.78rem">
+            {{ player.get_preferred_foot_display|default:"—" }}
+          </td>
+          <td class="c-traits" style="font-size:.72rem">
+            {% with traits=player.technical_profile.soft_traits.all %}
+              {% if traits %}
+                {% for t in traits %}
+                <span style="background:#ede9fe;color:#4c1d95;border-radius:99px;padding:.1rem .45rem;display:inline-block;margin:.05rem">{{ t.trait_type.name }}</span>
+                {% endfor %}
+              {% else %}—{% endif %}
+            {% endwith %}
+          </td>
+          <td class="c-shirt" style="font-size:.82rem;font-weight:800;color:var(--navy);text-align:center">
+            {% if player.technical_profile.shirt_number %}#{{ player.technical_profile.shirt_number }}{% else %}—{% endif %}
+          </td>
+          <td class="c-position" style="font-size:.78rem">
+            {% if player.technical_profile.position and player.technical_profile.position != "-" %}
+              {{ player.technical_profile.get_position_display }}
+            {% else %}—{% endif %}
           </td>
           <td>
             <a href="{% url 'training:player-profile' player.pk %}"
-               class="btn btn-outline btn-sm">👤 پروفایل</a>
+               class="btn btn-outline btn-sm">👤</a>
           </td>
         </tr>
         {% endfor %}
@@ -227,5 +351,35 @@ function toggleForm(id) {
   </div>
   {% endif %}
 </div>
+
+<script>
+// ── Column visibility ───────────────────────────────────────
+const CAT_COL_KEY = 'cat_detail_cols';
+const ALL_CAT_COLS = ['c-national','c-insurance','c-skill','c-foot','c-traits','c-shirt','c-position'];
+let catActiveCols = JSON.parse(localStorage.getItem(CAT_COL_KEY) || 'null')
+                   || [...ALL_CAT_COLS];  // همه به صورت پیش‌فرض
+
+function applyCatCols() {
+  ALL_CAT_COLS.forEach(col => {
+    const show = catActiveCols.includes(col);
+    document.querySelectorAll('.' + col).forEach(el => el.style.display = show ? '' : 'none');
+    const chip = document.querySelector(`[data-col="${col}"]`);
+    if (chip) chip.classList.toggle('active', show);
+  });
+}
+
+function toggleCatCol(chip) {
+  const col = chip.dataset.col;
+  if (catActiveCols.includes(col)) {
+    catActiveCols = catActiveCols.filter(c => c !== col);
+  } else {
+    catActiveCols.push(col);
+  }
+  localStorage.setItem(CAT_COL_KEY, JSON.stringify(catActiveCols));
+  applyCatCols();
+}
+
+applyCatCols();
+</script>
 
 {% endblock %}

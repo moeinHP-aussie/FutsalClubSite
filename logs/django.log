@@ -5294,3 +5294,179 @@ Traceback (most recent call last):
     raise NoReverseMatch(msg)
 django.urls.exceptions.NoReverseMatch: Reverse for 'coach-create' not found. 'coach-create' is not a valid view function or pattern name.
 ERROR 2026-02-22 23:42:35,838 basehttp "GET /training/coaches/ HTTP/1.1" 500 180768
+WARNING 2026-02-23 14:43:47,119 log Not Found: /favicon.ico
+WARNING 2026-02-23 14:43:47,121 basehttp "GET /favicon.ico HTTP/1.1" 404 3466
+ERROR 2026-02-23 14:44:43,745 basehttp "POST /training/players/187/tech/ HTTP/1.1" 500 102268
+WARNING 2026-02-23 14:49:10,990 log Not Found: /registration/applicants/reject/1/
+WARNING 2026-02-23 14:49:10,992 basehttp "POST /registration/applicants/reject/1/ HTTP/1.1" 404 6700
+WARNING 2026-02-23 14:49:38,208 log Not Found: /registration/applicants/approve/1/
+WARNING 2026-02-23 14:49:38,213 basehttp "POST /registration/applicants/approve/1/ HTTP/1.1" 404 6703
+WARNING 2026-02-23 14:50:32,042 log Not Found: /registration/applicants/approve/1/
+WARNING 2026-02-23 14:50:32,045 basehttp "POST /registration/applicants/approve/1/ HTTP/1.1" 404 6703
+INFO 2026-02-23 15:02:41,377 user_management_views User phani created by superuser moein hassanpour (moein) (role=technical_director)
+ERROR 2026-02-23 15:10:58,123 log Internal Server Error: /attendance/player/58/history/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: attendance/player_history.html
+ERROR 2026-02-23 15:10:58,127 basehttp "GET /attendance/player/58/history/ HTTP/1.1" 500 85727
+ERROR 2026-02-23 15:35:56,639 log Internal Server Error: /payroll/salary/category/1/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: payroll/salary_list.html, futsal_club/coachsalary_list.html
+ERROR 2026-02-23 15:35:56,645 basehttp "GET /payroll/salary/category/1/ HTTP/1.1" 500 87986
+ERROR 2026-02-23 15:37:28,278 basehttp "POST /training/players/88/soft-traits/ HTTP/1.1" 500 102998
+ERROR 2026-02-23 15:38:53,047 basehttp "POST /training/players/88/tech/ HTTP/1.1" 500 102306
+ERROR 2026-02-23 15:55:00,883 log Internal Server Error: /payroll/salary/category/1/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: payroll/salary_list.html, futsal_club/coachsalary_list.html
+ERROR 2026-02-23 15:55:00,896 basehttp "GET /payroll/salary/category/1/ HTTP/1.1" 500 87986
+WARNING 2026-02-23 15:57:01,091 log Forbidden (Permission denied): /admin-panel/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\OneDrive\Desktop\FC_ESPAD_SITE\futsal_club_project\futsal_club\views\user_management_views.py", line 39, in dispatch
+    raise PermissionDenied
+django.core.exceptions.PermissionDenied
+WARNING 2026-02-23 15:57:01,100 basehttp "GET /admin-panel/ HTTP/1.1" 403 135
+WARNING 2026-02-23 15:57:02,305 basehttp "GET /training/coaches/2/ HTTP/1.1" 403 135
+ERROR 2026-02-23 15:58:26,815 log Internal Server Error: /payroll/salary/category/1/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: payroll/salary_list.html, futsal_club/coachsalary_list.html
+ERROR 2026-02-23 15:58:26,828 basehttp "GET /payroll/salary/category/1/?year=1404&month=12 HTTP/1.1" 500 88515
+ERROR 2026-02-23 15:58:29,148 log Internal Server Error: /payroll/invoices/category/1/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: payroll/invoice_list.html, futsal_club/playerinvoice_list.html
+ERROR 2026-02-23 15:58:29,152 basehttp "GET /payroll/invoices/category/1/?year=1404&month=12 HTTP/1.1" 500 88581
+ERROR 2026-02-23 15:59:50,576 log Internal Server Error: /attendance/session/2/record/
+ERROR 2026-02-23 15:59:50,609 log Internal Server Error: /attendance/session/4/record/
+ERROR 2026-02-23 15:59:50,641 log Internal Server Error: /attendance/session/3/record/
+ERROR 2026-02-23 15:59:50,642 basehttp "POST /attendance/session/2/record/ HTTP/1.1" 500 31
+ERROR 2026-02-23 15:59:50,642 basehttp "POST /attendance/session/4/record/ HTTP/1.1" 500 31
+ERROR 2026-02-23 15:59:50,643 basehttp "POST /attendance/session/3/record/ HTTP/1.1" 500 31
+ERROR 2026-02-23 15:59:59,512 log Internal Server Error: /attendance/session/2/record/
+ERROR 2026-02-23 15:59:59,564 log Internal Server Error: /attendance/session/3/record/
+ERROR 2026-02-23 15:59:59,565 basehttp "POST /attendance/session/2/record/ HTTP/1.1" 500 31
+ERROR 2026-02-23 15:59:59,566 basehttp "POST /attendance/session/3/record/ HTTP/1.1" 500 31
+ERROR 2026-02-23 16:00:10,934 log Internal Server Error: /attendance/session/3/record/
+ERROR 2026-02-23 16:00:10,988 log Internal Server Error: /attendance/session/4/record/
+ERROR 2026-02-23 16:00:10,989 basehttp "POST /attendance/session/3/record/ HTTP/1.1" 500 31
+ERROR 2026-02-23 16:00:10,990 basehttp "POST /attendance/session/4/record/ HTTP/1.1" 500 31
+ERROR 2026-02-23 16:00:21,762 log Internal Server Error: /payroll/salary/category/1/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: payroll/salary_list.html, futsal_club/coachsalary_list.html
+ERROR 2026-02-23 16:00:21,767 basehttp "GET /payroll/salary/category/1/?year=1404&month=12 HTTP/1.1" 500 88515
+ERROR 2026-02-23 16:00:24,114 log Internal Server Error: /payroll/invoices/category/1/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: payroll/invoice_list.html, futsal_club/playerinvoice_list.html
+ERROR 2026-02-23 16:00:24,121 basehttp "GET /payroll/invoices/category/1/?year=1404&month=12 HTTP/1.1" 500 88581
+ERROR 2026-02-23 16:00:36,784 log Internal Server Error: /payroll/salary/category/1/
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: payroll/salary_list.html, futsal_club/coachsalary_list.html
+ERROR 2026-02-23 16:00:36,790 basehttp "GET /payroll/salary/category/1/?year=1404&month=11 HTTP/1.1" 500 88538

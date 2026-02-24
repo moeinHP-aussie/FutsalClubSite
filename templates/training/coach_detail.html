@@ -9,9 +9,17 @@
 {% endblock %}
 
 {% block content %}
+
+{% if messages %}
+{% for msg in messages %}
+<div style="background:{% if msg.level == 25 %}#d1fae5{% else %}#fee2e2{% endif %};border-radius:8px;padding:.65rem 1rem;margin-bottom:.85rem;font-size:.875rem;font-weight:600">{{ msg }}</div>
+{% endfor %}
+{% endif %}
+
+<!-- Header -->
 <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
   <div style="display:flex;align-items:center;gap:.85rem">
-    <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;font-weight:900">
+    <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;font-weight:900;flex-shrink:0">
       {{ coach.first_name|slice:":1" }}{{ coach.last_name|slice:":1" }}
     </div>
     <div>
@@ -24,11 +32,12 @@
     </div>
   </div>
   {% if request.user.is_technical_director or request.user.is_superuser %}
-  <div style="display:flex;gap:.5rem">
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
     <a href="{% url 'training:coach-update' coach.pk %}" class="btn btn-navy btn-sm">✏️ ویرایش</a>
     <form method="post" action="{% url 'training:coach-toggle' coach.pk %}">
       {% csrf_token %}
-      <button type="submit" class="btn btn-sm" style="border:1.5px solid {% if coach.is_active %}var(--red){% else %}var(--green){% endif %};color:{% if coach.is_active %}var(--red){% else %}var(--green){% endif %}">
+      <button type="submit" class="btn btn-sm"
+              style="border:1.5px solid {% if coach.is_active %}var(--red){% else %}var(--green){% endif %};color:{% if coach.is_active %}var(--red){% else %}var(--green){% endif %}">
         {% if coach.is_active %}🚫 غیرفعال{% else %}✅ فعال{% endif %}
       </button>
     </form>
@@ -37,7 +46,8 @@
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-  <!-- Info card -->
+
+  <!-- اطلاعات -->
   <div class="card">
     <div class="card-header"><span class="card-title">📋 اطلاعات</span></div>
     <div style="padding:.75rem 1rem">
@@ -58,35 +68,98 @@
     </div>
   </div>
 
-  <!-- Categories + rates -->
+  <!-- دسته‌ها -->
   <div class="card">
-    <div class="card-header"><span class="card-title">🗂️ دسته‌ها و نرخ‌ها</span></div>
+    <div class="card-header">
+      <span class="card-title">🗂️ دسته‌های آموزشی</span>
+      {% if request.user.is_technical_director or request.user.is_superuser %}
+      {% if available_categories %}
+      <button class="btn btn-amber btn-sm" id="assign-btn" onclick="toggleAssignPanel()">+ اختصاص دسته</button>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- فرم اختصاص دسته -->
+    {% if request.user.is_technical_director or request.user.is_superuser %}
+    {% if available_categories %}
+    <div id="assign-panel" style="display:none;padding:.85rem 1rem;border-bottom:2px solid var(--amber);background:#fffbeb">
+      <form method="post" action="{% url 'training:coach-assign-category' coach.pk %}"
+            style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end">
+        {% csrf_token %}
+        <div>
+          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.25rem">دسته آموزشی *</label>
+          <select name="category_id"
+                  style="padding:.45rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem;min-width:140px">
+            {% for cat in available_categories %}
+            <option value="{{ cat.pk }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.25rem">نرخ هر جلسه (ریال)</label>
+          <input type="number" name="session_rate" min="0" step="10000" value="0" placeholder="مثال: 500000"
+                 style="padding:.45rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:monospace;font-size:.82rem;width:140px">
+        </div>
+        <button type="submit" class="btn btn-navy btn-sm">✅ اختصاص</button>
+      </form>
+    </div>
+    {% endif %}
+    {% endif %}
+
     {% if coach_rates %}
-    <div style="padding:.75rem 1rem">
+    <div style="padding:.65rem 1rem">
       {% for cr in coach_rates %}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--surface-2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--surface-2)">
         <div>
           <div style="font-weight:700;font-size:.875rem">{{ cr.category.name }}</div>
-          <div style="font-size:.7rem;color:var(--text-muted)">{% if cr.is_active %}فعال{% else %}غیرفعال{% endif %}</div>
+          <div style="font-size:.7rem;color:var(--text-muted)">{% if cr.is_active %}🟢 فعال{% else %}🔴 غیرفعال{% endif %}</div>
         </div>
-        <span style="font-size:.82rem;color:var(--amber);font-weight:700">{{ cr.session_rate|floatformat:0 }} ریال</span>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span style="font-size:.82rem;color:var(--amber);font-weight:700">{{ cr.session_rate|floatformat:0 }} ریال/جلسه</span>
+          {% if request.user.is_technical_director or request.user.is_superuser %}
+          <form method="post" action="{% url 'training:coach-remove-category' coach.pk cr.pk %}"
+                onsubmit="return confirm('مربی از دسته «{{ cr.category.name }}» حذف شود؟')" style="margin:0">
+            {% csrf_token %}
+            <button type="submit"
+                    style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:.85rem;padding:.2rem .35rem"
+                    title="حذف از این دسته">✕</button>
+          </form>
+          {% endif %}
+        </div>
       </div>
       {% endfor %}
     </div>
     {% else %}
-    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.875rem">هنوز به دسته‌ای متصل نشده</div>
+    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.875rem">
+      هنوز به دسته‌ای متصل نشده
+    </div>
     {% endif %}
   </div>
 </div>
 
+<!-- لینک حقوق -->
+{% if coach_rates %}
 {% if request.user.is_finance_manager or request.user.is_technical_director or request.user.is_superuser %}
-<div style="display:flex;gap:.6rem;flex-wrap:wrap">
-  {% for cr in coach_rates %}
-  <a href="{% url 'payroll:salary-list' cr.category.pk %}" class="btn btn-outline btn-sm">
-    💳 حقوق در {{ cr.category.name }}
-  </a>
-  {% endfor %}
+<div class="card" style="padding:.75rem 1rem">
+  <div style="font-size:.75rem;font-weight:800;color:var(--text-muted);margin-bottom:.5rem">💳 گزارش حقوق</div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    {% for cr in coach_rates %}
+    <a href="{% url 'payroll:salary-list' cr.category.pk %}" class="btn btn-outline btn-sm">{{ cr.category.name }}</a>
+    {% endfor %}
+  </div>
 </div>
 {% endif %}
+{% endif %}
+
+<script>
+function toggleAssignPanel() {
+  const panel = document.getElementById('assign-panel');
+  const btn   = document.getElementById('assign-btn');
+  const open  = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '✕ بستن' : '+ اختصاص دسته';
+  btn.className   = open ? 'btn btn-outline btn-sm' : 'btn btn-amber btn-sm';
+}
+</script>
 
 {% endblock %}

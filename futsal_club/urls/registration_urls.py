@@ -30,8 +30,11 @@ urlpatterns = [
     # ── مدیر فنی: بررسی متقاضیان ──────────────────────────────────
     path("applicants/",                  ApplicantListView.as_view(),   name="applicant-list"),
     path("applicants/<int:pk>/",         ApplicantDetailView.as_view(), name="applicant-detail"),
-    path("applicants/<int:pk>/approve/", ApproveApplicantView.as_view(),name="approve"),
-    path("applicants/<int:pk>/reject/",  RejectApplicantView.as_view(), name="reject"),
+    path("applicants/<int:pk>/approve/", ApproveApplicantView.as_view(), name="approve"),
+    path("applicants/<int:pk>/reject/",  RejectApplicantView.as_view(),  name="reject"),
+    # فرمت قدیمی — برای سازگاری با template های قبلی
+    path("applicants/approve/<int:pk>/", ApproveApplicantView.as_view(), name="approve-legacy"),
+    path("applicants/reject/<int:pk>/",  RejectApplicantView.as_view(),  name="reject-legacy"),
 
     # ── آرشیو نرم ───────────────────────────────────────────────────
     path("players/<int:pk>/archive/",  ArchivePlayerView.as_view(),    name="archive-player"),
