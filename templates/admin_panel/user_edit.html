@@ -1,193 +1,362 @@
 {% extends "base.html" %}
-{% block title %}ویرایش کاربر — {{ u.username }}{% endblock %}
-{% block nav_admin_users %}active{% endblock %}
+{% block title %}ویرایش — {{ u.username }}{% endblock %}
+{% block nav_admin %}active{% endblock %}
 
 {% block breadcrumb %}
   <span class="sep">›</span>
   <a href="{% url 'admin_panel:user-list' %}" style="text-decoration:none;color:inherit">مدیریت کاربران</a>
-  <span class="sep">›</span><span class="cur">{{ u.username }}</span>
-{% endblock %}
-
-{% block extra_head %}
-<style>
-.section-title {
-  font-size:.72rem; font-weight:800; text-transform:uppercase;
-  letter-spacing:.08em; color:var(--text-muted);
-  padding-bottom:.4rem; border-bottom:1px solid var(--surface-2); margin-bottom:.85rem;
-}
-.role-toggle { display:flex; align-items:center; justify-content:space-between; padding:.6rem 0; border-bottom:1px solid var(--surface-2); }
-.role-toggle:last-child { border-bottom:none; }
-.toggle-label { font-size:.875rem; font-weight:700; }
-.toggle-desc  { font-size:.72rem; color:var(--text-muted); margin-top:.1rem; }
-
-/* pill toggle switch */
-.pill-toggle { position:relative; width:44px; height:24px; cursor:pointer; }
-.pill-toggle input { opacity:0; width:0; height:0; }
-.pill-slider {
-  position:absolute; inset:0; background:#e2e8f0; border-radius:99px;
-  transition:.2s; cursor:pointer;
-}
-.pill-slider::before {
-  content:""; position:absolute; height:18px; width:18px; border-radius:50%;
-  background:#fff; left:3px; bottom:3px; transition:.2s;
-  box-shadow:0 2px 4px rgba(0,0,0,.15);
-}
-input:checked + .pill-slider { background:var(--navy); }
-input:checked + .pill-slider::before { transform:translateX(20px); }
-</style>
+  <span class="sep">›</span><span class="cur">{{ u.get_full_name }}</span>
 {% endblock %}
 
 {% block content %}
 
-{% if messages %}
-{% for msg in messages %}
-<div style="background:{% if msg.level == 25 %}#d1fae5{% else %}#fee2e2{% endif %};border-radius:8px;padding:.65rem 1rem;margin-bottom:.85rem;font-size:.875rem;font-weight:600">
-  {{ msg }}
-</div>
-{% endfor %}
-{% endif %}
-
-<div style="max-width:620px;margin:0 auto">
-
-  <!-- Header -->
-  <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:1.25rem">
-    <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--navy));display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:900;color:#fff;flex-shrink:0">
-      {{ u.first_name|slice:":1"|default:u.username|slice:":1"|upper }}
+<!-- ─── Header ──────────────────────────────────────── -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div style="display:flex;align-items:center;gap:.85rem">
+    <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--teal));
+                display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;font-weight:900">
+      {{ u.first_name|first|upper|default:"?" }}
     </div>
     <div>
-      <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">{{ u.first_name }} {{ u.last_name }}</h1>
-      <div style="font-size:.8rem;font-family:monospace;color:var(--text-muted)">@{{ u.username }}</div>
+      <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">
+        {{ u.get_full_name }}
+        {% if not u.is_active %}<span class="badge badge-red" style="font-size:.65rem">غیرفعال</span>{% endif %}
+        {% if u.is_superuser %}<span class="badge" style="background:#7c3aed;color:#fff;font-size:.65rem">⭐ سوپر</span>{% endif %}
+      </h1>
+      <p style="font-size:.8rem;color:var(--text-muted)">
+        @{{ u.username }} &nbsp;·&nbsp; عضویت: {{ u.date_joined|date:"Y/m/d" }}
+        {% if u.last_login %}&nbsp;·&nbsp; آخرین ورود: {{ u.last_login|date:"Y/m/d" }}{% endif %}
+      </p>
     </div>
-    {% if player %}
-    <a href="{% url 'training:player-profile' player.pk %}" class="btn btn-outline btn-sm" style="margin-right:auto">⚽ پروفایل بازیکن</a>
-    {% endif %}
-    {% if coach %}
-    <a href="{% url 'training:coach-detail' coach.pk %}" class="btn btn-outline btn-sm" style="margin-right:auto">🎯 پروفایل مربی</a>
-    {% endif %}
+  </div>
+  <div style="display:flex;gap:.5rem">
+    <form method="post" style="margin:0">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="toggle_active">
+      <button type="submit" class="btn {% if u.is_active %}btn-outline{% else %}btn-green{% endif %} btn-sm"
+              onclick="return confirm('وضعیت حساب تغییر کند؟')">
+        {% if u.is_active %}🔒 غیرفعال‌کردن{% else %}🔓 فعال‌کردن{% endif %}
+      </button>
+    </form>
+    <a href="{% url 'admin_panel:user-list' %}" class="btn btn-outline btn-sm">← بازگشت</a>
+  </div>
+</div>
+
+<!-- Flash messages -->
+{% if messages %}
+  {% for msg in messages %}
+  <div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.4rem;
+    background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% elif msg.tags == 'warning' %}#fef9c3{% else %}#dbeafe{% endif %};
+    color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% elif msg.tags == 'warning' %}#854d0e{% else %}#1e40af{% endif %}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+{% endif %}
+
+<!-- ─── Grid ─────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+
+<!-- ═══ ستون چپ ═════════════════════════════════════ -->
+<div style="display:flex;flex-direction:column;gap:1rem">
+
+  <!-- ① اطلاعات پایه کاربر -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">👤 اطلاعات پایه کاربر</span></div>
+    <form method="post" style="padding:1rem 1.1rem">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="basic_info">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.65rem">
+        <div>
+          <label class="lbl">نام *</label>
+          <input type="text" name="first_name" value="{{ u.first_name }}" required class="fi">
+        </div>
+        <div>
+          <label class="lbl">نام خانوادگی *</label>
+          <input type="text" name="last_name" value="{{ u.last_name }}" required class="fi">
+        </div>
+      </div>
+
+      <div style="margin-bottom:.65rem">
+        <label class="lbl">نام کاربری (username) *</label>
+        <input type="text" name="username" value="{{ u.username }}" required class="fi" style="font-family:monospace">
+        <small style="color:var(--text-muted);font-size:.72rem">⚠️ تغییر نام کاربری لاگ‌اوت کاربر را ایجاد می‌کند</small>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.85rem">
+        <div>
+          <label class="lbl">شماره موبایل</label>
+          <input type="text" name="phone" value="{{ u.phone }}" class="fi" maxlength="11" placeholder="09XXXXXXXXX">
+        </div>
+        <div>
+          <label class="lbl">ایمیل</label>
+          <input type="email" name="email" value="{{ u.email }}" class="fi" placeholder="name@mail.com">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-navy btn-sm" style="width:100%">💾 ذخیره اطلاعات پایه</button>
+    </form>
   </div>
 
-  <!-- اطلاعات -->
+  <!-- ② نقش‌ها -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">🎭 نقش‌ها و دسترسی‌ها</span></div>
+    <form method="post" style="padding:1rem 1.1rem">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="roles">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.85rem">
+        <label class="role-cb {% if u.is_technical_director %}role-on{% endif %}">
+          <input type="checkbox" name="is_technical_director" {% if u.is_technical_director %}checked{% endif %}>
+          🎯 مدیر فنی
+        </label>
+        <label class="role-cb {% if u.is_finance_manager %}role-on{% endif %}">
+          <input type="checkbox" name="is_finance_manager" {% if u.is_finance_manager %}checked{% endif %}>
+          💰 مدیر مالی
+        </label>
+        <label class="role-cb {% if u.is_coach %}role-on{% endif %}">
+          <input type="checkbox" name="is_coach" {% if u.is_coach %}checked{% endif %} id="role-coach-cb">
+          👨‍🏫 مربی
+        </label>
+        <label class="role-cb {% if u.is_player %}role-on{% endif %}">
+          <input type="checkbox" name="is_player" {% if u.is_player %}checked{% endif %}>
+          ⚽ بازیکن
+        </label>
+        <label class="role-cb {% if u.is_active %}role-active{% else %}role-inactive{% endif %}" style="grid-column:span 2">
+          <input type="checkbox" name="is_active" {% if u.is_active %}checked{% endif %}>
+          ✅ حساب فعال است
+        </label>
+      </div>
+
+      {% if not coach %}
+      <div id="coach-hint" style="display:{% if u.is_coach %}block{% else %}none{% endif %};
+           font-size:.78rem;background:#fef3c7;color:#92400e;border-radius:6px;padding:.5rem .75rem;margin-bottom:.65rem">
+        ⚠️ با ذخیره، پروفایل مربی به‌صورت خودکار ایجاد می‌شود — اطلاعات مربی را سپس تکمیل کنید.
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn btn-navy btn-sm" style="width:100%">💾 ذخیره نقش‌ها</button>
+    </form>
+  </div>
+
+  <!-- ③ رمز عبور -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">🔑 تغییر رمز عبور</span></div>
+    <form method="post" style="padding:1rem 1.1rem">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reset_password">
+
+      <div style="margin-bottom:.65rem">
+        <label class="lbl">رمز جدید (حداقل ۶ کاراکتر)</label>
+        <input type="password" name="new_password" required minlength="6" class="fi" autocomplete="new-password" placeholder="رمز جدید...">
+      </div>
+      <div style="margin-bottom:.85rem">
+        <label class="lbl">تکرار رمز جدید</label>
+        <input type="password" name="confirm_password" required minlength="6" class="fi" autocomplete="new-password" placeholder="تکرار رمز...">
+      </div>
+      <button type="submit" class="btn btn-amber btn-sm" style="width:100%"
+              onclick="return confirm('رمز عبور این کاربر تغییر کند؟')">
+        🔑 تغییر رمز عبور
+      </button>
+    </form>
+  </div>
+
+</div>
+
+<!-- ═══ ستون راست ════════════════════════════════════ -->
+<div style="display:flex;flex-direction:column;gap:1rem">
+
+  <!-- ④ اطلاعات مربی (اگر is_coach باشه) -->
+  {% if u.is_coach %}
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">👨‍🏫 اطلاعات مربی</span>
+      {% if coach %}
+        <span class="badge {% if coach.is_active %}badge-green{% else %}badge-red{% endif %}" style="font-size:.68rem">
+          {% if coach.is_active %}فعال{% else %}غیرفعال{% endif %}
+        </span>
+      {% else %}
+        <span class="badge badge-amber" style="font-size:.68rem">⚠️ پروفایل ناقص</span>
+      {% endif %}
+    </div>
+
+    {% if coach %}
+    <form method="post" style="padding:1rem 1.1rem">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="coach_info">
+
+      <!-- نام مربی (جدا از نام کاربری) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.65rem">
+        <div>
+          <label class="lbl">نام مربی *</label>
+          <input type="text" name="coach_first_name" value="{{ coach.first_name }}" required class="fi">
+        </div>
+        <div>
+          <label class="lbl">نام خانوادگی *</label>
+          <input type="text" name="coach_last_name" value="{{ coach.last_name }}" required class="fi">
+        </div>
+      </div>
+
+      <!-- موبایل + مدرک -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.65rem">
+        <div>
+          <label class="lbl">موبایل مربی</label>
+          <input type="text" name="coach_phone" value="{{ coach.phone }}" class="fi" maxlength="11" placeholder="09XXXXXXXXX">
+        </div>
+        <div>
+          <label class="lbl">مدرک مربیگری</label>
+          <select name="degree" class="fi">
+            <option value="">— انتخاب —</option>
+            {% for val, lbl in degree_choices %}
+            <option value="{{ val }}" {% if coach.degree == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- شماره کارت -->
+      <div style="margin-bottom:.85rem">
+        <label class="lbl">شماره کارت بانکی (۱۶ رقم)</label>
+        <input type="text" name="bank_card_number" value="{{ coach.bank_card_number }}"
+               class="fi" maxlength="16" style="font-family:monospace;letter-spacing:.06em"
+               placeholder="بدون خط تیره، ۱۶ رقم">
+        {% if coach.bank_card_number %}
+        <small style="color:var(--text-muted);font-size:.72rem">
+          ذخیره‌شده: {{ coach.bank_card_number|slice:":4" }}-****-****-{{ coach.bank_card_number|slice:"-4:" }}
+        </small>
+        {% endif %}
+      </div>
+
+      <!-- وضعیت فعال -->
+      <div style="margin-bottom:.85rem">
+        <label class="role-cb {% if coach.is_active %}role-active{% else %}role-inactive{% endif %}">
+          <input type="checkbox" name="coach_is_active" {% if coach.is_active %}checked{% endif %}>
+          ✅ مربی فعال است
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-navy btn-sm" style="width:100%">💾 ذخیره اطلاعات مربی</button>
+    </form>
+
+    <!-- دسته‌های تدریس (فقط نمایش) -->
+    {% if coach.coach_rates.all %}
+    <div style="border-top:1px solid var(--surface-2);padding:.75rem 1.1rem">
+      <p style="font-size:.75rem;font-weight:700;color:var(--text-muted);margin-bottom:.4rem">📚 دسته‌های تدریس و نرخ:</p>
+      {% for rate in coach.coach_rates.all %}
+      <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.3rem 0;border-bottom:1px solid var(--surface-2)">
+        <span>{{ rate.category.name }}</span>
+        <span style="font-family:monospace;color:var(--navy)">{{ rate.session_rate|floatformat:0 }} ریال/جلسه</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- پروفایل مربی وجود نداره -->
+    <div style="padding:1.25rem;text-align:center;color:var(--text-muted);font-size:.85rem">
+      <p>پروفایل مربی هنوز ایجاد نشده.</p>
+      <p style="font-size:.75rem;margin-top:.35rem">نقش مربی را ذخیره کنید تا پروفایل خودکار ایجاد شود.</p>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ⑤ پروفایل بازیکن (اگر لینک داره) -->
   {% if player %}
-  <div class="card" style="margin-bottom:.85rem;padding:.75rem 1rem">
-    <div style="font-size:.72rem;font-weight:800;color:var(--text-muted);margin-bottom:.5rem">📋 اطلاعات بازیکن</div>
-    <div style="display:flex;gap:1.5rem;font-size:.82rem;flex-wrap:wrap">
-      <span>کد ملی: <strong style="font-family:monospace">{{ player.national_id }}</strong></span>
-      <span>موبایل: <strong>{{ player.phone }}</strong></span>
-      <span>رده: <strong>{{ player.get_age_category }}</strong></span>
+  <div class="card">
+    <div class="card-header"><span class="card-title">⚽ پروفایل بازیکن</span></div>
+    <div style="padding:.85rem 1.1rem;display:grid;grid-template-columns:1fr 1fr;gap:.45rem;font-size:.82rem">
+      <div>
+        <span style="color:var(--text-muted)">کد ملی:</span>
+        <strong style="font-family:monospace"> {{ player.national_id }}</strong>
+      </div>
+      <div>
+        <span style="color:var(--text-muted)">وضعیت:</span>
+        <span class="badge badge-{% if player.status == 'approved' %}green{% elif player.status == 'rejected' %}red{% else %}amber{% endif %}" style="font-size:.68rem">
+          {{ player.get_status_display }}
+        </span>
+      </div>
+      <div><span style="color:var(--text-muted)">موبایل:</span> <span style="font-family:monospace">{{ player.phone }}</span></div>
+      <div><span style="color:var(--text-muted)">سن:</span> {{ player.age|default:"—" }} سال</div>
+    </div>
+    <div style="padding:0 1.1rem .75rem">
+      <a href="{% url 'registration:player-detail' player.pk %}" class="btn btn-outline btn-sm"
+         style="width:100%;text-align:center;justify-content:center">
+        👤 مشاهده پروفایل کامل
+      </a>
     </div>
   </div>
   {% endif %}
 
-  <!-- نقش‌ها -->
-  <div class="card" style="margin-bottom:.85rem">
-    <div style="padding:1rem 1.25rem">
-      <div class="section-title">🏷️ نقش‌ها و دسترسی‌ها</div>
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="roles">
+  <!-- ⑥ خلاصه حساب -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">ℹ️ خلاصه حساب</span></div>
+    <div style="padding:.85rem 1.1rem;font-size:.82rem">
 
-        <div class="role-toggle">
-          <div>
-            <div class="toggle-label">🔧 مدیر فنی</div>
-            <div class="toggle-desc">دسترسی کامل به بازیکنان، رده‌ها، و گزارش‌ها</div>
-          </div>
-          <label class="pill-toggle">
-            <input type="checkbox" name="is_technical_director" {% if u.is_technical_director %}checked{% endif %}>
-            <span class="pill-slider"></span>
-          </label>
+      <!-- نقش‌ها -->
+      <div style="padding:.3rem 0;border-bottom:1px solid var(--surface-2);margin-bottom:.4rem">
+        <span style="color:var(--text-muted);font-size:.78rem;display:block;margin-bottom:.3rem">نقش‌های فعلی:</span>
+        <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+          {% if u.is_superuser %}<span class="badge" style="background:#7c3aed;color:#fff;font-size:.68rem">⭐ سوپر</span>{% endif %}
+          {% if u.is_technical_director %}<span class="badge badge-navy" style="font-size:.68rem">🎯 مدیر فنی</span>{% endif %}
+          {% if u.is_finance_manager %}<span class="badge badge-green" style="font-size:.68rem">💰 مدیر مالی</span>{% endif %}
+          {% if u.is_coach %}<span class="badge badge-amber" style="font-size:.68rem">👨‍🏫 مربی</span>{% endif %}
+          {% if u.is_player %}<span class="badge" style="background:#f97316;color:#fff;font-size:.68rem">⚽ بازیکن</span>{% endif %}
+          {% if not u.is_superuser and not u.is_technical_director and not u.is_finance_manager and not u.is_coach and not u.is_player %}
+          <span style="color:var(--text-muted);font-size:.78rem">بدون نقش</span>
+          {% endif %}
         </div>
-
-        <div class="role-toggle">
-          <div>
-            <div class="toggle-label">💰 مدیر مالی</div>
-            <div class="toggle-desc">فاکتورها، حقوق مربیان، گزارش مالی</div>
-          </div>
-          <label class="pill-toggle">
-            <input type="checkbox" name="is_finance_manager" {% if u.is_finance_manager %}checked{% endif %}>
-            <span class="pill-slider"></span>
-          </label>
-        </div>
-
-        <div class="role-toggle">
-          <div>
-            <div class="toggle-label">🎯 مربی</div>
-            <div class="toggle-desc">مشاهده بازیکنان رده خود، ثبت حضور</div>
-          </div>
-          <label class="pill-toggle">
-            <input type="checkbox" name="is_coach" {% if u.is_coach %}checked{% endif %}>
-            <span class="pill-slider"></span>
-          </label>
-        </div>
-
-        <div class="role-toggle">
-          <div>
-            <div class="toggle-label">⚽ بازیکن</div>
-            <div class="toggle-desc">دسترسی به پروفایل شخصی و فاکتورها</div>
-          </div>
-          <label class="pill-toggle">
-            <input type="checkbox" name="is_player" {% if u.is_player %}checked{% endif %}>
-            <span class="pill-slider"></span>
-          </label>
-        </div>
-
-        <div class="role-toggle">
-          <div>
-            <div class="toggle-label" style="color:{% if u.is_active %}#065f46{% else %}#991b1b{% endif %}">
-              {% if u.is_active %}✅ حساب فعال{% else %}🔴 حساب غیرفعال{% endif %}
-            </div>
-            <div class="toggle-desc">غیرفعال = نمی‌تواند وارد سیستم شود</div>
-          </div>
-          <label class="pill-toggle">
-            <input type="checkbox" name="is_active" {% if u.is_active %}checked{% endif %}>
-            <span class="pill-slider"></span>
-          </label>
-        </div>
-
-        <div style="display:flex;justify-content:flex-end;margin-top:1rem">
-          <button type="submit" class="btn btn-navy">💾 ذخیره نقش‌ها</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ریست رمز -->
-  <div class="card" style="margin-bottom:.85rem">
-    <div style="padding:1rem 1.25rem">
-      <div class="section-title">🔑 تغییر رمز عبور</div>
-      <form method="post" style="display:flex;gap:.6rem;align-items:flex-end;flex-wrap:wrap">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="reset_password">
-        <div style="flex:1;min-width:200px">
-          <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:.25rem">رمز جدید *</label>
-          <input type="text" name="new_password" id="new-pw" placeholder="حداقل ۶ کاراکتر"
-                 style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:monospace;font-size:.875rem">
-        </div>
-        <button type="button" onclick="genPass()" class="btn btn-outline btn-sm">🎲</button>
-        <button type="submit" class="btn btn-amber">تغییر رمز</button>
-      </form>
-      {% if player %}
-      <div style="margin-top:.6rem;font-size:.75rem;color:var(--text-muted)">
-        💡 رمز پیشنهادی: کد ملی بازیکن
-        <code style="background:var(--surface-2);padding:.1rem .4rem;border-radius:4px;cursor:pointer"
-              onclick="document.getElementById('new-pw').value='{{ player.national_id }}'">
-          {{ player.national_id }}
-        </code>
       </div>
-      {% endif %}
+
+      <div style="display:grid;gap:.3rem">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">آخرین ورود:</span>
+          <span>{{ u.last_login|date:"Y/m/d H:i"|default:"—" }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">وضعیت:</span>
+          <span class="badge {% if u.is_active %}badge-green{% else %}badge-red{% endif %}" style="font-size:.72rem">
+            {% if u.is_active %}✅ فعال{% else %}❌ غیرفعال{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 1.1rem .85rem;display:flex;flex-direction:column;gap:.35rem">
+      <a href="{% url 'payroll:my-financial-history' %}" class="btn btn-outline btn-sm" style="text-align:center;justify-content:center">
+        📊 تاریخچه مالی این کاربر
+      </a>
     </div>
   </div>
 
-  <div style="display:flex;justify-content:flex-start">
-    <a href="{% url 'admin_panel:user-list' %}" class="btn btn-outline">← بازگشت</a>
-  </div>
 </div>
+</div><!-- /grid -->
 
+<!-- ─── Styles ────────────────────────────────────────── -->
+<style>
+.lbl { font-size:.8rem; font-weight:700; display:block; margin-bottom:.3rem; color:var(--text-primary); }
+.fi  { width:100%; padding:.5rem .75rem; border:1.5px solid var(--surface-2); border-radius:8px;
+       font-family:inherit; font-size:.875rem; box-sizing:border-box; transition:border-color .15s; }
+.fi:focus { outline:none; border-color:var(--navy); }
+select.fi { background:#fff; }
+
+.role-cb { display:flex; align-items:center; gap:.5rem; padding:.55rem .75rem;
+           border-radius:8px; border:1.5px solid var(--surface-2); cursor:pointer;
+           font-size:.85rem; user-select:none; }
+.role-cb input[type=checkbox] { width:16px; height:16px; accent-color:var(--navy); flex-shrink:0; }
+.role-on     { background:#f0f9ff; border-color:#bae6fd; }
+.role-active { background:#dcfce7; border-color:#86efac; }
+.role-inactive { background:#fee2e2; border-color:#fca5a5; }
+</style>
+
+<!-- ─── Script ─────────────────────────────────────────── -->
 <script>
-function genPass() {
-  const c = 'abcdefghjkmnpqrstuvwxyz23456789';
-  let p = '';
-  for (let i=0; i<8; i++) p += c[Math.floor(Math.random()*c.length)];
-  document.getElementById('new-pw').value = p;
+// نشان دادن hint اگر نقش مربی تیک بخوره ولی پروفایل نداره
+const coachCb   = document.getElementById('role-coach-cb');
+const coachHint = document.getElementById('coach-hint');
+if (coachCb && coachHint) {
+  coachCb.addEventListener('change', () => {
+    coachHint.style.display = coachCb.checked ? 'block' : 'none';
+  });
 }
 </script>
 {% endblock %}

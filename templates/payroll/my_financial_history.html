@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}تاریخچه مالی من{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">تاریخچه مالی</span>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📊 تاریخچه مالی من</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">تمام عملیات مالی مرتبط با حساب شما</p>
+  </div>
+</div>
+
+<!-- خلاصه کلی -->
+<div class="grid-auto" style="margin-bottom:1.25rem">
+  {% if pending_invoices %}
+  <div class="stat-card amber">
+    <div class="stat-label">شهریه معوق</div>
+    <div class="stat-value">{{ pending_invoices|length }}</div>
+    <div class="stat-sub">فاکتور در انتظار پرداخت</div>
+    <span class="stat-icon">⚠️</span>
+  </div>
+  {% endif %}
+  <div class="stat-card navy">
+    <div class="stat-label">مجموع پرداخت‌ها</div>
+    <div class="stat-value" style="font-size:1rem">{{ total_debit|floatformat:0 }}</div>
+    <div class="stat-sub">ریال</div>
+    <span class="stat-icon">💸</span>
+  </div>
+  {% if total_credit > 0 %}
+  <div class="stat-card green">
+    <div class="stat-label">مجموع دریافت‌ها</div>
+    <div class="stat-value" style="font-size:1rem">{{ total_credit|floatformat:0 }}</div>
+    <div class="stat-sub">ریال</div>
+    <span class="stat-icon">💰</span>
+  </div>
+  {% endif %}
+</div>
+
+<!-- شهریه‌های معوق -->
+{% if pending_invoices %}
+<div class="card" style="margin-bottom:1rem;border:2px solid var(--amber)">
+  <div class="card-header" style="background:#fffbeb">
+    <span class="card-title">⚠️ شهریه‌های معوق</span>
+  </div>
+  <div style="padding:.6rem 1rem">
+    {% for inv in pending_invoices %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--surface-2)">
+      <div>
+        <strong style="font-size:.875rem">{{ inv.jalali_year }}/{{ inv.jalali_month|stringformat:"02d" }}</strong>
+        <span style="font-size:.78rem;color:var(--text-muted);margin-right:.5rem">{{ inv.category.name }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <span style="font-size:.875rem;font-weight:700">{{ inv.final_amount|floatformat:0 }} ریال</span>
+        <span class="badge {% if inv.status == 'debtor' %}badge-red{% else %}badge-amber{% endif %}" style="font-size:.68rem">
+          {{ inv.get_status_display }}
+        </span>
+        <a href="{% url 'payroll:invoice-pay' inv.pk %}" class="btn btn-green btn-sm" style="font-size:.72rem">پرداخت آنلاین</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- تاریخچه تراکنش‌ها -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">📋 تاریخچه تراکنش‌ها</span>
+  </div>
+  {% if transactions %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>تاریخ</th>
+          <th>نوع</th>
+          <th>شرح</th>
+          <th>جهت</th>
+          <th>مبلغ (ریال)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+        <tr>
+          <td style="font-size:.78rem;color:var(--text-muted)">{{ tx.created_at|date:"Y/m/d" }}</td>
+          <td style="font-size:.78rem">{{ tx.get_tx_type_display }}</td>
+          <td style="font-size:.82rem">{{ tx.description }}</td>
+          <td>
+            {% if tx.direction == 'credit' %}
+            <span class="badge badge-green" style="font-size:.68rem">بستانکار ↓</span>
+            {% else %}
+            <span class="badge badge-red" style="font-size:.68rem">بدهکار ↑</span>
+            {% endif %}
+          </td>
+          <td style="font-weight:700;font-size:.875rem;font-family:monospace;
+                     color:{% if tx.direction == 'credit' %}var(--green){% else %}var(--navy){% endif %}">
+            {{ tx.amount|floatformat:0 }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <div style="display:flex;justify-content:center;gap:.4rem;padding:.85rem">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline btn-sm">← قبلی</a>
+    {% endif %}
+    <span style="padding:.5rem .75rem;font-size:.82rem;color:var(--text-muted)">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline btn-sm">بعدی →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="padding:2.5rem;text-align:center;color:var(--text-muted)">
+    <div style="font-size:2.5rem;opacity:.4;margin-bottom:.75rem">📊</div>
+    <p style="font-size:.875rem">هنوز تراکنش مالی ثبت نشده</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

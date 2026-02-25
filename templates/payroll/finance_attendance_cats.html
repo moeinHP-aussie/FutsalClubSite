@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}مشاهده حضور و غیاب{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span><span class="cur">حضور و غیاب</span>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:1.25rem">
+  <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📋 مشاهده فرم‌های حضور و غیاب</h1>
+  <p style="font-size:.82rem;color:var(--text-muted)">انتخاب دسته برای مشاهده — بدون امکان ویرایش</p>
+</div>
+
+<div class="grid-auto">
+  {% for cat in categories %}
+  <div class="card" style="padding:1.25rem">
+    <div style="font-size:1.5rem;margin-bottom:.5rem">🗂️</div>
+    <h3 style="font-size:.95rem;font-weight:800;color:var(--navy);margin-bottom:.35rem">{{ cat.name }}</h3>
+    <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.85rem">{{ cat.players.count }} بازیکن</p>
+    <a href="{% url 'payroll:finance-attendance-sheet' cat.pk %}" class="btn btn-outline btn-sm" style="width:100%;text-align:center;justify-content:center">
+      👁️ مشاهده جلسات
+    </a>
+  </div>
+  {% empty %}
+  <div style="text-align:center;color:var(--text-muted);padding:2rem">هیچ دسته‌ای یافت نشد</div>
+  {% endfor %}
+</div>
+{% endblock %}

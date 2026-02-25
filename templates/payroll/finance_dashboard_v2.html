@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}داشبورد مالی{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">مدیریت مالی</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header + nav ماه -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.15rem;font-weight:900;color:var(--navy)">💰 داشبورد مالی</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">مدیریت شهریه، حقوق و هزینه‌های باشگاه</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← {{ prev_month.year }}/{{ prev_month.month }}</a>
+    <span style="font-weight:800;font-size:.95rem;color:var(--navy)">{{ month.year }}/{{ month.month|stringformat:"02d" }}</span>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">{{ next_month.year }}/{{ next_month.month }} →</a>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid-auto" style="margin-bottom:1.25rem">
+  <div class="stat-card green">
+    <div class="stat-label">شهریه دریافت‌شده</div>
+    <div class="stat-value" style="font-size:1.1rem">{{ invoice_stats.paid_amount|floatformat:0 }}</div>
+    <div class="stat-sub">ریال — {{ invoice_stats.paid }} فاکتور</div>
+    <span class="stat-icon">✅</span>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-label">شهریه معوق</div>
+    <div class="stat-value" style="font-size:1.1rem">{{ invoice_stats.pending_amount|floatformat:0 }}</div>
+    <div class="stat-sub">ریال — {{ invoice_stats.pending|add:invoice_stats.debtor }} فاکتور</div>
+    <span class="stat-icon">⏳</span>
+  </div>
+  <div class="stat-card navy">
+    <div class="stat-label">حقوق تأیید‌شده مربیان</div>
+    <div class="stat-value" style="font-size:1.1rem">{{ salary_stats.total_amount|floatformat:0 }}</div>
+    <div class="stat-sub">ریال — {{ salary_stats.approved }} مربی</div>
+    <span class="stat-icon">👨‍🏫</span>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-label">فاکتور دستی معلق</div>
+    <div class="stat-value">{{ staff_invoice_stats.pending_count }}</div>
+    <div class="stat-sub">{{ staff_invoice_stats.pending_amount|floatformat:0 }} ریال</div>
+    <span class="stat-icon">📄</span>
+  </div>
+</div>
+
+<!-- دکمه‌های اقدام سریع -->
+<div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem">
+  <a href="{% url 'payroll:coach-payroll-summary' %}" class="btn btn-navy btn-sm">👨‍🏫 پرداخت حقوق مربیان</a>
+  <a href="{% url 'payroll:player-payment-status' %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-navy btn-sm">📊 وضعیت شهریه بازیکنان</a>
+  <a href="{% url 'payroll:coach-rate-manage' %}" class="btn btn-amber btn-sm">💰 تعیین نرخ مربیان</a>
+  <a href="{% url 'payroll:staff-invoice-create' %}" class="btn btn-amber btn-sm">📄 فاکتور دستی جدید</a>
+  <a href="{% url 'payroll:expense-create' %}" class="btn btn-outline btn-sm">💸 ثبت هزینه</a>
+  <a href="{% url 'payroll:finance-attendance-cats' %}" class="btn btn-outline btn-sm">📋 مشاهده حضور و غیاب</a>
+  <a href="{% url 'payroll:all-financial-history' %}" class="btn btn-outline btn-sm">📊 تاریخچه کامل</a>
+  <form method="post" action="{% url 'payroll:invoice-generate-all' %}" style="display:inline">
+    {% csrf_token %}
+    <input type="hidden" name="year"  value="{{ month.year }}">
+    <input type="hidden" name="month" value="{{ month.month }}">
+    <button type="submit" class="btn btn-outline btn-sm"
+            onclick="return confirm('فاکتور ماه {{ month.year }}/{{ month.month }} برای همه دسته‌ها صادر شود؟')">
+      ⚡ صدور فاکتور همه دسته‌ها
+    </button>
+  </form>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+
+  <!-- فاکتورهای در انتظار تأیید -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📋 رسید در انتظار تأیید</span>
+      <span style="font-size:.75rem;color:var(--amber);font-weight:700">{{ invoice_stats.pending_confirm }} مورد</span>
+    </div>
+    {% if awaiting_confirm %}
+    <div style="padding:.5rem .85rem">
+      {% for inv in awaiting_confirm %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+        <div>
+          <strong style="font-size:.85rem">{{ inv.player.first_name }} {{ inv.player.last_name }}</strong>
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ inv.category.name }}</div>
+        </div>
+        <div style="display:flex;gap:.35rem;align-items:center">
+          <span style="font-size:.78rem;font-weight:700">{{ inv.final_amount|floatformat:0 }}</span>
+          <form method="post" action="{% url 'payroll:invoice-status-update' inv.pk %}" style="margin:0">
+            {% csrf_token %}
+            <input type="hidden" name="new_status" value="paid">
+            <button class="btn btn-green btn-sm" style="padding:.2rem .5rem;font-size:.72rem">✅ تأیید</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.85rem">رسید معلقی وجود ندارد ✓</div>
+    {% endif %}
+  </div>
+
+  <!-- شهریه‌های معوق -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">⚠️ شهریه‌های معوق</span>
+      <span style="font-size:.75rem;color:var(--red);font-weight:700">{{ invoice_stats.debtor }} مورد</span>
+    </div>
+    {% if debtor_invoices %}
+    <div style="padding:.5rem .85rem">
+      {% for inv in debtor_invoices %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+        <div>
+          <strong style="font-size:.85rem">{{ inv.player.first_name }} {{ inv.player.last_name }}</strong>
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ inv.category.name }} — {{ inv.jalali_year }}/{{ inv.jalali_month|stringformat:"02d" }}</div>
+        </div>
+        <span style="font-size:.78rem;font-weight:700;color:var(--red)">{{ inv.final_amount|floatformat:0 }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.85rem">بدهی معوقی وجود ندارد ✓</div>
+    {% endif %}
+  </div>
+
+  <!-- حقوق تأیید‌شده هنوز پرداخت‌نشده -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">👨‍🏫 حقوق تأیید‌شده (پرداخت‌نشده)</span>
+      <a href="{% url 'payroll:coach-payroll-summary' %}" class="btn btn-navy btn-sm">پرداخت</a>
+    </div>
+    {% if approved_salaries %}
+    <div style="padding:.5rem .85rem">
+      {% for sal in approved_salaries %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
+        <div>
+          <strong style="font-size:.85rem">{{ sal.coach.first_name }} {{ sal.coach.last_name }}</strong>
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ sal.category.name }}</div>
+        </div>
+        <span style="font-size:.78rem;font-weight:700;color:var(--amber)">{{ sal.final_amount|floatformat:0 }} ریال</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.85rem">حقوق معلقی وجود ندارد ✓</div>
+    {% endif %}
+  </div>
+
+  <!-- دسته‌های آموزشی + لینک سریع -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">🗂️ دسته‌های آموزشی</span></div>
+    <div style="padding:.6rem .85rem">
+      {% for cat in categories %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.85rem;font-weight:700">{{ cat.name }}</span>
+        <div style="display:flex;gap:.3rem">
+          <a href="{% url 'payroll:invoice-list' cat.pk %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .45rem">💳 فاکتور</a>
+          <a href="{% url 'payroll:salary-list' cat.pk %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .45rem">👨‍🏫 حقوق</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

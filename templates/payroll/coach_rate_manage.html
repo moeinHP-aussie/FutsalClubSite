@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}تعیین نرخ مربیان{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span><span class="cur">نرخ مربیان</span>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.75rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">💰 تعیین نرخ دریافتی مربیان</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">نرخ دریافت مربی به ازای هر جلسه (ریال) — برای هر دسته آموزشی</p>
+  </div>
+  <a href="{% url 'payroll:finance-dashboard' %}" class="btn btn-outline btn-sm">← داشبورد</a>
+</div>
+
+{% if messages %}{% for msg in messages %}
+<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.45rem;
+  background:{% if msg.tags == 'success' %}#dcfce7{% else %}#fee2e2{% endif %};
+  color:{% if msg.tags == 'success' %}#15803d{% else %}#b91c1c{% endif %}">{{ msg }}</div>
+{% endfor %}{% endif %}
+
+<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:.7rem 1rem;font-size:.82rem;color:#92400e;margin-bottom:1rem">
+  💡 <strong>حقوق مربی = تعداد جلسات حضور × نرخ هر جلسه</strong> + تعدیل دستی مدیر مالی<br>
+  خالی گذاشتن یا صفر → نرخ حذف می‌شود.
+</div>
+
+<div class="card">
+  <form method="post" style="padding:0">
+    {% csrf_token %}
+    <div style="overflow-x:auto">
+      <table class="table" style="border-collapse:collapse">
+        <thead>
+          <tr style="background:var(--surface-1)">
+            <th style="position:sticky;right:0;background:var(--surface-1);min-width:155px;z-index:2;border-left:2px solid var(--surface-2)">مربی</th>
+            {% for cat in categories %}
+            <th style="text-align:center;min-width:148px;padding:.6rem .5rem">
+              <div style="font-size:.82rem;font-weight:700;color:var(--navy)">{{ cat.name }}</div>
+              <div style="font-size:.7rem;color:var(--text-muted);margin-top:.1rem">{{ cat.monthly_fee|floatformat:0 }} ر/ماه</div>
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in coaches_with_rates %}
+          <tr>
+            <td style="position:sticky;right:0;background:#fff;z-index:1;border-left:2px solid var(--surface-2)">
+              <div style="font-size:.88rem;font-weight:700">{{ row.coach.first_name }} {{ row.coach.last_name }}</div>
+              {% if row.coach.degree %}<div style="font-size:.7rem;color:var(--text-muted)">{{ row.coach.get_degree_display }}</div>{% endif %}
+            </td>
+            {% for cr in row.cat_rates %}
+            <td style="text-align:center;padding:.45rem .5rem">
+              <input type="number"
+                     name="{{ cr.field_name }}"
+                     value="{{ cr.value }}"
+                     class="rate-input {% if cr.value %}has-rate{% endif %}"
+                     placeholder="—"
+                     min="0" step="1000">
+            </td>
+            {% endfor %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{{ categories|length|add:1 }}" style="text-align:center;padding:2.5rem;color:var(--text-muted)">
+              مربی فعالی یافت نشد
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:.85rem 1rem;border-top:1px solid var(--surface-2);display:flex;justify-content:flex-end;gap:.5rem">
+      <a href="{% url 'payroll:finance-dashboard' %}" class="btn btn-outline">انصراف</a>
+      <button type="submit" class="btn btn-navy">💾 ذخیره همه نرخ‌ها</button>
+    </div>
+  </form>
+</div>
+
+<style>
+.rate-input {
+  width: 115px; padding: .38rem .5rem;
+  border: 1.5px solid var(--surface-2); border-radius: 7px;
+  font-family: monospace; font-size: .85rem; text-align: center;
+  transition: border-color .15s, background .15s; background: #fafafa;
+}
+.rate-input:focus       { outline: none; border-color: var(--navy); background: #f0f9ff; }
+.rate-input.has-rate    { border-color: #86efac; background: #f0fdf4; font-weight:700; }
+.rate-input::placeholder{ color: #d1d5db; font-size: .75rem; }
+</style>
+
+<script>
+document.querySelectorAll('.rate-input').forEach(function(inp){
+  inp.addEventListener('input', function(){
+    this.classList.toggle('has-rate', this.value && this.value !== '0');
+  });
+});
+</script>
+
+{% endblock %}

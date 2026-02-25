@@ -1,9 +1,6 @@
 """
-futsal_club/urls/payroll_urls.py   ←  نسخه v2 (کامل)
+futsal_club/urls/payroll_urls.py — نسخه v3 (کامل)
 namespace = "payroll"
-
-تغییر نسبت به نسخه قبل:
-  + اضافه شدن URL   invoices/<category_pk>/payment-success/
 """
 from django.urls import path
 
@@ -12,7 +9,6 @@ from ..views.payroll_views import (
     BulkSalaryCalculateView,
     CoachSalaryCalculateView,
     ConfirmInvoicePaymentView,
-    FinanceDashboardView,
     GenerateAllCategoryInvoicesView,
     GenerateMonthlyInvoicesView,
     InvoiceListView,
@@ -23,37 +19,51 @@ from ..views.payroll_views import (
 from ..views.zarinpal_views import (
     InvoicePaymentInitView,
     ZarinpalCallbackView,
-    PaymentSuccessView,          # ← اضافه شد
+    PaymentSuccessView,
 )
-
 from ..views.coach_payroll_view import CoachPayrollSummaryView, PayCoachSalaryView
 from ..views.expense_views import (
     ExpenseListView, ExpenseCreateView,
     ExpenseCategoryCreateView, ExpenseCategoryListView,
 )
+from ..views.finance_views import (
+    FinanceDashboardV2View,
+    StaffInvoiceListView,
+    StaffInvoiceCreateView,
+    StaffInvoiceMarkPaidView,
+    StaffInvoiceCancelView,
+    MyFinancialHistoryView,
+    FinanceAllHistoryView,
+    InvoiceStatusUpdateView,
+    BulkInvoiceStatusView,
+    FinanceAttendanceCategoryListView,
+    FinanceAttendanceSheetView,
+    FinanceAttendanceSessionView,
+    CoachRateManageView,
+    PlayerPaymentStatusView,
+)
 
 app_name = "payroll"
 
 urlpatterns = [
-    # ── داشبورد مالی ──────────────────────────────────────────────
     path("dashboard/",
-         FinanceDashboardView.as_view(), name="finance-dashboard"),
+         FinanceDashboardV2View.as_view(),  name="finance-dashboard"),
 
-    # ── حقوق مربیان ───────────────────────────────────────────────
+    # حقوق مربیان
     path("salary/category/<int:category_pk>/",
-         SalaryListView.as_view(), name="salary-list"),
+         SalaryListView.as_view(),          name="salary-list"),
     path("salary/category/<int:category_pk>/bulk/",
          BulkSalaryCalculateView.as_view(), name="salary-bulk"),
     path("salary/coach/<int:coach_pk>/category/<int:category_pk>/",
-         CoachSalaryCalculateView.as_view(), name="salary-calculate"),
+         CoachSalaryCalculateView.as_view(),name="salary-calculate"),
     path("salary/<int:salary_pk>/approve/",
-         ApproveSalaryView.as_view(), name="salary-approve"),
+         ApproveSalaryView.as_view(),       name="salary-approve"),
     path("salary/<int:salary_pk>/pay/",
-         MarkSalaryPaidView.as_view(), name="salary-pay"),
+         MarkSalaryPaidView.as_view(),      name="salary-pay"),
 
-    # ── فاکتورهای بازیکنان ────────────────────────────────────────
+    # فاکتور شهریه بازیکنان
     path("invoices/category/<int:category_pk>/",
-         InvoiceListView.as_view(), name="invoice-list"),
+         InvoiceListView.as_view(),         name="invoice-list"),
     path("invoices/generate/<int:category_pk>/",
          GenerateMonthlyInvoicesView.as_view(), name="invoice-generate"),
     path("invoices/generate-all/",
@@ -61,25 +71,59 @@ urlpatterns = [
     path("invoices/<int:invoice_pk>/confirm/",
          ConfirmInvoicePaymentView.as_view(), name="invoice-confirm"),
     path("invoices/<int:invoice_pk>/receipt/",
-         UploadReceiptView.as_view(), name="invoice-receipt"),
+         UploadReceiptView.as_view(),       name="invoice-receipt"),
+    path("invoices/<int:invoice_pk>/status/",
+         InvoiceStatusUpdateView.as_view(), name="invoice-status-update"),
+    path("invoices/bulk-status/",
+         BulkInvoiceStatusView.as_view(),   name="invoice-bulk-status"),
 
-    # ── درگاه پرداخت زرین‌پال ─────────────────────────────────────
+    # درگاه پرداخت
     path("invoices/<int:invoice_pk>/pay/",
-         InvoicePaymentInitView.as_view(), name="invoice-pay"),
+         InvoicePaymentInitView.as_view(),  name="invoice-pay"),
     path("zarinpal/callback/",
-         ZarinpalCallbackView.as_view(), name="zarinpal-callback"),
-
-    # ── صفحه موفقیت پرداخت (ریدایرکت از ZarinpalCallbackView) ────
+         ZarinpalCallbackView.as_view(),    name="zarinpal-callback"),
     path("invoices/<int:category_pk>/payment-success/",
-         PaymentSuccessView.as_view(), name="payment-success"),
+         PaymentSuccessView.as_view(),      name="payment-success"),
 
-    # ── خلاصه حقوق مربیان ─────────────────────────────────────────
+    # پرداخت حقوق مربیان
     path("coach-payroll/",
          CoachPayrollSummaryView.as_view(), name="coach-payroll-summary"),
     path("coach-payroll/pay/",
          PayCoachSalaryView.as_view(),      name="coach-payroll-pay"),
 
-    # ── هزینه‌ها و درآمدها ─────────────────────────────────────────
+    # فاکتور دستی اعضاء
+    path("staff-invoices/",
+         StaffInvoiceListView.as_view(),    name="staff-invoice-list"),
+    path("staff-invoices/create/",
+         StaffInvoiceCreateView.as_view(),  name="staff-invoice-create"),
+    path("staff-invoices/<int:invoice_pk>/paid/",
+         StaffInvoiceMarkPaidView.as_view(),name="staff-invoice-paid"),
+    path("staff-invoices/<int:invoice_pk>/cancel/",
+         StaffInvoiceCancelView.as_view(),  name="staff-invoice-cancel"),
+
+    # تاریخچه مالی
+    path("my-history/",
+         MyFinancialHistoryView.as_view(),  name="my-financial-history"),
+    path("all-history/",
+         FinanceAllHistoryView.as_view(),   name="all-financial-history"),
+
+    # حضور و غیاب فقط‌خواندنی برای مدیر مالی
+    path("attendance/",
+         FinanceAttendanceCategoryListView.as_view(), name="finance-attendance-cats"),
+    path("attendance/category/<int:category_pk>/",
+         FinanceAttendanceSheetView.as_view(), name="finance-attendance-sheet"),
+    path("attendance/session/<int:session_pk>/",
+         FinanceAttendanceSessionView.as_view(), name="finance-session-detail"),
+
+    # نرخ مربیان — فقط مدیر مالی
+    path("coach-rates/",
+         CoachRateManageView.as_view(),     name="coach-rate-manage"),
+
+    # وضعیت پرداخت بازیکنان — مدیر فنی + مدیر مالی
+    path("player-payments/",
+         PlayerPaymentStatusView.as_view(), name="player-payment-status"),
+
+    # هزینه‌ها
     path("expenses/",
          ExpenseListView.as_view(),         name="expense-list"),
     path("expenses/create/",

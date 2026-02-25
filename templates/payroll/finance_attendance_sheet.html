@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}حضور و غیاب — {{ category.name }}{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-attendance-cats' %}" style="text-decoration:none;color:inherit">حضور و غیاب</a>
+  <span class="sep">›</span><span class="cur">{{ category.name }}</span>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📋 حضور و غیاب — {{ category.name }}</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">فقط مشاهده — امکان تغییر وجود ندارد</p>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center">
+    <span style="background:#dbeafe;color:#1e3a8a;border-radius:8px;padding:.3rem .75rem;font-size:.75rem;font-weight:700">👁️ فقط‌خواندنی</span>
+    <a href="{% url 'payroll:finance-attendance-cats' %}" class="btn btn-outline btn-sm">← بازگشت</a>
+  </div>
+</div>
+
+{% if sheets %}
+{% for sheet in sheets %}
+<div class="card" style="margin-bottom:1rem">
+  <div class="card-header">
+    <span class="card-title">{{ sheet.jalali_year }}/{% if sheet.jalali_month < 10 %}0{% endif %}{{ sheet.jalali_month }}</span>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      {% if sheet.is_finalized %}
+      <span class="badge badge-green" style="font-size:.72rem">✅ نهایی</span>
+      {% else %}
+      <span class="badge badge-amber" style="font-size:.72rem">در جریان</span>
+      {% endif %}
+      <span style="font-size:.75rem;color:var(--text-muted)">{{ sheet.session_dates.count }} جلسه</span>
+    </div>
+  </div>
+
+  {% with sessions=sheet.session_dates.all %}
+  {% if sessions %}
+  <div style="padding:.6rem .85rem">
+    {% for session in sessions %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--surface-2)">
+      <div>
+        <strong style="font-size:.875rem">{{ session.date }}</strong>
+        <span style="font-size:.72rem;color:var(--text-muted);margin-right:.3rem">جلسه {{ session.session_number }}</span>
+        {% if session.notes %}
+        <span style="font-size:.75rem;color:var(--text-muted)">— {{ session.notes }}</span>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:.75rem;align-items:center">
+        <span style="font-size:.78rem;color:var(--green);font-weight:700">
+          ✅ {{ session.player_records.count }} حاضر
+        </span>
+        <span style="font-size:.78rem;color:var(--amber)">
+          مربی: {% if session.coach_records.filter.exists %}✅{% else %}—{% endif %}
+        </span>
+        <a href="{% url 'payroll:finance-session-detail' session.pk %}" class="btn btn-outline btn-sm" style="font-size:.72rem">جزئیات</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="padding:1rem;text-align:center;color:var(--text-muted);font-size:.85rem">جلسه‌ای ثبت نشده</div>
+  {% endif %}
+  {% endwith %}
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center;padding:3rem;color:var(--text-muted)">
+  <div style="font-size:2.5rem;margin-bottom:.5rem">📋</div>
+  <p style="font-weight:700">هیچ شیت حضوری برای این دسته ثبت نشده</p>
+</div>
+{% endif %}
+{% endblock %}

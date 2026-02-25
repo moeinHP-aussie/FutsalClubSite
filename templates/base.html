@@ -600,6 +600,10 @@
        class="nav-item {% block nav_dashboard %}{% endblock %}">
       <span class="nav-icon">🏠</span> داشبورد
     </a>
+    <a href="{% url 'payroll:my-financial-history' %}"
+       class="nav-item {% block nav_my_finance %}{% endblock %}">
+      <span class="nav-icon">📊</span> تاریخچه مالی من
+    </a>
 
     <!-- ─── مدیر فنی ────────────────────────────────────── -->
     {% if request.user.is_technical_director or request.user.is_superuser %}
@@ -678,7 +682,7 @@
     <!-- ─── مدیر مالی ────────────────────────────────────── -->
     {% if request.user.is_finance_manager or request.user.is_technical_director or request.user.is_superuser %}
     <div class="nav-section">
-      <div class="nav-label">مالی</div>
+      <div class="nav-label">مدیریت مالی</div>
     </div>
     <a href="{% url 'payroll:finance-dashboard' %}"
        class="nav-item {% block nav_finance %}{% endblock %}">
@@ -686,20 +690,23 @@
     </a>
     <a href="{% url 'payroll:coach-payroll-summary' %}"
        class="nav-item {% block nav_coach_payroll %}{% endblock %}">
-      <span class="nav-icon">🧾</span> پرداخت حقوق مربیان
+      <span class="nav-icon">👨‍🏫</span> حقوق مربیان
     </a>
-    {# فاکتورها و حقوق نیاز به category_pk دارند — از داشبورد مالی انتخاب می‌شود #}
-    <a href="{% url 'payroll:finance-dashboard' %}#invoices"
-       class="nav-item {% block nav_invoices %}{% endblock %}">
-      <span class="nav-icon">🧾</span> فاکتورها
-    </a>
-    <a href="{% url 'payroll:finance-dashboard' %}#salaries"
-       class="nav-item {% block nav_salaries %}{% endblock %}">
-      <span class="nav-icon">💳</span> حقوق مربیان
+    <a href="{% url 'payroll:staff-invoice-list' %}"
+       class="nav-item {% block nav_staff_invoice %}{% endblock %}">
+      <span class="nav-icon">📄</span> فاکتور دستی اعضاء
     </a>
     <a href="{% url 'payroll:expense-list' %}"
        class="nav-item {% block nav_expenses %}{% endblock %}">
-      <span class="nav-icon">📊</span> هزینه‌ها
+      <span class="nav-icon">💸</span> هزینه‌ها و درآمد
+    </a>
+    <a href="{% url 'payroll:finance-attendance-cats' %}"
+       class="nav-item {% block nav_finance_attend %}{% endblock %}">
+      <span class="nav-icon">📋</span> حضور و غیاب (مشاهده)
+    </a>
+    <a href="{% url 'payroll:all-financial-history' %}"
+       class="nav-item {% block nav_all_history %}{% endblock %}">
+      <span class="nav-icon">📊</span> تاریخچه مالی کل
     </a>
     {% endif %}
 
@@ -712,9 +719,9 @@
        class="nav-item {% block nav_my_profile %}{% endblock %}">
       <span class="nav-icon">👤</span> پروفایل من
     </a>
-    <a href="{% url 'payroll:finance-dashboard' %}"
+    <a href="{% url 'payroll:my-financial-history' %}"
        class="nav-item {% block nav_my_invoices %}{% endblock %}">
-      <span class="nav-icon">🧾</span> فاکتورهای من
+      <span class="nav-icon">🧾</span> سوابق مالی
     </a>
     <a href="{% url 'training:attendance-select' %}"
        class="nav-item {% block nav_my_attendance %}{% endblock %}">

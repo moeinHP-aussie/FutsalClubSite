@@ -331,13 +331,18 @@ class GenerateMonthlyInvoicesView(FinanceOnlyMixin, View):
 
 class GenerateAllCategoryInvoicesView(FinanceOnlyMixin, View):
     """
-    صدور فاکتور برای تمام دسته‌ها — ماه جاری.
+    صدور فاکتور برای تمام دسته‌ها — ماه انتخاب‌شده از داشبورد.
     POST  /payroll/invoices/generate-all/
+    پارامترهای POST: year, month  (اگر نباشند، ماه جاری)
     """
     http_method_names = ["post"]
 
     def post(self, request):
-        month = JalaliMonth.current()
+        # ✅ Bug fix: ماه را از POST بخوان نه همیشه ماه جاری
+        month = parse_jalali_month_from_request(
+            request.POST.get("year"),
+            request.POST.get("month"),
+        )
         results = PayrollService.generate_invoices_all_categories(
             jalali_month=month, created_by=request.user
         )
@@ -346,7 +351,9 @@ class GenerateAllCategoryInvoicesView(FinanceOnlyMixin, View):
             request,
             f"{total_created} فاکتور برای {month} در تمام دسته‌ها صادر شد.",
         )
-        return redirect("payroll:finance-dashboard")
+        from django.urls import reverse
+        url = reverse("payroll:finance-dashboard") + f"?year={month.year}&month={month.month}"
+        return redirect(url)
 
 
 # ────────────────────────────────────────────────────────────────────

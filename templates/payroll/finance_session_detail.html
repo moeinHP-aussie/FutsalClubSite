@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}جزئیات جلسه{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-attendance-cats' %}" style="text-decoration:none;color:inherit">حضور و غیاب</a>
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-attendance-sheet' session.sheet.category_id %}" style="text-decoration:none;color:inherit">{{ category.name }}</a>
+  <span class="sep">›</span><span class="cur">جلسه {{ session.session_number }}</span>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📋 جزئیات جلسه {{ session.session_number }} — {{ category.name }}</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">تاریخ: {{ session.date }} &nbsp;|&nbsp; فقط‌خواندنی</p>
+  </div>
+  <a href="{% url 'payroll:finance-attendance-sheet' category.pk %}" class="btn btn-outline btn-sm">← بازگشت</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+  <div class="card">
+    <div class="card-header"><span class="card-title">👨‍🏫 وضعیت مربیان</span></div>
+    {% if session.coach_records.all %}
+    <div style="padding:.6rem .85rem">
+      {% for rec in session.coach_records.all %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.875rem">{{ rec.coach.first_name }} {{ rec.coach.last_name }}</span>
+        {% if rec.status == 'present' %}
+        <span class="badge badge-green" style="font-size:.68rem">✅ حاضر</span>
+        {% elif rec.status == 'excused' %}
+        <span class="badge badge-amber" style="font-size:.68rem">⚠️ موجه</span>
+        {% else %}
+        <span class="badge badge-red" style="font-size:.68rem">❌ غایب</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:1rem;text-align:center;color:var(--text-muted);font-size:.85rem">رکوردی ثبت نشده</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">⚽ وضعیت بازیکنان</span>
+      <div style="display:flex;gap:.35rem">
+        <span class="badge badge-green" style="font-size:.65rem">
+          حاضر: {{ attendances|length }}
+        </span>
+      </div>
+    </div>
+    {% if attendances %}
+    <div style="padding:.6rem .85rem;max-height:400px;overflow-y:auto">
+      {% for rec in attendances %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--surface-2)">
+        <span style="font-size:.85rem">{{ rec.player.first_name }} {{ rec.player.last_name }}</span>
+        {% if rec.status == 'present' %}
+        <span class="badge badge-green" style="font-size:.65rem">✅ حاضر</span>
+        {% elif rec.status == 'excused' %}
+        <span class="badge badge-amber" style="font-size:.65rem">⚠️ موجه</span>
+        {% else %}
+        <span class="badge badge-red" style="font-size:.65rem">❌ غایب</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:1rem;text-align:center;color:var(--text-muted);font-size:.85rem">رکوردی ثبت نشده</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

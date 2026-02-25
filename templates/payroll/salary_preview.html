@@ -1,241 +1,218 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <title>محاسبه حقوق — {{ coach }}</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: "Vazirmatn", Tahoma, sans-serif; background: #f4f6f9; direction: rtl; color: #1a1a2e; }
-    .page   { max-width: 860px; margin: 0 auto; padding: 1.5rem; }
-    .card   { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 1.5rem; margin-bottom: 1.25rem; }
-    h1      { font-size: 1.3rem; font-weight: 700; margin-bottom: .25rem; }
-    h2      { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: #495057; }
-    .meta   { color: #868e96; font-size: .85rem; margin-bottom: 1.5rem; }
+{% extends "base.html" %}
+{% block title %}پیش‌نمایش حقوق — {{ coach }}{% endblock %}
+{% block nav_finance %}active{% endblock %}
 
-    /* ── Stat Grid ─────────────────────── */
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
-    .stat-box  {
-      border-radius: 10px; padding: 1rem; text-align: center;
-    }
-    .stat-box .label { font-size: .75rem; color: #868e96; margin-bottom: .3rem; }
-    .stat-box .value { font-size: 1.6rem; font-weight: 800; }
-    .stat-box.green  { background: #d3f9d8; }
-    .stat-box.red    { background: #ffe3e3; }
-    .stat-box.yellow { background: #fff3bf; }
-    .stat-box.blue   { background: #d0ebff; }
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:salary-list' category.pk %}?year={{ month.year }}&month={{ month.month }}" style="text-decoration:none;color:inherit">حقوق {{ category.name }}</a>
+  <span class="sep">›</span><span class="cur">{{ coach }}</span>
+{% endblock %}
 
-    /* ── Progress ──────────────────────── */
-    .progress-wrap { margin: 1rem 0; }
-    .progress-bar-bg {
-      background: #dee2e6; border-radius: 100px; height: 12px; overflow: hidden;
-    }
-    .progress-bar {
-      height: 100%; border-radius: 100px;
-      background: linear-gradient(90deg, #3b5bdb, #74c0fc);
-      transition: width .6s ease;
-    }
-    .progress-label { font-size: .8rem; color: #495057; margin-top: .3rem; }
+{% block content %}
 
-    /* ── Breakdown Table ────────────────── */
-    .breakdown { width: 100%; border-collapse: collapse; }
-    .breakdown td { padding: .6rem .75rem; border-bottom: 1px solid #f1f3f5; }
-    .breakdown tr:last-child td { border-bottom: none; }
-    .breakdown td:first-child { color: #868e96; font-size: .88rem; }
-    .breakdown td:last-child  { font-weight: 600; text-align: left; }
-    .breakdown .total td { background: #f8f9fa; font-weight: 800; font-size: 1rem; }
-    .breakdown .final td { background: #d3f9d8; font-weight: 800; font-size: 1.05rem; color: #2f9e44; }
-
-    /* ── Form ──────────────────────────── */
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; font-size: .88rem; margin-bottom: .35rem; font-weight: 600; }
-    .form-group input, .form-group textarea {
-      width: 100%; padding: .55rem .75rem; border: 1.5px solid #ced4da;
-      border-radius: 8px; font-family: inherit; font-size: .9rem;
-    }
-    .form-group input:focus, .form-group textarea:focus {
-      outline: none; border-color: #3b5bdb;
-    }
-    .form-hint { font-size: .75rem; color: #868e96; margin-top: .2rem; }
-
-    /* ── Buttons ────────────────────────── */
-    .actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.25rem; }
-    .btn {
-      padding: .55rem 1.3rem; border-radius: 8px; border: none;
-      cursor: pointer; font-family: inherit; font-size: .9rem;
-      font-weight: 600; text-decoration: none; transition: opacity .2s;
-      display: inline-flex; align-items: center; gap: .4rem;
-    }
-    .btn:hover { opacity: .85; }
-    .btn-primary  { background: #3b5bdb; color: #fff; }
-    .btn-outline  { background: transparent; border: 2px solid #ced4da; color: #495057; }
-    .btn-warning  { background: #f08c00; color: #fff; }
-
-    /* ── Alert ──────────────────────────── */
-    .alert { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
-    .alert-danger  { background: #ffe3e3; color: #c92a2a; border: 1px solid #ffa8a8; }
-    .alert-info    { background: #d0ebff; color: #1864ab; border: 1px solid #74c0fc; }
-
-    /* ── Month Nav ──────────────────────── */
-    .month-nav { display: flex; gap: .5rem; align-items: center; }
-    .month-nav a { padding: .35rem .8rem; border-radius: 6px; background: #e9ecef; text-decoration: none; color: #495057; font-size: .85rem; }
-    .month-nav .cur { background: #3b5bdb; color: #fff; font-weight: 700; padding: .35rem 1rem; border-radius: 6px; }
-  </style>
-</head>
-<body>
-<div class="page">
-
-  {# ── Header ────────────────────────────────────────────── #}
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
-    <div style="display:flex;align-items:center;gap:.85rem">
-      <img src="{% static 'img/fcespad.jpg' %}" alt="اسپاد"
-           style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0">
-      <div>
-        <h1>📊 محاسبه حقوق مربی</h1>
-        <p class="meta">{{ coach }} | دسته: {{ category }}</p>
-      </div>
-    </div>
-    <div class="month-nav">
-      <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}">
-        &lsaquo; {{ prev_month.persian_name }}
-      </a>
-      <span class="cur">{{ month.persian_name }} {{ month.year }}</span>
-      <a href="?year={{ next_month.year }}&month={{ next_month.month }}">
-        {{ next_month.persian_name }} &rsaquo;
-      </a>
-    </div>
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">
+      💰 پیش‌نمایش حقوق — {{ coach.first_name }} {{ coach.last_name }}
+    </h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">
+      دسته: {{ category.name }} &nbsp;|&nbsp; ماه: {{ month.year }}/{{ month.month|stringformat:"02d" }}
+    </p>
   </div>
-
-  {% if error %}
-  <div class="alert alert-danger">
-    <strong>خطا:</strong> {{ error }}
+  <div style="display:flex;gap:.5rem;align-items:center">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← {{ prev_month.year }}/{{ prev_month.month|stringformat:"02d" }}</a>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">{{ next_month.year }}/{{ next_month.month|stringformat:"02d" }} →</a>
+    <a href="{% url 'payroll:salary-list' category.pk %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm">← بازگشت</a>
   </div>
-  {% endif %}
+</div>
 
-  {% if breakdown %}
+{% if messages %}{% for msg in messages %}
+<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.45rem;
+  background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
+  color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">{{ msg }}</div>
+{% endfor %}{% endif %}
 
-  {# ── Attendance Stats ─────────────────────────────────── #}
+{% if error %}
+<div style="background:#fee2e2;color:#b91c1c;border-radius:10px;padding:1.25rem;text-align:center">
+  <div style="font-size:1.8rem;margin-bottom:.5rem">⚠️</div>
+  <p style="font-weight:700;font-size:.95rem">{{ error }}</p>
+  <p style="font-size:.82rem;margin-top:.5rem">
+    ممکن است لیست حضور و غیاب برای این ماه ثبت نشده باشد،
+    یا نرخ تدریس برای این مربی و دسته تعریف نشده باشد.
+  </p>
+  <a href="{% url 'payroll:coach-rate-manage' %}" class="btn btn-navy btn-sm" style="margin-top:.75rem">
+    💰 تعیین نرخ مربیان
+  </a>
+</div>
+{% elif breakdown %}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
+
+  <!-- محاسبه اتوماتیک -->
   <div class="card">
-    <h2>📅 آمار حضور</h2>
-    <div class="stat-grid">
-      <div class="stat-box blue">
-        <div class="label">کل جلسات</div>
-        <div class="value">{{ breakdown.sessions_total }}</div>
-      </div>
-      <div class="stat-box green">
-        <div class="label">حاضر</div>
-        <div class="value">{{ breakdown.sessions_attended }}</div>
-      </div>
-      <div class="stat-box red">
-        <div class="label">غایب</div>
-        <div class="value">{{ breakdown.sessions_absent }}</div>
-      </div>
-      <div class="stat-box yellow">
-        <div class="label">غیبت موجه</div>
-        <div class="value">{{ breakdown.sessions_excused }}</div>
-      </div>
-    </div>
+    <div class="card-header"><span class="card-title">📊 محاسبه اتوماتیک</span></div>
+    <div style="padding:1.1rem">
 
-    <div class="progress-wrap">
-      <div class="progress-bar-bg">
-        <div class="progress-bar" style="width:{{ breakdown.attendance_pct }}%"></div>
+      <!-- کارت اطلاعات مربی -->
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;background:var(--surface-1);border-radius:10px;margin-bottom:1rem">
+        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--teal));
+                    display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#fff;font-weight:900">
+          {{ coach.first_name|first|upper }}
+        </div>
+        <div>
+          <p style="font-weight:800;font-size:.9rem;color:var(--navy)">{{ coach.first_name }} {{ coach.last_name }}</p>
+          {% if coach.degree %}
+          <p style="font-size:.75rem;color:var(--text-muted)">{{ coach.get_degree_display }}</p>
+          {% endif %}
+        </div>
+        {% if breakdown.existing_salary %}
+        <span class="badge badge-amber" style="margin-right:auto;font-size:.65rem">
+          محاسبه قبلی: {{ breakdown.existing_salary.get_status_display }}
+        </span>
+        {% endif %}
       </div>
-      <div class="progress-label">
-        درصد حضور: <strong>{{ breakdown.attendance_pct }}٪</strong>
+
+      <!-- آمار حضور -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:1rem;text-align:center">
+        <div style="background:#dcfce7;border-radius:8px;padding:.6rem">
+          <div style="font-size:1.3rem;font-weight:900;color:#15803d">{{ breakdown.sessions_attended }}</div>
+          <div style="font-size:.72rem;color:#15803d">✅ حاضر</div>
+        </div>
+        <div style="background:#fee2e2;border-radius:8px;padding:.6rem">
+          <div style="font-size:1.3rem;font-weight:900;color:#b91c1c">{{ breakdown.sessions_absent }}</div>
+          <div style="font-size:.72rem;color:#b91c1c">❌ غایب</div>
+        </div>
+        <div style="background:#fef9c3;border-radius:8px;padding:.6rem">
+          <div style="font-size:1.3rem;font-weight:900;color:#854d0e">{{ breakdown.sessions_excused }}</div>
+          <div style="font-size:.72rem;color:#854d0e">⚠️ موجه</div>
+        </div>
+      </div>
+
+      <!-- جزئیات مالی -->
+      <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+        <tr style="border-bottom:1px solid var(--surface-2)">
+          <td style="padding:.45rem 0;color:var(--text-muted)">کل جلسات ماه:</td>
+          <td style="text-align:left;font-weight:700">{{ breakdown.sessions_total }} جلسه</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--surface-2)">
+          <td style="padding:.45rem 0;color:var(--text-muted)">نرخ هر جلسه:</td>
+          <td style="text-align:left;font-family:monospace;font-weight:700;color:var(--navy)">{{ breakdown.session_rate|floatformat:0 }} ریال</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--surface-2)">
+          <td style="padding:.45rem 0;color:var(--text-muted)">حقوق پایه:</td>
+          <td style="text-align:left;font-family:monospace;font-weight:700">
+            {{ breakdown.sessions_attended }} × {{ breakdown.session_rate|floatformat:0 }} = {{ breakdown.base_amount|floatformat:0 }} ریال
+          </td>
+        </tr>
+        {% if breakdown.manual_adjustment and breakdown.manual_adjustment != 0 %}
+        <tr style="border-bottom:1px solid var(--surface-2)">
+          <td style="padding:.45rem 0;color:var(--text-muted)">تعدیل دستی:</td>
+          <td style="text-align:left;font-family:monospace;color:{% if breakdown.manual_adjustment > 0 %}var(--green){% else %}var(--red){% endif %}">
+            {% if breakdown.manual_adjustment > 0 %}+{% endif %}{{ breakdown.manual_adjustment|floatformat:0 }} ریال
+            {% if breakdown.adjustment_reason %}
+            <div style="font-size:.7rem;color:var(--text-muted)">{{ breakdown.adjustment_reason }}</div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endif %}
+        <tr style="background:var(--navy);color:#fff">
+          <td style="padding:.6rem .5rem;border-radius:0 0 0 8px;font-weight:800">💰 حقوق نهایی:</td>
+          <td style="text-align:left;font-family:monospace;font-size:1.05rem;font-weight:900;border-radius:0 0 8px 0;padding:.6rem .5rem">
+            {{ breakdown.final_amount|floatformat:0 }} ریال
+          </td>
+        </tr>
+      </table>
+
+      <!-- درصد حضور -->
+      <div style="margin-top:.85rem">
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.3rem">
+          <span style="color:var(--text-muted)">درصد حضور:</span>
+          <strong>{{ breakdown.attendance_pct }}%</strong>
+        </div>
+        <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:{{ breakdown.attendance_pct }}%;background:{% if breakdown.attendance_pct >= 80 %}var(--green){% elif breakdown.attendance_pct >= 60 %}var(--amber){% else %}#ef4444{% endif %};border-radius:3px;transition:width .4s"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  {# ── Salary Breakdown ─────────────────────────────────── #}
-  <div class="card">
-    <h2>💰 محاسبه حقوق</h2>
-    <table class="breakdown">
-      <tr>
-        <td>نرخ هر جلسه</td>
-        <td>{{ breakdown.session_rate|floatformat:"0" }} ریال</td>
-      </tr>
-      <tr>
-        <td>تعداد جلسات حاضر</td>
-        <td>{{ breakdown.sessions_attended }} جلسه</td>
-      </tr>
-      <tr class="total">
-        <td>حقوق پایه  ({{ breakdown.sessions_attended }} × {{ breakdown.session_rate|floatformat:"0" }})</td>
-        <td>{{ breakdown.base_amount|floatformat:"0" }} ریال</td>
-      </tr>
-      <tr>
-        <td>تعدیل دستی</td>
-        <td id="adj-preview">{{ breakdown.manual_adjustment|floatformat:"0" }} ریال</td>
-      </tr>
-      <tr class="final">
-        <td>حقوق نهایی</td>
-        <td id="final-preview">{{ breakdown.final_amount|floatformat:"0" }} ریال</td>
-      </tr>
-    </table>
-  </div>
+  <!-- فرم ذخیره -->
+  <div style="display:flex;flex-direction:column;gap:1rem">
+    <div class="card">
+      <div class="card-header"><span class="card-title">✏️ تأیید و ذخیره حقوق</span></div>
+      <form method="post" style="padding:1.1rem">
+        {% csrf_token %}
+        <input type="hidden" name="year"         value="{{ month.year }}">
+        <input type="hidden" name="month"        value="{{ month.month }}">
+        <input type="hidden" name="coach_pk"     value="{{ coach.pk }}">
+        <input type="hidden" name="category_pk"  value="{{ category.pk }}">
 
-  {# ── Adjustment Form ──────────────────────────────────── #}
-  <div class="card">
-    <h2>✏️ تعدیل دستی و ذخیره</h2>
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:.8rem;font-weight:700;display:block;margin-bottom:.3rem">
+            تعدیل دستی (ریال)
+            <span style="font-size:.7rem;font-weight:400;color:var(--text-muted)"> — مثبت: اضافه‌پرداخت / منفی: کسر</span>
+          </label>
+          <input type="number" name="manual_adjustment" value="0" step="1000"
+                 class="fi" placeholder="مثال: 500000 یا -200000"
+                 style="font-family:monospace">
+        </div>
+
+        <div style="margin-bottom:1rem">
+          <label style="font-size:.8rem;font-weight:700;display:block;margin-bottom:.3rem">دلیل تعدیل (اختیاری)</label>
+          <textarea name="adjustment_reason" rows="2" class="fi" placeholder="مثلاً: پاداش عملکرد، کسر تأخیر..."></textarea>
+        </div>
+
+        <div style="background:#eff6ff;border-radius:8px;padding:.75rem;font-size:.82rem;margin-bottom:1rem">
+          <strong style="color:var(--navy)">💡 توجه:</strong>
+          حقوق نهایی = {{ breakdown.base_amount|floatformat:0 }} + تعدیل وارد‌شده
+        </div>
+
+        {% if breakdown.existing_salary %}
+        <div style="background:#fef9c3;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;margin-bottom:.75rem;color:#92400e">
+          ⚠️ یک رکورد حقوق قبلی برای این ماه وجود دارد
+          ({{ breakdown.existing_salary.get_status_display }}).
+          ذخیره مجدد آن را به‌روزرسانی می‌کند.
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-navy btn-sm" style="width:100%">
+          💾 ذخیره و محاسبه حقوق
+        </button>
+      </form>
+    </div>
 
     {% if breakdown.existing_salary %}
-    <div class="alert alert-info">
-      ⚠ رکورد حقوق برای این ماه قبلاً ذخیره شده است. ذخیره مجدد آن را به‌روزرسانی می‌کند.
+    <div class="card">
+      <div class="card-header"><span class="card-title">🔖 وضعیت فعلی</span></div>
+      <div style="padding:1rem;font-size:.85rem;display:grid;gap:.4rem">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--surface-2);padding:.3rem 0">
+          <span style="color:var(--text-muted)">وضعیت:</span>
+          <span class="badge {% if breakdown.existing_salary.status == 'paid' %}badge-green{% elif breakdown.existing_salary.status == 'approved' %}badge-navy{% else %}badge-amber{% endif %}" style="font-size:.65rem">
+            {{ breakdown.existing_salary.get_status_display }}
+          </span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--surface-2);padding:.3rem 0">
+          <span style="color:var(--text-muted)">مبلغ ذخیره‌شده:</span>
+          <span style="font-family:monospace;font-weight:700">{{ breakdown.existing_salary.final_amount|floatformat:0 }} ریال</span>
+        </div>
+        {% if breakdown.existing_salary.paid_at %}
+        <div style="display:flex;justify-content:space-between;padding:.3rem 0">
+          <span style="color:var(--text-muted)">تاریخ پرداخت:</span>
+          <span>{{ breakdown.existing_salary.paid_at|date:"Y/m/d" }}</span>
+        </div>
+        {% endif %}
+      </div>
     </div>
     {% endif %}
-
-    <form method="post">
-      {% csrf_token %}
-      <input type="hidden" name="year"  value="{{ month.year }}">
-      <input type="hidden" name="month" value="{{ month.month }}">
-
-      <div class="form-group">
-        <label for="manual_adjustment">تعدیل دستی (ریال)</label>
-        <input type="number" id="manual_adjustment" name="manual_adjustment"
-               value="{{ breakdown.manual_adjustment }}"
-               oninput="updatePreview()"
-               placeholder="مثال: 500000 یا -200000">
-        <div class="form-hint">مقدار مثبت = افزایش | مقدار منفی = کسر</div>
-      </div>
-
-      <div class="form-group">
-        <label for="adjustment_reason">دلیل تعدیل</label>
-        <textarea id="adjustment_reason" name="adjustment_reason" rows="2"
-                  placeholder="مثال: پاداش، کسر تأخیر ...">{{ breakdown.adjustment_reason }}</textarea>
-      </div>
-
-      <div class="actions">
-        <button type="submit" class="btn btn-primary">💾 ذخیره حقوق</button>
-        <a href="{% url 'payroll:salary-list' category_pk=category.pk %}"
-           class="btn btn-outline">انصراف</a>
-      </div>
-    </form>
   </div>
-
-  <script>
-  const BASE_AMOUNT = {{ breakdown.base_amount }};
-
-  function updatePreview() {
-    const adj = parseFloat(document.getElementById("manual_adjustment").value) || 0;
-    const final = BASE_AMOUNT + adj;
-    document.getElementById("adj-preview").textContent   = adj.toLocaleString("fa") + " ریال";
-    document.getElementById("final-preview").textContent = final.toLocaleString("fa") + " ریال";
-  }
-  </script>
-
-  {% else %}
-  <div class="card">
-    <div class="alert alert-danger">
-      امکان محاسبه حقوق وجود ندارد. ابتدا لیست حضور این ماه را ایجاد و تأیید نمایید.
-    </div>
-    <div class="actions">
-      <a href="{% url 'attendance:matrix' category_pk=category.pk %}?year={{ month.year }}&month={{ month.month }}"
-         class="btn btn-warning">
-        رفتن به لیست حضور
-      </a>
-    </div>
-  </div>
-  {% endif %}
 
 </div>
-</body>
-</html>
+{% endif %}
+
+<style>
+.fi { width:100%; padding:.5rem .75rem; border:1.5px solid var(--surface-2); border-radius:8px; font-family:inherit; font-size:.875rem; box-sizing:border-box; }
+.fi:focus { outline:none; border-color:var(--navy); }
+</style>
+{% endblock %}

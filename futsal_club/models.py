@@ -818,7 +818,11 @@ class Notification(models.Model):
     class NotificationType(models.TextChoices):
         INSURANCE_EXPIRY = 'insurance_expiry', _('انقضای بیمه')
         INVOICE_DUE      = 'invoice_due',      _('سررسید فاکتور')
+        INVOICE_ISSUED   = 'invoice_issued',   _('صدور فاکتور شهریه')
+        INVOICE_PAID     = 'invoice_paid',     _('تأیید پرداخت شهریه')
         SALARY_READY     = 'salary_ready',     _('آماده بودن حقوق')
+        SALARY_PAID      = 'salary_paid',      _('پرداخت حقوق مربی')
+        STAFF_INVOICE    = 'staff_invoice',    _('فاکتور دستی')
         PLAYER_CHANGE    = 'player_change',    _('تغییر اطلاعات بازیکن')
         GENERAL          = 'general',          _('عمومی')
 
@@ -1017,3 +1021,106 @@ class PlayerActivityLog(models.Model):
 
     def __str__(self):
         return f'{self.player} — {self.get_action_display()} توسط {self.actor}'
+
+
+# ─────────────────────────────────────────────
+#  StaffInvoice — فاکتور دستی برای اعضاء باشگاه
+# ─────────────────────────────────────────────
+class StaffInvoice(models.Model):
+    """
+    فاکتور دستی که مدیر مالی برای هر کاربر سیستم صادر می‌کند.
+    مثال: حق عضویت سالانه مربی، هزینه خاص برای مدیر فنی و...
+    پرداخت از طریق درگاه زرین‌پال یا تأیید دستی.
+    """
+
+    class PaymentStatus(models.TextChoices):
+        PENDING  = 'pending',  _('در انتظار پرداخت')
+        PAID     = 'paid',     _('پرداخت شده')
+        CANCELED = 'canceled', _('لغو شده')
+
+    recipient       = models.ForeignKey(
+        CustomUser, on_delete=models.PROTECT,
+        related_name='staff_invoices', verbose_name=_('دریافت‌کننده')
+    )
+    title           = models.CharField(_('عنوان فاکتور'), max_length=255)
+    description     = models.TextField(_('شرح'), blank=True)
+    amount          = models.DecimalField(_('مبلغ (ریال)'), max_digits=14, decimal_places=0)
+    status          = models.CharField(
+        _('وضعیت'), max_length=15,
+        choices=PaymentStatus.choices, default=PaymentStatus.PENDING
+    )
+    zarinpal_ref_id     = models.CharField(_('شماره مرجع'), max_length=100, blank=True)
+    zarinpal_authority  = models.CharField(_('Authority'), max_length=100, blank=True)
+    paid_at         = jmodels.jDateTimeField(_('تاریخ پرداخت'), null=True, blank=True)
+    created_by      = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True,
+        related_name='issued_staff_invoices', verbose_name=_('صادرکننده')
+    )
+    created_at      = jmodels.jDateTimeField(_('تاریخ صدور'), auto_now_add=True)
+
+    class Meta:
+        verbose_name        = _('فاکتور دستی')
+        verbose_name_plural = _('فاکتورهای دستی')
+        ordering            = ['-created_at']
+
+    def __str__(self):
+        return f'{self.title} — {self.recipient} ({self.get_status_display()})'
+
+
+# ─────────────────────────────────────────────
+#  FinancialTransaction — تاریخچه مالی یکپارچه
+# ─────────────────────────────────────────────
+class FinancialTransaction(models.Model):
+    """
+    تاریخچه مالی یکپارچه برای همه کاربران سیستم.
+    هر رویداد مالی (پرداخت شهریه، دریافت حقوق، صدور فاکتور) اینجا ثبت می‌شه.
+    """
+
+    class TxType(models.TextChoices):
+        INVOICE_ISSUED    = 'invoice_issued',    _('صدور فاکتور شهریه')
+        INVOICE_PAID      = 'invoice_paid',      _('پرداخت شهریه')
+        SALARY_CALCULATED = 'salary_calculated', _('محاسبه حقوق')
+        SALARY_PAID       = 'salary_paid',       _('پرداخت حقوق')
+        STAFF_INVOICE     = 'staff_invoice',     _('فاکتور دستی')
+        STAFF_INVOICE_PAID= 'staff_invoice_paid',_('پرداخت فاکتور دستی')
+        EXPENSE           = 'expense',           _('ثبت هزینه')
+        INCOME            = 'income',            _('ثبت درآمد')
+
+    class Direction(models.TextChoices):
+        CREDIT = 'credit', _('بستانکار')   # دریافت پول
+        DEBIT  = 'debit',  _('بدهکار')    # پرداخت پول
+
+    user            = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE,
+        related_name='financial_history', verbose_name=_('کاربر')
+    )
+    tx_type         = models.CharField(_('نوع'), max_length=30, choices=TxType.choices)
+    direction       = models.CharField(_('جهت'), max_length=10, choices=Direction.choices)
+    amount          = models.DecimalField(_('مبلغ (ریال)'), max_digits=14, decimal_places=0)
+    description     = models.CharField(_('شرح'), max_length=500)
+    # لینک‌های اختیاری به مدل‌های مرتبط
+    player_invoice  = models.ForeignKey(
+        PlayerInvoice, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='transactions', verbose_name=_('فاکتور شهریه')
+    )
+    coach_salary    = models.ForeignKey(
+        CoachSalary, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='transactions', verbose_name=_('حقوق مربی')
+    )
+    staff_invoice   = models.ForeignKey(
+        StaffInvoice, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='transactions', verbose_name=_('فاکتور دستی')
+    )
+    performed_by    = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='performed_transactions', verbose_name=_('انجام‌دهنده')
+    )
+    created_at      = jmodels.jDateTimeField(_('تاریخ'), auto_now_add=True)
+
+    class Meta:
+        verbose_name        = _('تراکنش مالی')
+        verbose_name_plural = _('تراکنش‌های مالی')
+        ordering            = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user} — {self.get_tx_type_display()} — {self.amount:,} ریال'

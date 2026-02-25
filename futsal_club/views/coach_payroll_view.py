@@ -19,7 +19,7 @@ from django.views.generic import TemplateView
 
 from ..mixins import RoleRequiredMixin
 from ..models import Coach, CoachSalary, Notification
-from ..utils.jalali_utils import JalaliMonth
+from ..services.jalali_utils import JalaliMonth, parse_jalali_month_from_request
 from ..services.payroll_service import PayrollService
 
 logger = logging.getLogger(__name__)

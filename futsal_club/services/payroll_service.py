@@ -22,12 +22,14 @@ from ..models import (
     CoachAttendance,
     CoachCategoryRate,
     CoachSalary,
+    FinancialTransaction,
     Notification,
     Player,
     PlayerInvoice,
+    StaffInvoice,
     TrainingCategory,
 )
-from ..utils.jalali_utils import JalaliMonth
+from .jalali_utils import JalaliMonth
 
 logger = logging.getLogger(__name__)
 
@@ -259,6 +261,29 @@ class PayrollService:
         salary.processed_by = paid_by
         salary.save(update_fields=["status", "paid_at", "processed_by"])
         logger.info("حقوق %s پرداخت شد.", salary)
+
+        # اعلان به مربی
+        if salary.coach.user:
+            month_str = f"{salary.attendance_sheet.jalali_year}/{salary.attendance_sheet.jalali_month:02d}"
+            Notification.objects.create(
+                recipient=salary.coach.user,
+                type=Notification.NotificationType.SALARY_PAID,
+                title=f"حقوق {month_str} پرداخت شد",
+                message=(
+                    f"حقوق شما برای دسته «{salary.category.name}» ماه {month_str} "                    f"به مبلغ {salary.final_amount:,.0f} ریال پرداخت شد."
+                ),
+            )
+            # ثبت در تاریخچه مالی مربی
+            FinancialTransaction.objects.create(
+                user=salary.coach.user,
+                tx_type=FinancialTransaction.TxType.SALARY_PAID,
+                direction=FinancialTransaction.Direction.CREDIT,
+                amount=salary.final_amount,
+                description=f"حقوق دسته «{salary.category.name}» ماه {month_str}",
+                coach_salary=salary,
+                performed_by=paid_by,
+            )
+
         return salary
 
     # ── 3. Player Invoice Generation ────────────────────────────────
@@ -345,18 +370,29 @@ class PayrollService:
         invoice: PlayerInvoice,
         jalali_month: JalaliMonth,
     ):
-        """ارسال اعلان فاکتور جدید به بازیکن."""
+        """ارسال اعلان فاکتور جدید به بازیکن + ثبت تاریخچه مالی."""
+        month_str = f"{jalali_month.year}/{jalali_month.month:02d}"
         if player.user:
             Notification.objects.create(
                 recipient=player.user,
-                type=Notification.NotificationType.INVOICE_DUE,
-                title=f"فاکتور {jalali_month.persian_name} {jalali_month.year}",
+                type=Notification.NotificationType.INVOICE_ISSUED,
+                title=f"فاکتور شهریه {month_str}",
                 message=(
-                    f"فاکتور شهریه {jalali_month.persian_name} "
+                    f"فاکتور شهریه {jalali_month.persian_name} {jalali_month.year} "
+                    f"برای دسته «{invoice.category.name}» "
                     f"به مبلغ {invoice.final_amount:,.0f} ریال صادر شد. "
                     "لطفاً در اسرع وقت پرداخت نمایید."
                 ),
                 related_player=player,
+            )
+            # ثبت در تاریخچه مالی بازیکن
+            FinancialTransaction.objects.create(
+                user=player.user,
+                tx_type=FinancialTransaction.TxType.INVOICE_ISSUED,
+                direction=FinancialTransaction.Direction.DEBIT,
+                amount=invoice.final_amount,
+                description=f"شهریه دسته «{invoice.category.name}» — {month_str}",
+                player_invoice=invoice,
             )
 
     # ── 4. Insurance Expiry Notifications ───────────────────────────
@@ -482,6 +518,32 @@ class PayrollService:
         invoice.paid_at      = timezone.now()
         invoice.confirmed_by = confirmed_by
         invoice.save(update_fields=["status", "paid_at", "confirmed_by"])
+
+        # اعلان به بازیکن + تاریخچه مالی
+        if invoice.player.user:
+            month_str = f"{invoice.jalali_year}/{invoice.jalali_month:02d}"
+            Notification.objects.create(
+                recipient=invoice.player.user,
+                type=Notification.NotificationType.INVOICE_PAID,
+                title=f"پرداخت شهریه {month_str} تأیید شد",
+                message=(
+                    f"پرداخت شهریه {month_str} دسته «{invoice.category.name}» "
+                    f"به مبلغ {invoice.final_amount:,.0f} ریال تأیید شد."
+                ),
+                related_player=invoice.player,
+            )
+            FinancialTransaction.objects.get_or_create(
+                user=invoice.player.user,
+                tx_type=FinancialTransaction.TxType.INVOICE_PAID,
+                player_invoice=invoice,
+                defaults={
+                    "direction": FinancialTransaction.Direction.DEBIT,
+                    "amount": invoice.final_amount,
+                    "description": f"پرداخت شهریه دسته «{invoice.category.name}» — {month_str}",
+                    "performed_by": confirmed_by,
+                },
+            )
+
         return invoice
 
     @classmethod

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}تاریخچه مالی کامل{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span><span class="cur">تاریخچه کامل</span>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📊 تاریخچه مالی کامل</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">تمام تراکنش‌های مالی سیستم</p>
+  </div>
+  <a href="{% url 'payroll:finance-dashboard' %}" class="btn btn-outline btn-sm">← داشبورد</a>
+</div>
+
+<!-- فیلتر -->
+<div class="card" style="margin-bottom:1rem">
+  <form method="get" style="padding:.85rem 1.1rem;display:flex;flex-wrap:wrap;gap:.65rem;align-items:flex-end">
+    <div>
+      <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.25rem">نوع تراکنش</label>
+      <select name="tx_type" style="padding:.4rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem;background:#fff">
+        <option value="">همه</option>
+        {% for val, lbl in tx_type_choices %}
+        <option value="{{ val }}" {% if tx_type_filter == val %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:700;display:block;margin-bottom:.25rem">کاربر</label>
+      <select name="user_id" style="padding:.4rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem;background:#fff">
+        <option value="">همه کاربران</option>
+        {% for u in users %}
+        <option value="{{ u.pk }}" {% if user_filter == u.pk|stringformat:"s" %}selected{% endif %}>
+          {{ u.get_full_name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-navy btn-sm">🔍 فیلتر</button>
+    <a href="{% url 'payroll:all-financial-history' %}" class="btn btn-outline btn-sm">× پاک‌کردن</a>
+  </form>
+</div>
+
+{% if transactions %}
+<div class="card">
+  <div style="overflow-x:auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>تاریخ</th>
+          <th>کاربر</th>
+          <th>نوع</th>
+          <th>جهت</th>
+          <th>مبلغ (ریال)</th>
+          <th>توضیح</th>
+          <th>ثبت‌شده توسط</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+        <tr>
+          <td style="font-size:.78rem;color:var(--text-muted)">{{ tx.created_at|date:"Y/m/d" }}</td>
+          <td>
+            <strong style="font-size:.85rem">{{ tx.user.get_full_name }}</strong>
+            <div style="font-size:.7rem;color:var(--text-muted)">@{{ tx.user.username }}</div>
+          </td>
+          <td><span style="font-size:.78rem">{{ tx.get_tx_type_display }}</span></td>
+          <td>
+            {% if tx.direction == 'credit' %}
+            <span class="badge badge-green" style="font-size:.65rem">↓ دریافت</span>
+            {% else %}
+            <span class="badge badge-red" style="font-size:.65rem">↑ پرداخت</span>
+            {% endif %}
+          </td>
+          <td style="font-family:monospace;font-size:.88rem;font-weight:700;
+                     color:{% if tx.direction == 'credit' %}var(--green){% else %}var(--red){% endif %}">
+            {{ tx.amount|floatformat:0 }}
+          </td>
+          <td style="font-size:.8rem;max-width:200px">{{ tx.description|truncatechars:60 }}</td>
+          <td style="font-size:.75rem;color:var(--text-muted)">
+            {% if tx.performed_by %}{{ tx.performed_by.get_full_name }}{% else %}سیستم{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div style="padding:.75rem 1rem;border-top:1px solid var(--surface-2);display:flex;gap:.4rem;justify-content:center">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&tx_type={{ tx_type_filter }}&user_id={{ user_filter }}" class="btn btn-outline btn-sm">←</a>
+    {% endif %}
+    <span style="padding:.35rem .75rem;font-size:.82rem">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&tx_type={{ tx_type_filter }}&user_id={{ user_filter }}" class="btn btn-outline btn-sm">→</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div style="text-align:center;padding:3rem;color:var(--text-muted)">
+  <div style="font-size:2.5rem;margin-bottom:.5rem">📭</div>
+  <p style="font-weight:700">تراکنشی یافت نشد</p>
+</div>
+{% endif %}
+{% endblock %}

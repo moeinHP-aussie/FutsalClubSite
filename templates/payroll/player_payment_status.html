@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}وضعیت پرداخت شهریه{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span><span class="cur">وضعیت شهریه</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.1rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📊 وضعیت پرداخت شهریه بازیکنان</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">
+      {% if request.user.is_finance_manager %}مدیر مالی — تأیید پرداخت‌ها و تغییر وضعیت{% else %}مدیر فنی — نمای کلی{% endif %}
+    </p>
+  </div>
+  <!-- ماه‌گردی -->
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}{% if selected_cat %}&category={{ selected_cat.pk }}{% endif %}" class="btn btn-outline btn-sm">←</a>
+    <span style="font-weight:800;font-size:.95rem;color:var(--navy);background:var(--surface-1);padding:.3rem .8rem;border-radius:8px">
+      {{ month.year }}/{{ month.month|stringformat:"02d" }}
+    </span>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}{% if selected_cat %}&category={{ selected_cat.pk }}{% endif %}" class="btn btn-outline btn-sm">→</a>
+  </div>
+</div>
+
+{% if messages %}{% for msg in messages %}
+<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.45rem;
+  background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
+  color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">{{ msg }}</div>
+{% endfor %}{% endif %}
+
+<!-- آمار کلی -->
+<div class="grid-auto" style="margin-bottom:1.1rem">
+  <div class="stat-card green">
+    <div class="stat-label">پرداخت‌شده</div>
+    <div class="stat-value">{{ stats.paid }}</div>
+    <div class="stat-sub">{{ stats.total_collected|floatformat:0 }} ریال</div>
+    <span class="stat-icon">✅</span>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-label">معوق</div>
+    <div class="stat-value">{{ stats.pending }}</div>
+    <div class="stat-sub">{{ stats.total_pending|floatformat:0 }} ریال</div>
+    <span class="stat-icon">⏳</span>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-label">بدهکار</div>
+    <div class="stat-value">{{ stats.debtor }}</div>
+    <div class="stat-sub">فاکتور</div>
+    <span class="stat-icon">🔴</span>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-label">انتظار تأیید</div>
+    <div class="stat-value">{{ stats.pending_confirm }}</div>
+    <div class="stat-sub">رسید آپلودشده</div>
+    <span class="stat-icon">📎</span>
+  </div>
+</div>
+
+<!-- فیلتر دسته -->
+<div class="card" style="margin-bottom:1rem;padding:.75rem 1rem">
+  <form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+    <input type="hidden" name="year"  value="{{ month.year }}">
+    <input type="hidden" name="month" value="{{ month.month }}">
+    <select name="category" style="padding:.4rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-size:.85rem;font-family:inherit">
+      <option value="">همه دسته‌ها</option>
+      {% for cat in categories %}
+      <option value="{{ cat.pk }}" {% if selected_cat and selected_cat.pk == cat.pk %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm">🔍 فیلتر</button>
+    {% if selected_cat %}
+    <a href="?year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm">× حذف فیلتر</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- جدول -->
+{% if invoices %}
+<div class="card">
+  <div style="overflow-x:auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          {% if not selected_cat %}<th>دسته</th>{% endif %}
+          <th>بازیکن</th>
+          <th>مبلغ (ریال)</th>
+          <th>وضعیت</th>
+          <th>پرداخت از طریق</th>
+          <th>رسید</th>
+          {% if request.user.is_finance_manager %}<th>اقدام</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr style="{% if inv.status == 'pending_confirm' %}background:#fffbeb{% elif inv.status == 'paid' %}background:#f0fdf4{% elif inv.status == 'debtor' %}background:#fef2f2{% endif %}">
+          <td style="font-size:.75rem;color:var(--text-muted)">{{ forloop.counter }}</td>
+          {% if not selected_cat %}<td style="font-size:.82rem">{{ inv.category.name }}</td>{% endif %}
+          <td>
+            <div style="font-weight:700;font-size:.88rem">{{ inv.player.first_name }} {{ inv.player.last_name }}</div>
+            {% if inv.player.phone %}<div style="font-size:.72rem;color:var(--text-muted);font-family:monospace">{{ inv.player.phone }}</div>{% endif %}
+          </td>
+          <td style="font-family:monospace;font-size:.9rem;font-weight:{% if inv.status != 'paid' %}700{% else %}400{% endif %}">
+            {{ inv.final_amount|floatformat:0 }}
+          </td>
+          <td>
+            {% if inv.status == 'paid' %}
+              <span class="badge badge-green" style="font-size:.68rem">✅ پرداخت‌شده</span>
+              {% if inv.confirmed_by %}<div style="font-size:.7rem;color:var(--text-muted)">توسط: {{ inv.confirmed_by.get_full_name }}</div>{% endif %}
+            {% elif inv.status == 'pending_confirm' %}
+              <span class="badge badge-amber" style="font-size:.68rem">📎 انتظار تأیید</span>
+            {% elif inv.status == 'debtor' %}
+              <span class="badge badge-red" style="font-size:.68rem">🔴 بدهکار</span>
+            {% else %}
+              <span class="badge" style="background:#e5e7eb;color:#374151;font-size:.68rem">⏳ معوق</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.78rem;color:var(--text-muted)">
+            {% if inv.zarinpal_ref_id %}
+              <span style="color:var(--green);font-family:monospace">💳 {{ inv.zarinpal_ref_id|truncatechars:10 }}</span>
+            {% elif inv.receipt_image %}
+              رسید کارت
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if inv.receipt_image %}
+              <a href="{{ inv.receipt_image.url }}" target="_blank" class="btn btn-outline btn-sm" style="font-size:.7rem">📎 مشاهده</a>
+            {% else %}—{% endif %}
+          </td>
+          {% if request.user.is_finance_manager %}
+          <td>
+            <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+              {% if inv.status == 'pending_confirm' %}
+              <form method="post" action="{% url 'payroll:invoice-confirm' inv.pk %}" style="margin:0">
+                {% csrf_token %}
+                <button class="btn btn-green btn-sm" style="font-size:.72rem;padding:.25rem .55rem"
+                        onclick="return confirm('پرداخت {{ inv.player.first_name }} تأیید شود؟')">
+                  ✅ تأیید
+                </button>
+              </form>
+              {% endif %}
+              {% if inv.status != 'paid' %}
+              <form method="post" action="{% url 'payroll:invoice-status-update' inv.pk %}" style="margin:0;display:flex;gap:.2rem">
+                {% csrf_token %}
+                <input type="hidden" name="redirect_to" value="{% url 'payroll:player-payment-status' %}?year={{ month.year }}&month={{ month.month }}{% if selected_cat %}&category={{ selected_cat.pk }}{% endif %}">
+                <select name="new_status" style="font-size:.72rem;border:1.5px solid var(--surface-2);border-radius:6px;padding:.25rem .4rem">
+                  {% for val, label in status_choices %}
+                  <option value="{{ val }}" {% if inv.status == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.25rem .4rem">ثبت</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div style="text-align:center;padding:3rem;color:var(--text-muted)">
+  <div style="font-size:2.5rem;margin-bottom:.5rem">📋</div>
+  <p style="font-weight:700">فاکتوری برای این ماه وجود ندارد</p>
+  <p style="font-size:.82rem">
+    {% if request.user.is_finance_manager %}
+      از <a href="{% url 'payroll:finance-dashboard' %}">داشبورد مالی</a> فاکتور صادر کنید.
+    {% endif %}
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

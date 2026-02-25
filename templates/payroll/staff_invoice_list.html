@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}فاکتورهای دستی{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span><span class="cur">فاکتورهای دستی</span>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📄 فاکتورهای دستی اعضاء</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">{{ total_pending }} معلق</p>
+  </div>
+  <a href="{% url 'payroll:staff-invoice-create' %}" class="btn btn-amber">+ فاکتور جدید</a>
+</div>
+
+<!-- فیلتر -->
+<form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.85rem">
+  <select name="status" style="padding:.45rem .65rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem">
+    <option value="">همه وضعیت‌ها</option>
+    {% for val, label in status_choices %}
+    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="recipient" value="{{ recipient_filter }}" placeholder="نام یا نام کاربری..."
+         style="padding:.45rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.82rem;min-width:180px">
+  <button type="submit" class="btn btn-outline btn-sm">جستجو</button>
+  {% if status_filter or recipient_filter %}<a href="?" class="btn btn-outline btn-sm">✕</a>{% endif %}
+</form>
+
+{% if invoices %}
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>تاریخ</th>
+          <th>دریافت‌کننده</th>
+          <th>عنوان</th>
+          <th>مبلغ</th>
+          <th>وضعیت</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td style="font-size:.78rem;color:var(--text-muted)">{{ inv.created_at|date:"Y/m/d" }}</td>
+          <td>
+            <strong style="font-size:.85rem">{{ inv.recipient.get_full_name }}</strong>
+            <div style="font-size:.72rem;color:var(--text-muted)">{{ inv.recipient.username }}</div>
+          </td>
+          <td style="font-size:.85rem">
+            {{ inv.title }}
+            {% if inv.description %}
+            <div style="font-size:.72rem;color:var(--text-muted)">{{ inv.description|truncatechars:60 }}</div>
+            {% endif %}
+          </td>
+          <td style="font-weight:700;font-family:monospace">{{ inv.amount|floatformat:0 }}</td>
+          <td>
+            {% if inv.status == 'paid' %}
+            <span class="badge badge-green">✅ پرداخت شده</span>
+            {% if inv.paid_at %}<div style="font-size:.68rem;color:var(--text-muted)">{{ inv.paid_at|date:"Y/m/d" }}</div>{% endif %}
+            {% elif inv.status == 'canceled' %}
+            <span class="badge" style="background:#f1f5f9;color:#64748b">لغو</span>
+            {% else %}
+            <span class="badge badge-amber">در انتظار</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if inv.status == 'pending' %}
+            <div style="display:flex;gap:.3rem">
+              <!-- تأیید پرداخت -->
+              <button class="btn btn-green btn-sm" onclick="openPayModal({{ inv.pk }}, '{{ inv.title|escapejs }}')" style="font-size:.72rem">✅ پرداخت شد</button>
+              <!-- لغو -->
+              <form method="post" action="{% url 'payroll:staff-invoice-cancel' inv.pk %}"
+                    onsubmit="return confirm('فاکتور لغو شود؟')" style="margin:0">
+                {% csrf_token %}
+                <button class="btn btn-outline btn-sm" style="font-size:.72rem;color:var(--red)">✕ لغو</button>
+              </form>
+            </div>
+            {% elif inv.status == 'paid' and inv.zarinpal_ref_id %}
+            <span style="font-size:.72rem;font-family:monospace;color:var(--teal)">مرجع: {{ inv.zarinpal_ref_id|truncatechars:12 }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div style="display:flex;justify-content:center;gap:.4rem;padding:.75rem">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline btn-sm">← قبلی</a>{% endif %}
+    <span style="padding:.5rem .75rem;font-size:.82rem;color:var(--text-muted)">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline btn-sm">بعدی →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:2.5rem">
+  <div style="font-size:2.5rem;opacity:.4;margin-bottom:.75rem">📄</div>
+  <h3>فاکتوری یافت نشد</h3>
+</div>
+{% endif %}
+
+<!-- Modal تأیید پرداخت -->
+<div id="pay-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <h3 style="font-size:1rem;font-weight:900;color:var(--navy);margin-bottom:.75rem">✅ تأیید پرداخت</h3>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem" id="pay-modal-desc"></p>
+    <form method="post" id="pay-modal-form">
+      {% csrf_token %}
+      <div style="margin-bottom:.85rem">
+        <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem">شماره مرجع پرداخت (اختیاری)</label>
+        <input type="text" name="ref_id" id="pay-ref-id" placeholder="شماره مرجع یا تراکنش..."
+               style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:monospace;font-size:.85rem">
+      </div>
+      <div style="display:flex;gap:.6rem;justify-content:flex-end">
+        <button type="button" class="btn btn-outline" onclick="closePayModal()">انصراف</button>
+        <button type="submit" class="btn btn-green">✅ تأیید پرداخت</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openPayModal(pk, title) {
+  document.getElementById('pay-modal-desc').textContent = 'تأیید پرداخت فاکتور «' + title + '»';
+  document.getElementById('pay-modal-form').action = '/finance/payroll/staff-invoices/' + pk + '/paid/';
+  document.getElementById('pay-modal').style.display = 'flex';
+}
+function closePayModal() {
+  document.getElementById('pay-modal').style.display = 'none';
+}
+</script>
+{% endblock %}

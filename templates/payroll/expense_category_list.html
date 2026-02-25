@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}دسته‌بندی هزینه‌ها{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:expense-list' %}" style="text-decoration:none;color:inherit">هزینه‌ها</a>
+  <span class="sep">›</span><span class="cur">دسته‌بندی‌ها</span>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+  <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📂 دسته‌بندی هزینه‌ها</h1>
+  <a href="{% url 'payroll:expense-category-create' %}" class="btn btn-navy btn-sm">+ دسته جدید</a>
+</div>
+
+{% if messages %}{% for msg in messages %}
+<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.45rem;
+  background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
+  color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">{{ msg }}</div>
+{% endfor %}{% endif %}
+
+{% if categories %}
+<div class="card">
+  <div style="overflow-x:auto">
+    <table class="table">
+      <thead>
+        <tr><th>نام دسته</th><th>توضیحات</th><th>وضعیت</th><th>ایجادشده توسط</th></tr>
+      </thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td><strong>{{ cat.name }}</strong></td>
+          <td style="font-size:.82rem;color:var(--text-muted)">{{ cat.description|default:"—" }}</td>
+          <td>
+            {% if cat.is_active %}
+            <span class="badge badge-green" style="font-size:.65rem">فعال</span>
+            {% else %}
+            <span class="badge badge-red" style="font-size:.65rem">غیرفعال</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.78rem;color:var(--text-muted)">
+            {% if cat.created_by %}{{ cat.created_by.get_full_name }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div style="text-align:center;padding:3rem;color:var(--text-muted)">
+  <div style="font-size:2.5rem;margin-bottom:.5rem">📂</div>
+  <p style="font-weight:700">دسته‌ای تعریف نشده</p>
+  <a href="{% url 'payroll:expense-category-create' %}" class="btn btn-navy btn-sm" style="margin-top:.75rem">+ اضافه کردن دسته</a>
+</div>
+{% endif %}
+{% endblock %}

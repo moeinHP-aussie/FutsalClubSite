@@ -38,20 +38,20 @@ urlpatterns = [
     # ── ارتباطات ──────────────────────────────────────────────────────
     path("comms/", include("futsal_club.urls.comms_urls", namespace="comms")),
 
-    # ── آموزش / رده‌ها / بازیکنان ────────────────────────────────────
-    path("training/", include("futsal_club.urls.training_urls", namespace="training")),
-
     # ── مخزن تمرین‌ها ─────────────────────────────────────────────────
     path("exercises/", include("futsal_club.urls.exercise_urls", namespace="exercises")),
 
-    # ── پنل مدیریت کاربران ───────────────────────────────────────────
+    # ── دسته‌های آموزشی، مربیان، بازیکنان ─────────────────────────────
+    path("training/", include("futsal_club.urls.training_urls", namespace="training")),
+
+    # ── پنل مدیریت کاربران (فقط superuser) ───────────────────────────────────────
     path("admin-panel/", include("futsal_club.urls.admin_panel_urls", namespace="admin_panel")),
 
     # ── ریدایرکت صفحه اصلی به لاگین ─────────────────────────────────
     path("", RedirectView.as_view(url="/auth/login/", permanent=False)),
 ]
 
-# در Development فایل‌های media را Django سرو می‌کند
+# ✅ در Development فقط فایل‌های media را Django سرو می‌کند
+# Static را نیازی نیست اضافه کنیم — runserver خودش از STATICFILES_DIRS سرو می‌کنه
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

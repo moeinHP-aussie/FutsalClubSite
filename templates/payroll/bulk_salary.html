@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}محاسبه حقوق — {{ category.name }}{% endblock %}
+{% block nav_finance %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:salary-list' category.pk %}?year={{ month.year }}&month={{ month.month }}" style="text-decoration:none;color:inherit">حقوق {{ category.name }}</a>
+  <span class="sep">›</span><span class="cur">محاسبه دسته‌جمعی</span>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">⚡ محاسبه حقوق همه مربیان — {{ category.name }}</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">ماه: {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}</p>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← ماه قبل</a>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">ماه بعد →</a>
+    <a href="{% url 'payroll:salary-list' category.pk %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm">← بازگشت</a>
+  </div>
+</div>
+
+{% if messages %}{% for msg in messages %}
+<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.45rem;
+  background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
+  color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">{{ msg }}</div>
+{% endfor %}{% endif %}
+
+{% if breakdowns %}
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="year"  value="{{ month.year }}">
+  <input type="hidden" name="month" value="{{ month.month }}">
+
+  <div class="card" style="margin-bottom:1rem">
+    <div style="overflow-x:auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>مربی</th>
+            <th>جلسات کل</th>
+            <th>حاضر</th>
+            <th>غایب</th>
+            <th>نرخ/جلسه</th>
+            <th>حقوق پایه</th>
+            <th>تعدیل دستی</th>
+            <th>دلیل تعدیل</th>
+            <th>نهایی</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bd in breakdowns %}
+          <tr>
+            <td>
+              <strong style="font-size:.88rem">{{ bd.coach.first_name }} {{ bd.coach.last_name }}</strong>
+              {% if bd.existing_salary %}
+              <div style="font-size:.7rem;color:var(--amber)">⚠️ قبلاً ذخیره شده</div>
+              {% endif %}
+            </td>
+            <td style="text-align:center">{{ bd.sessions_total }}</td>
+            <td style="text-align:center;color:var(--green);font-weight:700">{{ bd.sessions_attended }}</td>
+            <td style="text-align:center;color:var(--red)">{{ bd.sessions_absent }}</td>
+            <td style="font-family:monospace;font-size:.85rem">{{ bd.session_rate|floatformat:0 }}</td>
+            <td style="font-family:monospace;font-size:.85rem;font-weight:700">{{ bd.base_amount|floatformat:0 }}</td>
+            <td style="width:130px">
+              <input type="number" name="adjustment_{{ bd.coach.pk }}"
+                     value="0" step="10000"
+                     class="fi" style="font-family:monospace;font-size:.82rem;text-align:center"
+                     placeholder="±ریال">
+            </td>
+            <td style="width:160px">
+              <input type="text" name="reason_{{ bd.coach.pk }}"
+                     class="fi" style="font-size:.78rem" placeholder="دلیل (اختیاری)">
+            </td>
+            <td style="font-family:monospace;font-size:.9rem;font-weight:700;color:var(--navy)">
+              <span id="final_{{ bd.coach.pk }}">{{ bd.final_amount|floatformat:0 }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--surface-1)">
+            <td colspan="5" style="text-align:left;font-weight:700;font-size:.85rem">جمع کل:</td>
+            <td colspan="3" style="font-family:monospace;font-weight:900;color:var(--navy)">{{ total|floatformat:0 }} ریال</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:.75rem;justify-content:flex-end">
+    <a href="{% url 'payroll:salary-list' category.pk %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm">انصراف</a>
+    <button type="submit" class="btn btn-navy btn-sm"
+            onclick="return confirm('حقوق تمام مربیان برای این ماه ذخیره شود؟')">
+      💾 ذخیره حقوق همه مربیان
+    </button>
+  </div>
+</form>
+{% else %}
+<div style="text-align:center;padding:3rem;color:var(--text-muted)">
+  <div style="font-size:2.5rem;margin-bottom:.5rem">⚠️</div>
+  <p style="font-weight:700">امکان محاسبه وجود ندارد</p>
+  <p style="font-size:.85rem">
+    لیست حضور برای این ماه ثبت نشده یا نرخ مربیان تعریف نشده است.
+  </p>
+  <a href="{% url 'payroll:coach-rate-manage' %}" class="btn btn-amber btn-sm" style="margin-top:.75rem">⚙️ تعیین نرخ مربیان</a>
+</div>
+{% endif %}
+
+<style>
+.fi { width:100%; padding:.35rem .55rem; border:1.5px solid var(--surface-2); border-radius:7px; font-family:inherit; box-sizing:border-box; }
+.fi:focus { outline:none; border-color:var(--navy); }
+</style>
+{% endblock %}
