@@ -686,27 +686,40 @@
     </div>
     <a href="{% url 'payroll:finance-dashboard' %}"
        class="nav-item {% block nav_finance %}{% endblock %}">
-      <span class="nav-icon">💰</span> داشبورد مالی
+      <span class="nav-icon">🏦</span> داشبورد مالی
+    </a>
+    <a href="{% url 'payroll:tuition-categories' %}"
+       class="nav-item {% block nav_tuition %}{% endblock %}">
+      <span class="nav-icon">🧾</span> مدیریت شهریه
     </a>
     <a href="{% url 'payroll:coach-payroll-summary' %}"
        class="nav-item {% block nav_coach_payroll %}{% endblock %}">
       <span class="nav-icon">👨‍🏫</span> حقوق مربیان
     </a>
+    <a href="{% url 'payroll:pending-receipts' %}"
+       class="nav-item {% block nav_pending_receipts %}{% endblock %}">
+      <span class="nav-icon">📎</span> رسیدها
+      {% if pending_receipt_count > 0 %}
+      <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:.65rem;padding:.1rem .4rem;font-weight:800">
+        {{ pending_receipt_count }}
+      </span>
+      {% endif %}
+    </a>
     <a href="{% url 'payroll:staff-invoice-list' %}"
        class="nav-item {% block nav_staff_invoice %}{% endblock %}">
-      <span class="nav-icon">📄</span> فاکتور دستی اعضاء
+      <span class="nav-icon">📄</span> فاکتور دستی
+    </a>
+    <a href="{% url 'payroll:all-financial-history' %}"
+       class="nav-item {% block nav_all_history %}{% endblock %}">
+      <span class="nav-icon">📊</span> تاریخچه مالی کل
     </a>
     <a href="{% url 'payroll:expense-list' %}"
        class="nav-item {% block nav_expenses %}{% endblock %}">
       <span class="nav-icon">💸</span> هزینه‌ها و درآمد
     </a>
-    <a href="{% url 'payroll:finance-attendance-cats' %}"
-       class="nav-item {% block nav_finance_attend %}{% endblock %}">
-      <span class="nav-icon">📋</span> حضور و غیاب (مشاهده)
-    </a>
-    <a href="{% url 'payroll:all-financial-history' %}"
-       class="nav-item {% block nav_all_history %}{% endblock %}">
-      <span class="nav-icon">📊</span> تاریخچه مالی کل
+    <a href="{% url 'payroll:coach-rate-manage' %}"
+       class="nav-item {% block nav_coach_rates %}{% endblock %}">
+      <span class="nav-icon">⚙️</span> نرخ مربیان
     </a>
     {% endif %}
 
@@ -719,9 +732,18 @@
        class="nav-item {% block nav_my_profile %}{% endblock %}">
       <span class="nav-icon">👤</span> پروفایل من
     </a>
-    <a href="{% url 'payroll:my-financial-history' %}"
+    <a href="{% url 'payroll:player-invoices' %}"
        class="nav-item {% block nav_my_invoices %}{% endblock %}">
-      <span class="nav-icon">🧾</span> سوابق مالی
+      <span class="nav-icon">🧾</span> فاکتورهای من
+      {% if player_pending_count > 0 %}
+      <span style="background:#f59e0b;color:#fff;border-radius:99px;font-size:.65rem;padding:.1rem .45rem;font-weight:800;margin-right:.25rem">
+        {{ player_pending_count }}
+      </span>
+      {% endif %}
+    </a>
+    <a href="{% url 'payroll:my-financial-history' %}"
+       class="nav-item">
+      <span class="nav-icon">📊</span> سوابق مالی
     </a>
     <a href="{% url 'training:attendance-select' %}"
        class="nav-item {% block nav_my_attendance %}{% endblock %}">

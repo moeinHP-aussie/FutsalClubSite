@@ -3,165 +3,139 @@
 {% block nav_finance %}active{% endblock %}
 
 {% block breadcrumb %}
-  <span class="sep">›</span><span class="cur">مدیریت مالی</span>
+  <span class="sep">›</span><span class="cur">داشبورد مالی</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+.hub-card { background:#fff; border-radius:14px; border:1.5px solid var(--surface-2); padding:1.25rem 1.4rem; text-decoration:none; color:inherit; transition:.15s; position:relative; overflow:hidden; }
+.hub-card:hover { border-color:var(--navy); box-shadow:0 4px 16px rgba(0,0,50,.09); transform:translateY(-2px); }
+.hub-card-icon { font-size:2rem; margin-bottom:.6rem; }
+.hub-card-title { font-size:.92rem; font-weight:900; color:var(--navy); margin-bottom:.3rem; }
+.hub-card-sub { font-size:.78rem; color:var(--text-muted); }
+.hub-badge { position:absolute; top:.65rem; left:.65rem; background:#ef4444; color:#fff; border-radius:99px; font-size:.65rem; padding:.15rem .5rem; font-weight:800; }
+.hub-stat { display:flex; justify-content:space-between; margin-top:.75rem; padding-top:.65rem; border-top:1px solid var(--surface-2); }
+.hub-stat-item { text-align:center; }
+.hub-stat-num { font-size:1rem; font-weight:900; }
+.hub-stat-lbl { font-size:.65rem; color:var(--text-muted); }
+</style>
 {% endblock %}
 
 {% block content %}
-
-<!-- Header + nav ماه -->
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem">
   <div>
-    <h1 style="font-size:1.15rem;font-weight:900;color:var(--navy)">💰 داشبورد مالی</h1>
-    <p style="font-size:.82rem;color:var(--text-muted)">مدیریت شهریه، حقوق و هزینه‌های باشگاه</p>
+    <h1 style="font-size:1.2rem;font-weight:900;color:var(--navy)">🏦 داشبورد مالی</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">مرکز مدیریت تمام جریان‌های مالی باشگاه</p>
   </div>
-  <div style="display:flex;align-items:center;gap:.5rem">
-    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← {{ prev_month.year }}/{{ prev_month.month }}</a>
-    <span style="font-weight:800;font-size:.95rem;color:var(--navy)">{{ month.year }}/{{ month.month|stringformat:"02d" }}</span>
-    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">{{ next_month.year }}/{{ next_month.month }} →</a>
-  </div>
-</div>
-
-<!-- Stats Row -->
-<div class="grid-auto" style="margin-bottom:1.25rem">
-  <div class="stat-card green">
-    <div class="stat-label">شهریه دریافت‌شده</div>
-    <div class="stat-value" style="font-size:1.1rem">{{ invoice_stats.paid_amount|floatformat:0 }}</div>
-    <div class="stat-sub">ریال — {{ invoice_stats.paid }} فاکتور</div>
-    <span class="stat-icon">✅</span>
-  </div>
-  <div class="stat-card amber">
-    <div class="stat-label">شهریه معوق</div>
-    <div class="stat-value" style="font-size:1.1rem">{{ invoice_stats.pending_amount|floatformat:0 }}</div>
-    <div class="stat-sub">ریال — {{ invoice_stats.pending|add:invoice_stats.debtor }} فاکتور</div>
-    <span class="stat-icon">⏳</span>
-  </div>
-  <div class="stat-card navy">
-    <div class="stat-label">حقوق تأیید‌شده مربیان</div>
-    <div class="stat-value" style="font-size:1.1rem">{{ salary_stats.total_amount|floatformat:0 }}</div>
-    <div class="stat-sub">ریال — {{ salary_stats.approved }} مربی</div>
-    <span class="stat-icon">👨‍🏫</span>
-  </div>
-  <div class="stat-card teal">
-    <div class="stat-label">فاکتور دستی معلق</div>
-    <div class="stat-value">{{ staff_invoice_stats.pending_count }}</div>
-    <div class="stat-sub">{{ staff_invoice_stats.pending_amount|floatformat:0 }} ریال</div>
-    <span class="stat-icon">📄</span>
+  <!-- ناوبری ماه -->
+  <div style="display:flex;gap:.45rem;align-items:center">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← ماه قبل</a>
+    <span style="font-weight:800;font-size:.95rem;background:var(--surface-1);padding:.35rem .85rem;border-radius:8px">
+      {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
+    </span>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">ماه بعد →</a>
   </div>
 </div>
 
-<!-- دکمه‌های اقدام سریع -->
-<div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem">
-  <a href="{% url 'payroll:coach-payroll-summary' %}" class="btn btn-navy btn-sm">👨‍🏫 پرداخت حقوق مربیان</a>
-  <a href="{% url 'payroll:player-payment-status' %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-navy btn-sm">📊 وضعیت شهریه بازیکنان</a>
-  <a href="{% url 'payroll:coach-rate-manage' %}" class="btn btn-amber btn-sm">💰 تعیین نرخ مربیان</a>
-  <a href="{% url 'payroll:staff-invoice-create' %}" class="btn btn-amber btn-sm">📄 فاکتور دستی جدید</a>
-  <a href="{% url 'payroll:expense-create' %}" class="btn btn-outline btn-sm">💸 ثبت هزینه</a>
-  <a href="{% url 'payroll:finance-attendance-cats' %}" class="btn btn-outline btn-sm">📋 مشاهده حضور و غیاب</a>
-  <a href="{% url 'payroll:all-financial-history' %}" class="btn btn-outline btn-sm">📊 تاریخچه کامل</a>
-  <form method="post" action="{% url 'payroll:invoice-generate-all' %}" style="display:inline">
+<!-- ۶ کارت اصلی -->
+<div class="hub-grid">
+
+  <!-- ۱. مدیریت شهریه -->
+  <a href="{% url 'payroll:tuition-categories' %}?year={{ month.year }}&month={{ month.month }}"
+     class="hub-card" style="border-top:4px solid var(--navy)">
+    <div class="hub-card-icon">🧾</div>
+    <div class="hub-card-title">مدیریت شهریه</div>
+    <div class="hub-card-sub">فاکتور، رسید، تأیید پرداخت</div>
+    <div class="hub-stat">
+      <div class="hub-stat-item">
+        <div class="hub-stat-num" style="color:var(--green)">{{ invoice_stats.paid }}</div>
+        <div class="hub-stat-lbl">پرداخت‌شده</div>
+      </div>
+      <div class="hub-stat-item">
+        <div class="hub-stat-num" style="color:var(--amber)">{{ invoice_stats.pending }}</div>
+        <div class="hub-stat-lbl">معوق</div>
+      </div>
+      <div class="hub-stat-item">
+        <div class="hub-stat-num" style="color:#ef4444">{{ invoice_stats.debtor }}</div>
+        <div class="hub-stat-lbl">بدهکار</div>
+      </div>
+    </div>
+    {% if invoice_stats.pending_confirm > 0 %}
+    <div class="hub-badge">{{ invoice_stats.pending_confirm }} رسید</div>
+    {% endif %}
+  </a>
+
+  <!-- ۲. حقوق مربیان -->
+  <a href="{% url 'payroll:tuition-categories' %}?section=salary&year={{ month.year }}&month={{ month.month }}"
+     class="hub-card" style="border-top:4px solid var(--teal)">
+    <div class="hub-card-icon">👨‍🏫</div>
+    <div class="hub-card-title">حقوق مربیان</div>
+    <div class="hub-card-sub">محاسبه، آپلود فیش، تأیید مربی</div>
+    {% if pending_receipt_count > 0 %}
+    <div class="hub-badge">{{ pending_receipt_count }} رسید</div>
+    {% endif %}
+  </a>
+
+  <!-- ۳. رسیدهای در انتظار -->
+  <a href="{% url 'payroll:pending-receipts' %}" class="hub-card" style="border-top:4px solid #f59e0b">
+    <div class="hub-card-icon">📎</div>
+    <div class="hub-card-title">رسیدهای در انتظار</div>
+    <div class="hub-card-sub">بررسی و تأیید رسیدهای بازیکنان</div>
+    {% if invoice_stats.pending_confirm > 0 %}
+    <div class="hub-stat">
+      <div class="hub-stat-item">
+        <div class="hub-stat-num" style="color:#f59e0b">{{ invoice_stats.pending_confirm }}</div>
+        <div class="hub-stat-lbl">منتظر بررسی</div>
+      </div>
+    </div>
+    <div class="hub-badge">نیاز به اقدام</div>
+    {% else %}
+    <div style="margin-top:.75rem;font-size:.78rem;color:var(--green);font-weight:700">✅ همه بررسی شده</div>
+    {% endif %}
+  </a>
+
+  <!-- ۴. فاکتور دستی -->
+  <a href="{% url 'payroll:staff-invoice-list' %}" class="hub-card" style="border-top:4px solid #8b5cf6">
+    <div class="hub-card-icon">📄</div>
+    <div class="hub-card-title">فاکتور دستی</div>
+    <div class="hub-card-sub">صدور، پرداخت، تأیید گیرنده</div>
+    {% if staff_pending_count > 0 %}
+    <div class="hub-badge">{{ staff_pending_count }} منتظر</div>
+    {% endif %}
+  </a>
+
+  <!-- ۵. تاریخچه مالی -->
+  <a href="{% url 'payroll:all-financial-history' %}" class="hub-card" style="border-top:4px solid var(--green)">
+    <div class="hub-card-icon">📊</div>
+    <div class="hub-card-title">تاریخچه مالی کل</div>
+    <div class="hub-card-sub">گزارش تمام تراکنش‌ها</div>
+  </a>
+
+  <!-- ۶. هزینه‌ها -->
+  <a href="{% url 'payroll:expense-list' %}" class="hub-card" style="border-top:4px solid var(--red)">
+    <div class="hub-card-icon">💸</div>
+    <div class="hub-card-title">هزینه‌ها و درآمدها</div>
+    <div class="hub-card-sub">ثبت و پایش تراکنش‌های صندوق</div>
+  </a>
+
+</div>
+
+<!-- ابزارها -->
+<div style="display:flex;gap:.65rem;flex-wrap:wrap;padding:.85rem 1rem;background:var(--surface-1);border-radius:10px;border:1px solid var(--surface-2)">
+  <span style="font-size:.8rem;color:var(--text-muted);margin-left:.5rem;line-height:2">ابزارها:</span>
+  <a href="{% url 'payroll:coach-rate-manage' %}" class="btn btn-outline btn-sm">⚙️ نرخ مربیان</a>
+  <a href="{% url 'payroll:player-payment-status' %}" class="btn btn-outline btn-sm">📋 وضعیت شهریه</a>
+  <a href="{% url 'payroll:expense-category-list' %}" class="btn btn-outline btn-sm">🗂️ دسته‌بندی هزینه</a>
+  <a href="{% url 'payroll:my-financial-history' %}" class="btn btn-outline btn-sm">👤 تاریخچه من</a>
+  {% if request.user.is_finance_manager %}
+  <form method="post" action="{% url 'payroll:invoice-generate-all' %}" style="margin:0"
+        onsubmit="return confirm('فاکتور شهریه {{ month.year }}/{{ month.month }} برای همه دسته‌ها صادر شود؟')">
     {% csrf_token %}
     <input type="hidden" name="year"  value="{{ month.year }}">
     <input type="hidden" name="month" value="{{ month.month }}">
-    <button type="submit" class="btn btn-outline btn-sm"
-            onclick="return confirm('فاکتور ماه {{ month.year }}/{{ month.month }} برای همه دسته‌ها صادر شود؟')">
-      ⚡ صدور فاکتور همه دسته‌ها
-    </button>
+    <button class="btn btn-navy btn-sm">📤 صدور فاکتور همه دسته‌ها</button>
   </form>
-</div>
-
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-
-  <!-- فاکتورهای در انتظار تأیید -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">📋 رسید در انتظار تأیید</span>
-      <span style="font-size:.75rem;color:var(--amber);font-weight:700">{{ invoice_stats.pending_confirm }} مورد</span>
-    </div>
-    {% if awaiting_confirm %}
-    <div style="padding:.5rem .85rem">
-      {% for inv in awaiting_confirm %}
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
-        <div>
-          <strong style="font-size:.85rem">{{ inv.player.first_name }} {{ inv.player.last_name }}</strong>
-          <div style="font-size:.72rem;color:var(--text-muted)">{{ inv.category.name }}</div>
-        </div>
-        <div style="display:flex;gap:.35rem;align-items:center">
-          <span style="font-size:.78rem;font-weight:700">{{ inv.final_amount|floatformat:0 }}</span>
-          <form method="post" action="{% url 'payroll:invoice-status-update' inv.pk %}" style="margin:0">
-            {% csrf_token %}
-            <input type="hidden" name="new_status" value="paid">
-            <button class="btn btn-green btn-sm" style="padding:.2rem .5rem;font-size:.72rem">✅ تأیید</button>
-          </form>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.85rem">رسید معلقی وجود ندارد ✓</div>
-    {% endif %}
-  </div>
-
-  <!-- شهریه‌های معوق -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">⚠️ شهریه‌های معوق</span>
-      <span style="font-size:.75rem;color:var(--red);font-weight:700">{{ invoice_stats.debtor }} مورد</span>
-    </div>
-    {% if debtor_invoices %}
-    <div style="padding:.5rem .85rem">
-      {% for inv in debtor_invoices %}
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
-        <div>
-          <strong style="font-size:.85rem">{{ inv.player.first_name }} {{ inv.player.last_name }}</strong>
-          <div style="font-size:.72rem;color:var(--text-muted)">{{ inv.category.name }} — {{ inv.jalali_year }}/{{ inv.jalali_month|stringformat:"02d" }}</div>
-        </div>
-        <span style="font-size:.78rem;font-weight:700;color:var(--red)">{{ inv.final_amount|floatformat:0 }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.85rem">بدهی معوقی وجود ندارد ✓</div>
-    {% endif %}
-  </div>
-
-  <!-- حقوق تأیید‌شده هنوز پرداخت‌نشده -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">👨‍🏫 حقوق تأیید‌شده (پرداخت‌نشده)</span>
-      <a href="{% url 'payroll:coach-payroll-summary' %}" class="btn btn-navy btn-sm">پرداخت</a>
-    </div>
-    {% if approved_salaries %}
-    <div style="padding:.5rem .85rem">
-      {% for sal in approved_salaries %}
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
-        <div>
-          <strong style="font-size:.85rem">{{ sal.coach.first_name }} {{ sal.coach.last_name }}</strong>
-          <div style="font-size:.72rem;color:var(--text-muted)">{{ sal.category.name }}</div>
-        </div>
-        <span style="font-size:.78rem;font-weight:700;color:var(--amber)">{{ sal.final_amount|floatformat:0 }} ریال</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:.85rem">حقوق معلقی وجود ندارد ✓</div>
-    {% endif %}
-  </div>
-
-  <!-- دسته‌های آموزشی + لینک سریع -->
-  <div class="card">
-    <div class="card-header"><span class="card-title">🗂️ دسته‌های آموزشی</span></div>
-    <div style="padding:.6rem .85rem">
-      {% for cat in categories %}
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--surface-2)">
-        <span style="font-size:.85rem;font-weight:700">{{ cat.name }}</span>
-        <div style="display:flex;gap:.3rem">
-          <a href="{% url 'payroll:invoice-list' cat.pk %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .45rem">💳 فاکتور</a>
-          <a href="{% url 'payroll:salary-list' cat.pk %}?year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .45rem">👨‍🏫 حقوق</a>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-
+  {% endif %}
 </div>
 {% endblock %}

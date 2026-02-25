@@ -58,6 +58,7 @@ class ApplicantRegistrationForm(forms.Form):
     phone = forms.CharField(
         label=_('شماره موبایل'), max_length=11,
         validators=[PHONE_VALIDATOR],
+        required=False,
         widget=forms.TextInput(attrs={"placeholder": "09xxxxxxxxx", "inputmode": "numeric"})
     )
     father_phone = forms.CharField(
@@ -73,7 +74,7 @@ class ApplicantRegistrationForm(forms.Form):
     )
     address = forms.CharField(
         label=_('آدرس'), required=False,
-        widget=forms.Textarea(attrs={"rows": 2, "placeholder": "آدرس کامل (اختیاری)"})
+        widget=forms.Textarea(attrs={"rows": 2, "placeholder": "آدرس "})
     )
 
     # ─── بیومتریک ─────────────────────────────────────────────────
@@ -109,7 +110,7 @@ class ApplicantRegistrationForm(forms.Form):
     father_education = forms.ChoiceField(
         label=_('تحصیلات پدر'),
         choices=[('', '--- انتخاب کنید ---')] + [
-            ('illiterate', 'بی‌سواد'),
+            ('illiterate', 'سیکل'),
             ('high_school', 'دیپلم'),
             ('associate', 'فوق دیپلم'), ('bachelor', 'لیسانس'),
             ('master', 'فوق لیسانس'), ('phd', 'دکترا'),
@@ -123,7 +124,7 @@ class ApplicantRegistrationForm(forms.Form):
     mother_education = forms.ChoiceField(
         label=_('تحصیلات مادر'),
         choices=[('', '--- انتخاب کنید ---')] + [
-            ('illiterate', 'بی‌سواد'),
+            ('illiterate', 'سیکل'),
             ( 'high_school', 'دیپلم'),
             ('associate', 'فوق دیپلم'), ('bachelor', 'لیسانس'),
             ('master', 'فوق لیسانس'), ('phd', 'دکترا'),

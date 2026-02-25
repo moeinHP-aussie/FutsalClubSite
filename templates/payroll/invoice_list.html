@@ -1,107 +1,93 @@
 {% extends "base.html" %}
-{% block title %}فاکتورها — {{ category.name }}{% endblock %}
-{% block nav_finance %}active{% endblock %}
+{% block title %}فاکتور شهریه — {{ category.name }}{% endblock %}
+{% block nav_tuition %}active{% endblock %}
 
 {% block breadcrumb %}
   <span class="sep">›</span>
-  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <a href="{% url 'payroll:tuition-categories' %}" style="text-decoration:none;color:inherit">شهریه</a>
   <span class="sep">›</span><span class="cur">{{ category.name }}</span>
 {% endblock %}
 
-{% block content %}
+{% block extra_head %}
+<style>
+.status-pending { background:#fef3c7; color:#92400e; }
+.status-debtor  { background:#fee2e2; color:#991b1b; }
+.status-pending_confirm { background:#dbeafe; color:#1e3a8a; }
+.status-paid    { background:#d1fae5; color:#065f46; }
+.action-row { display:flex; gap:.3rem; flex-wrap:wrap; }
+</style>
+{% endblock %}
 
-<!-- Header -->
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.1rem">
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
   <div>
-    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📋 فاکتورهای شهریه — {{ category.name }}</h1>
-    <p style="font-size:.82rem;color:var(--text-muted)">شهریه ماهانه: {{ category.monthly_fee|floatformat:0 }} ریال</p>
+    <h1 style="font-size:1.05rem;font-weight:900;color:var(--navy)">🧾 {{ category.name }}</h1>
+    <p style="font-size:.78rem;color:var(--text-muted)">شهریه {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}</p>
   </div>
-  <!-- ماه‌گردی -->
-  <div style="display:flex;align-items:center;gap:.5rem">
-    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← {{ prev_month.year }}/{{ prev_month.month|stringformat:"02d" }}</a>
-    <span style="font-weight:800;font-size:.95rem;color:var(--navy);background:var(--surface-1);padding:.3rem .7rem;border-radius:8px">
-      {{ month.year }}/{{ month.month|stringformat:"02d" }}
+  <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← قبل</a>
+    <span style="font-weight:800;font-size:.88rem;background:var(--surface-1);padding:.3rem .65rem;border-radius:6px">
+      {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
     </span>
-    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">{{ next_month.year }}/{{ next_month.month|stringformat:"02d" }} →</a>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">بعد →</a>
+    {% if request.user.is_finance_manager %}
+    <form method="post" action="{% url 'payroll:invoice-generate' category.pk %}" style="margin:0"
+          onsubmit="return confirm('فاکتور صادر شود؟')">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ month.year }}">
+      <input type="hidden" name="month" value="{{ month.month }}">
+      <button class="btn btn-navy btn-sm">📤 صدور فاکتور</button>
+    </form>
+    {% endif %}
   </div>
 </div>
 
 {% if messages %}{% for msg in messages %}
-<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.45rem;
+<div style="border-radius:8px;padding:.6rem .9rem;font-size:.83rem;margin-bottom:.5rem;
   background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
   color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">{{ msg }}</div>
 {% endfor %}{% endif %}
 
-<!-- آمار سریع -->
-<div class="grid-auto" style="margin-bottom:1.1rem">
-  <div class="stat-card green">
-    <div class="stat-label">پرداخت‌شده</div>
-    <div class="stat-value">{{ status_counts.paid }}</div>
-    <div class="stat-sub">{{ total_paid|floatformat:0 }} ریال</div>
-    <span class="stat-icon">✅</span>
+<!-- آمار -->
+<div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+  <div style="background:#d1fae5;border-radius:8px;padding:.5rem .9rem;font-size:.8rem">
+    <span style="font-weight:900;color:var(--green);font-size:.95rem">{{ stats.paid }}</span>
+    <span style="color:#065f46"> پرداخت‌شده</span>
+    <span style="font-family:monospace;font-size:.75rem;color:#065f46"> ({{ stats.paid_amount|floatformat:0 }} ریال)</span>
   </div>
-  <div class="stat-card amber">
-    <div class="stat-label">در انتظار</div>
-    <div class="stat-value">{{ status_counts.pending }}</div>
-    <div class="stat-sub">فاکتور معوق</div>
-    <span class="stat-icon">⏳</span>
+  <div style="background:#fef3c7;border-radius:8px;padding:.5rem .9rem;font-size:.8rem">
+    <span style="font-weight:900;color:#92400e;font-size:.95rem">{{ stats.pending }}</span> معوق
   </div>
-  <div class="stat-card red">
-    <div class="stat-label">بدهکار</div>
-    <div class="stat-value">{{ status_counts.debtor }}</div>
-    <div class="stat-sub">فاکتور معوق</div>
-    <span class="stat-icon">🔴</span>
+  <div style="background:#fee2e2;border-radius:8px;padding:.5rem .9rem;font-size:.8rem">
+    <span style="font-weight:900;color:#991b1b;font-size:.95rem">{{ stats.debtor }}</span> بدهکار
   </div>
-  <div class="stat-card teal">
-    <div class="stat-label">رسید در انتظار</div>
-    <div class="stat-value">{{ status_counts.pending_confirm }}</div>
-    <div class="stat-sub">نیاز به تأیید</div>
-    <span class="stat-icon">📎</span>
-  </div>
-</div>
-
-<!-- اقدامات -->
-<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.1rem;align-items:center">
-  {% if request.user.is_finance_manager %}
-  <form method="post" action="{% url 'payroll:invoice-generate' category.pk %}" style="margin:0">
-    {% csrf_token %}
-    <input type="hidden" name="year"  value="{{ month.year }}">
-    <input type="hidden" name="month" value="{{ month.month }}">
-    <button type="submit" class="btn btn-navy btn-sm"
-            onclick="return confirm('فاکتور ماه {{ month.year }}/{{ month.month|stringformat:"02d" }} برای {{ category.name }} صادر شود؟')">
-      ⚡ صدور فاکتور این ماه
-    </button>
-  </form>
+  {% if stats.pending_confirm > 0 %}
+  <a href="{% url 'payroll:pending-receipts' %}" style="text-decoration:none"
+     style="background:#dbeafe;border-radius:8px;padding:.5rem .9rem;font-size:.8rem;display:flex;align-items:center;gap:.4rem">
+    <span style="font-weight:900;color:#1e3a8a;font-size:.95rem">{{ stats.pending_confirm }}</span>
+    <span style="color:#1e3a8a">📎 منتظر تأیید →</span>
+  </a>
   {% endif %}
-
-  <!-- فیلتر وضعیت -->
-  <form method="get" style="display:flex;gap:.4rem;margin:0">
-    <input type="hidden" name="year"  value="{{ month.year }}">
-    <input type="hidden" name="month" value="{{ month.month }}">
-    <select name="status" class="field-input" style="padding:.35rem .65rem;font-size:.82rem;border-radius:8px;border:1.5px solid var(--surface-2)">
-      <option value="">همه وضعیت‌ها</option>
-      {% for val, label in status_choices %}
-      <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="btn btn-outline btn-sm">🔍 فیلتر</button>
-  </form>
-
-  <a href="{% url 'payroll:finance-dashboard' %}" class="btn btn-outline btn-sm">← داشبورد</a>
+  <!-- فیلتر -->
+  <div style="margin-right:auto;display:flex;gap:.3rem">
+    <a href="?year={{ month.year }}&month={{ month.month }}"
+       class="btn btn-sm {% if not status_filter %}btn-navy{% else %}btn-outline{% endif %}">همه</a>
+    <a href="?year={{ month.year }}&month={{ month.month }}&status=pending_confirm"
+       class="btn btn-sm {% if status_filter == 'pending_confirm' %}btn-amber{% else %}btn-outline{% endif %}">📎 رسید</a>
+    <a href="?year={{ month.year }}&month={{ month.month }}&status=debtor"
+       class="btn btn-sm {% if status_filter == 'debtor' %}btn-red{% else %}btn-outline{% endif %}">بدهکار</a>
+  </div>
 </div>
 
-<!-- جدول فاکتورها -->
-{% if invoices %}
 <div class="card">
-  <div style="overflow-x:auto">
-    <table class="table">
+  {% if invoices %}
+  <div class="table-wrap">
+    <table class="data-table">
       <thead>
         <tr>
           <th>#</th>
           <th>بازیکن</th>
-          <th>مبلغ</th>
-          <th>تخفیف</th>
-          <th>نهایی</th>
+          <th>مبلغ (ریال)</th>
           <th>وضعیت</th>
           <th>رسید</th>
           {% if request.user.is_finance_manager %}<th>اقدام</th>{% endif %}
@@ -110,54 +96,59 @@
       <tbody>
         {% for inv in invoices %}
         <tr>
-          <td style="font-size:.78rem;color:var(--text-muted)">{{ forloop.counter }}</td>
+          <td style="font-size:.75rem;color:var(--text-muted)">{{ forloop.counter }}</td>
           <td>
-            <strong style="font-size:.88rem">{{ inv.player.first_name }} {{ inv.player.last_name }}</strong>
-            {% if inv.player.phone %}<div style="font-size:.72rem;color:var(--text-muted);font-family:monospace">{{ inv.player.phone }}</div>{% endif %}
+            <div style="font-weight:700;font-size:.88rem">{{ inv.player.first_name }} {{ inv.player.last_name }}</div>
+            {% if inv.player.phone %}<div style="font-size:.7rem;color:var(--text-muted)">{{ inv.player.phone }}</div>{% endif %}
           </td>
-          <td style="font-family:monospace;font-size:.85rem">{{ inv.amount|floatformat:0 }}</td>
-          <td style="font-family:monospace;font-size:.85rem;color:var(--green)">
-            {% if inv.discount %}{{ inv.discount|floatformat:0 }}{% else %}—{% endif %}
-          </td>
-          <td style="font-family:monospace;font-size:.9rem;font-weight:700;color:var(--navy)">{{ inv.final_amount|floatformat:0 }}</td>
+          <td style="font-family:monospace;font-size:.9rem;font-weight:700">{{ inv.final_amount|floatformat:0 }}</td>
           <td>
-            {% if inv.status == 'paid' %}
-              <span class="badge badge-green" style="font-size:.68rem">✅ پرداخت شده</span>
-            {% elif inv.status == 'pending_confirm' %}
-              <span class="badge badge-amber" style="font-size:.68rem">📎 انتظار تأیید</span>
-            {% elif inv.status == 'debtor' %}
-              <span class="badge badge-red" style="font-size:.68rem">🔴 بدهکار</span>
-            {% else %}
-              <span class="badge" style="background:#e5e7eb;color:#374151;font-size:.68rem">⏳ معوق</span>
-            {% endif %}
+            <span class="badge status-{{ inv.status }}" style="font-size:.68rem;border-radius:99px;padding:.18rem .55rem">
+              {% if inv.status == 'pending' %}⏳ معوق
+              {% elif inv.status == 'debtor' %}🔴 بدهکار
+              {% elif inv.status == 'pending_confirm' %}📎 رسید دارد
+              {% elif inv.status == 'paid' %}✅ پرداخت شده
+              {% endif %}
+            </span>
           </td>
           <td>
             {% if inv.receipt_image %}
-              <a href="{{ inv.receipt_image.url }}" target="_blank" class="btn btn-outline btn-sm" style="font-size:.7rem">📎 رسید</a>
-            {% else %}
-              <span style="font-size:.75rem;color:var(--text-muted)">—</span>
-            {% endif %}
+            <a href="{{ inv.receipt_image.url }}" target="_blank"
+               class="btn btn-outline btn-sm" style="font-size:.7rem">👁️ رسید</a>
+            {% else %}—{% endif %}
           </td>
           {% if request.user.is_finance_manager %}
           <td>
-            <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+            <div class="action-row">
               {% if inv.status == 'pending_confirm' %}
-              <form method="post" action="{% url 'payroll:invoice-confirm' inv.pk %}" style="margin:0">
+              <form method="post" action="{% url 'payroll:invoice-confirm' inv.pk %}" style="margin:0"
+                    onsubmit="return confirm('رسید تأیید شود؟')">
                 {% csrf_token %}
-                <button class="btn btn-green btn-sm" style="font-size:.7rem;padding:.2rem .5rem"
-                        onclick="return confirm('پرداخت تأیید شود؟')">✅ تأیید</button>
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="btn btn-green btn-sm" style="font-size:.7rem">✅ تأیید</button>
               </form>
               {% endif %}
               {% if inv.status != 'paid' %}
-              <form method="post" action="{% url 'payroll:invoice-status-update' inv.pk %}" style="margin:0">
+              <form method="post" action="{% url 'payroll:invoice-status-update' inv.pk %}"
+                    style="margin:0;display:flex;gap:.25rem">
                 {% csrf_token %}
-                <select name="new_status" style="font-size:.72rem;border:1px solid var(--surface-2);border-radius:6px;padding:.2rem">
-                  {% for val, label in status_choices %}
-                  <option value="{{ val }}" {% if inv.status == val %}selected{% endif %}>{{ label }}</option>
+                <input type="hidden" name="redirect_to" value="{{ request.get_full_path }}">
+                <select name="new_status"
+                        style="font-size:.7rem;border:1.5px solid var(--surface-2);border-radius:5px;padding:.2rem .35rem">
+                  {% for val, lbl in status_choices %}
+                  <option value="{{ val }}" {% if inv.status == val %}selected{% endif %}>{{ lbl }}</option>
                   {% endfor %}
                 </select>
-                <button class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .4rem">تغییر</button>
+                <button class="btn btn-outline btn-sm" style="font-size:.7rem">✓</button>
               </form>
+              {% if inv.player.user %}
+              <form method="post" action="{% url 'payroll:send-reminder' %}" style="margin:0"
+                    onsubmit="return confirm('یادآوری ارسال شود؟')">
+                {% csrf_token %}
+                <input type="hidden" name="invoice_pk" value="{{ inv.pk }}">
+                <button class="btn btn-amber btn-sm" style="font-size:.7rem" title="ارسال یادآوری">🔔</button>
+              </form>
+              {% endif %}
               {% endif %}
             </div>
           </td>
@@ -167,20 +158,41 @@
       </tbody>
     </table>
   </div>
+
+  <!-- ارسال یادآوری دسته‌جمعی -->
+  {% if request.user.is_finance_manager %}
+  <div style="padding:.75rem 1rem;border-top:1px solid var(--surface-2);display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+    <form method="post" action="{% url 'payroll:send-reminder' %}" style="margin:0"
+          onsubmit="return confirm('برای همه بدهکاران این دسته یادآوری ارسال شود؟')">
+      {% csrf_token %}
+      <input type="hidden" name="year"   value="{{ month.year }}">
+      <input type="hidden" name="month"  value="{{ month.month }}">
+      <button class="btn btn-amber btn-sm">🔔 یادآوری به همه بدهکاران</button>
+    </form>
+  </div>
+  {% endif %}
+
   {% if is_paginated %}
-  <div style="padding:.75rem 1rem;border-top:1px solid var(--surface-2);display:flex;gap:.4rem;justify-content:center">
+  <div style="display:flex;justify-content:center;gap:.4rem;padding:.85rem">
     {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm">←</a>{% endif %}
-    <span style="padding:.35rem .75rem;font-size:.82rem">صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+    <span style="padding:.5rem .75rem;font-size:.82rem">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
     {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&year={{ month.year }}&month={{ month.month }}" class="btn btn-outline btn-sm">→</a>{% endif %}
   </div>
   {% endif %}
-</div>
-{% else %}
-<div style="text-align:center;padding:3rem;color:var(--text-muted)">
-  <div style="font-size:2.5rem;margin-bottom:.5rem">📋</div>
-  <p style="font-size:.95rem;font-weight:700">فاکتوری برای این ماه وجود ندارد</p>
-  <p style="font-size:.82rem">{% if request.user.is_finance_manager %}با دکمه «صدور فاکتور» فاکتور صادر کنید.{% endif %}</p>
-</div>
-{% endif %}
 
+  {% else %}
+  <div style="padding:2.5rem;text-align:center;color:var(--text-muted)">
+    <div style="font-size:2rem;margin-bottom:.5rem">🧾</div>
+    <p style="font-weight:700">فاکتوری برای این ماه صادر نشده</p>
+    {% if request.user.is_finance_manager %}
+    <form method="post" action="{% url 'payroll:invoice-generate' category.pk %}" style="margin:.75rem 0 0">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ month.year }}">
+      <input type="hidden" name="month" value="{{ month.month }}">
+      <button class="btn btn-navy">📤 صدور فاکتور</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

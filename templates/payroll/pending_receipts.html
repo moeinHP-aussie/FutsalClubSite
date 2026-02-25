@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}رسیدهای در انتظار{% endblock %}
+{% block nav_pending_receipts %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span><span class="cur">رسیدها در انتظار</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.receipt-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:1rem; }
+.receipt-card { background:#fff; border:1.5px solid var(--surface-2); border-radius:12px; overflow:hidden; }
+.receipt-img { background:#f8fafc; display:flex; align-items:center; justify-content:center; min-height:180px; cursor:zoom-in; }
+.receipt-img img { max-width:100%; max-height:240px; object-fit:contain; }
+#lb { display:none; position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:9999; place-items:center; cursor:zoom-out; }
+#lb.on { display:grid; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📎 رسیدهای در انتظار تأیید</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">بررسی رسید بارگذاری‌شده توسط بازیکنان</p>
+  </div>
+  {% if total_pending > 0 %}
+  <span style="background:#fef3c7;color:#92400e;border-radius:8px;padding:.35rem .85rem;font-size:.82rem;font-weight:700">
+    ⏳ {{ total_pending }} رسید منتظر بررسی
+  </span>
+  {% else %}
+  <span style="background:#d1fae5;color:#065f46;border-radius:8px;padding:.35rem .85rem;font-size:.82rem;font-weight:700">
+    ✅ همه رسیدها بررسی شده
+  </span>
+  {% endif %}
+</div>
+
+{% if messages %}{% for msg in messages %}
+<div style="border-radius:8px;padding:.6rem 1rem;font-size:.83rem;margin-bottom:.6rem;
+  background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
+  color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">{{ msg }}</div>
+{% endfor %}{% endif %}
+
+{% if invoices %}
+<!-- شهریه‌های در انتظار -->
+<h2 style="font-size:.88rem;font-weight:800;color:var(--navy);margin-bottom:.75rem">رسیدهای شهریه بازیکنان</h2>
+<div class="receipt-grid" style="margin-bottom:1.5rem">
+  {% for inv in invoices %}
+  <div class="receipt-card">
+    <div style="padding:.75rem 1rem;border-bottom:1px solid var(--surface-2);background:var(--surface-1);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <strong style="font-size:.88rem">{{ inv.player.first_name }} {{ inv.player.last_name }}</strong>
+        <span style="font-size:.72rem;color:var(--text-muted);display:block">{{ inv.category.name }} — {{ inv.jalali_year }}/{% if inv.jalali_month < 10 %}0{% endif %}{{ inv.jalali_month }}</span>
+      </div>
+      <span style="font-family:monospace;font-weight:900;font-size:.9rem">{{ inv.final_amount|floatformat:0 }} ریال</span>
+    </div>
+    <!-- تصویر -->
+    <div class="receipt-img" onclick="openLB('{{ inv.receipt_image.url }}')">
+      {% if inv.receipt_image %}
+      <img src="{{ inv.receipt_image.url }}" alt="رسید">
+      {% else %}
+      <span style="color:var(--text-muted);font-size:.82rem">بدون تصویر</span>
+      {% endif %}
+    </div>
+    <!-- اقدام -->
+    <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.5rem">
+      <form method="post" onsubmit="return confirm('تأیید شود؟')">
+        {% csrf_token %}
+        <input type="hidden" name="invoice_pk" value="{{ inv.pk }}">
+        <input type="hidden" name="action"     value="confirm">
+        <input type="text" name="notes" placeholder="یادداشت (اختیاری)..."
+               style="width:100%;padding:.4rem .6rem;border:1.5px solid var(--surface-2);border-radius:6px;font-size:.8rem;margin-bottom:.4rem;box-sizing:border-box">
+        <button class="btn btn-green" style="width:100%;font-size:.82rem">✅ تأیید و ثبت پرداخت</button>
+      </form>
+      <form method="post" onsubmit="return confirm('رسید رد شود؟')">
+        {% csrf_token %}
+        <input type="hidden" name="invoice_pk" value="{{ inv.pk }}">
+        <input type="hidden" name="action"     value="reject">
+        <input type="text" name="notes" placeholder="دلیل رد..."
+               style="width:100%;padding:.4rem .6rem;border:1.5px solid var(--surface-2);border-radius:6px;font-size:.8rem;margin-bottom:.4rem;box-sizing:border-box">
+        <button class="btn btn-outline" style="width:100%;font-size:.82rem;color:var(--red);border-color:var(--red)">❌ رد رسید</button>
+      </form>
+      {% if inv.receipt_image %}
+      <a href="{{ inv.receipt_image.url }}" target="_blank" download
+         style="text-align:center;font-size:.75rem;color:var(--navy)">⬇️ دانلود تصویر</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% if is_paginated %}
+<div style="display:flex;justify-content:center;gap:.4rem;padding:.75rem">
+  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline btn-sm">←</a>{% endif %}
+  <span style="padding:.45rem .7rem;font-size:.8rem">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline btn-sm">→</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div style="text-align:center;padding:4rem;color:var(--text-muted)">
+  <div style="font-size:3rem;margin-bottom:.75rem">✅</div>
+  <p style="font-weight:800;font-size:1rem">رسید جدیدی نیست</p>
+  <p style="font-size:.85rem">همه رسیدها بررسی شده‌اند</p>
+</div>
+{% endif %}
+
+<!-- فیش‌های حقوق مربی در انتظار تأیید -->
+{% if salary_pending %}
+<h2 style="font-size:.88rem;font-weight:800;color:var(--navy);margin-bottom:.75rem;margin-top:1.5rem">⏳ فیش حقوق مربیان — منتظر تأیید مربی</h2>
+<div style="background:#fffbeb;border:1.5px solid #fbbf24;border-radius:10px;padding:.75rem 1rem;font-size:.82rem;color:#92400e">
+  {% for sal in salary_pending %}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid #fde68a">
+    <span>{{ sal.coach }} — {{ sal.category.name }} ({{ sal.attendance_sheet.jalali_year }}/{% if sal.attendance_sheet.jalali_month < 10 %}0{% endif %}{{ sal.attendance_sheet.jalali_month }})</span>
+    <span style="font-family:monospace;font-weight:700">{{ sal.final_amount|floatformat:0 }} ریال</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- فاکتورهای دستی در انتظار تأیید گیرنده -->
+{% if staff_pending %}
+<h2 style="font-size:.88rem;font-weight:800;color:var(--navy);margin-bottom:.75rem;margin-top:1.5rem">⏳ فاکتورهای دستی — منتظر تأیید گیرنده</h2>
+<div style="background:#ede9fe;border:1.5px solid #a78bfa;border-radius:10px;padding:.75rem 1rem;font-size:.82rem;color:#4c1d95">
+  {% for si in staff_pending %}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid #c4b5fd">
+    <span>{{ si.recipient.get_full_name }} — {{ si.title }}</span>
+    <span style="font-family:monospace;font-weight:700">{{ si.amount|floatformat:0 }} ریال</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- lightbox -->
+<div id="lb" onclick="this.classList.remove('on')">
+  <img id="lb-img" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px">
+</div>
+<script>
+function openLB(url){document.getElementById('lb-img').src=url;document.getElementById('lb').classList.add('on');}
+</script>
+{% endblock %}

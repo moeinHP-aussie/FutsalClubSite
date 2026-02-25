@@ -404,6 +404,7 @@ class InvoiceListView(FinanceAccessMixin, ListView):
                 "total_due":    sum(i.final_amount for i in qs.filter(status__in=["pending", "debtor"])),
                 "total_paid":   sum(i.final_amount for i in qs.filter(status="paid")),
                 "status_choices": PlayerInvoice.PaymentStatus.choices,
+                "pending_confirm_count": qs.filter(status="pending_confirm").count(),
             }
         )
         return ctx

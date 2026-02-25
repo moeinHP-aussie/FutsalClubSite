@@ -28,6 +28,25 @@
   </div>
 </div>
 
+{% if request.user.is_finance_manager and stats.pending or stats.debtor %}
+<div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1rem;padding:.75rem 1rem;background:#fffbeb;border-radius:10px;border:1.5px solid #fbbf24">
+  <span style="font-size:.82rem;font-weight:700;color:#92400e">⚠️ بازیکنان بدهکار این ماه:</span>
+  <span style="font-size:.82rem;color:#78350f">
+    {{ stats.pending }} معوق + {{ stats.debtor }} بدهکار
+  </span>
+  <form method="post" action="{% url 'payroll:send-reminder' %}"
+        onsubmit="return confirm('یادآوری برای همه بازیکنان بدهکار این ماه ارسال شود؟')"
+        style="margin-right:auto">
+    {% csrf_token %}
+    <input type="hidden" name="year"  value="{{ month.year }}">
+    <input type="hidden" name="month" value="{{ month.month }}">
+    <button type="submit" class="btn btn-amber btn-sm">
+      🔔 ارسال یادآوری به همه بدهکاران
+    </button>
+  </form>
+</div>
+{% endif %}
+
 {% if messages %}{% for msg in messages %}
 <div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.45rem;
   background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
@@ -156,6 +175,17 @@
                 </select>
                 <button class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.25rem .4rem">ثبت</button>
               </form>
+              {% if inv.player.user %}
+              <form method="post" action="{% url 'payroll:send-reminder' %}" style="margin:0">
+                {% csrf_token %}
+                <input type="hidden" name="invoice_pk" value="{{ inv.pk }}">
+                <button class="btn btn-amber btn-sm" style="font-size:.7rem;padding:.25rem .55rem"
+                        onclick="return confirm('یادآوری برای {{ inv.player.first_name }} ارسال شود؟')"
+                        title="ارسال یادآوری پرداخت">
+                  🔔 یادآوری
+                </button>
+              </form>
+              {% endif %}
               {% endif %}
             </div>
           </td>

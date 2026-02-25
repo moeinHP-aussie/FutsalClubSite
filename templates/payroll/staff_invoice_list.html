@@ -72,10 +72,26 @@
             {% endif %}
           </td>
           <td>
+            {% if inv.bank_receipt %}
+            <a href="{{ inv.bank_receipt.url }}" target="_blank"
+               class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .5rem;display:block;margin-bottom:.3rem">
+              📎 مشاهده فیش
+            </a>
+            {% endif %}
             {% if inv.status == 'pending' %}
-            <div style="display:flex;gap:.3rem">
-              <!-- تأیید پرداخت -->
-              <button class="btn btn-green btn-sm" onclick="openPayModal({{ inv.pk }}, '{{ inv.title|escapejs }}')" style="font-size:.72rem">✅ پرداخت شد</button>
+            <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+              <!-- آپلود فیش و پرداخت یکجا -->
+              <form method="post" action="{% url 'payroll:staff-invoice-receipt' inv.pk %}"
+                    enctype="multipart/form-data" style="margin:0">
+                {% csrf_token %}
+                <label style="cursor:pointer" title="آپلود فیش بانکی و ثبت پرداخت">
+                  <input type="file" name="bank_receipt" accept="image/jpeg,image/png,image/webp"
+                         style="display:none"
+                         onchange="if(this.files[0]&&confirm('فیش آپلود و فاکتور پرداخت شده ثبت شود؟'))this.form.submit()">
+                  <span class="btn btn-green btn-sm" style="font-size:.72rem">💸 آپلود فیش</span>
+                </label>
+              </form>
+              <!-- توضیح: پرداخت حتماً نیاز به آپلود فیش دارد -->
               <!-- لغو -->
               <form method="post" action="{% url 'payroll:staff-invoice-cancel' inv.pk %}"
                     onsubmit="return confirm('فاکتور لغو شود؟')" style="margin:0">

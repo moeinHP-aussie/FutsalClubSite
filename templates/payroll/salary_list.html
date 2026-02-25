@@ -1,139 +1,149 @@
 {% extends "base.html" %}
 {% block title %}حقوق مربیان — {{ category.name }}{% endblock %}
-{% block nav_finance %}active{% endblock %}
+{% block nav_coach_payroll %}active{% endblock %}
 
 {% block breadcrumb %}
   <span class="sep">›</span>
   <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
-  <span class="sep">›</span><span class="cur">حقوق {{ category.name }}</span>
+  <span class="sep">›</span><span class="cur">حقوق مربیان</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;place-items:center;cursor:zoom-out}
+#lb.on{display:grid}
+</style>
 {% endblock %}
 
 {% block content %}
-
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.1rem">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
   <div>
-    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">💰 حقوق مربیان — {{ category.name }}</h1>
-    <p style="font-size:.82rem;color:var(--text-muted)">محاسبه بر اساس تعداد جلسات حضور × نرخ مربی</p>
+    <h1 style="font-size:1.05rem;font-weight:900;color:var(--navy)">👨‍🏫 {{ category.name }} — حقوق مربیان</h1>
   </div>
-  <div style="display:flex;align-items:center;gap:.5rem">
-    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← {{ prev_month.year }}/{{ prev_month.month|stringformat:"02d" }}</a>
-    <span style="font-weight:800;font-size:.95rem;color:var(--navy);background:var(--surface-1);padding:.3rem .7rem;border-radius:8px">
-      {{ month.year }}/{{ month.month|stringformat:"02d" }}
+  <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← قبل</a>
+    <span style="font-weight:800;font-size:.88rem;background:var(--surface-1);padding:.3rem .65rem;border-radius:6px">
+      {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
     </span>
-    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">{{ next_month.year }}/{{ next_month.month|stringformat:"02d" }} →</a>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">بعد →</a>
+    <a href="{% url 'payroll:salary-bulk' category.pk %}?year={{ month.year }}&month={{ month.month }}"
+       class="btn btn-navy btn-sm">🔢 محاسبه دسته‌جمعی</a>
   </div>
 </div>
 
 {% if messages %}{% for msg in messages %}
-<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.45rem;
+<div style="border-radius:8px;padding:.6rem .9rem;font-size:.83rem;margin-bottom:.5rem;
   background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
   color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">{{ msg }}</div>
 {% endfor %}{% endif %}
 
-<div class="grid-auto" style="margin-bottom:1.1rem">
-  <div class="stat-card navy">
-    <div class="stat-label">کل مربیان</div>
-    <div class="stat-value">{{ salaries|length }}</div>
-    <span class="stat-icon">👨‍🏫</span>
-  </div>
-  <div class="stat-card green">
-    <div class="stat-label">پرداخت‌شده</div>
-    <div class="stat-value">{{ paid_count }}</div>
-    <span class="stat-icon">✅</span>
-  </div>
-  <div class="stat-card amber">
-    <div class="stat-label">مجموع حقوق</div>
-    <div class="stat-value" style="font-size:.9rem">{{ total_amount|floatformat:0 }}</div>
-    <div class="stat-sub">ریال</div>
-    <span class="stat-icon">💰</span>
-  </div>
-</div>
-
-<!-- اقدامات -->
-{% if request.user.is_finance_manager %}
-<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
-  <a href="{% url 'payroll:salary-bulk' category.pk %}?year={{ month.year }}&month={{ month.month }}"
-     class="btn btn-navy btn-sm">
-    ⚡ محاسبه حقوق همه مربیان این ماه
-  </a>
-  <a href="{% url 'payroll:coach-rate-manage' %}" class="btn btn-outline btn-sm">⚙️ تعیین نرخ مربیان</a>
-</div>
-{% endif %}
-
-{% if salaries %}
 <div class="card">
-  <div style="overflow-x:auto">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>مربی</th>
-          <th>جلسات حاضر</th>
-          <th>نرخ/جلسه</th>
-          <th>مبلغ پایه</th>
-          <th>تعدیل</th>
-          <th>مبلغ نهایی</th>
-          <th>وضعیت</th>
-          {% if request.user.is_finance_manager %}<th>اقدام</th>{% endif %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for salary in salaries %}
-        <tr>
-          <td>
-            <strong>{{ salary.coach.first_name }} {{ salary.coach.last_name }}</strong>
-            {% if salary.coach.degree %}<div style="font-size:.72rem;color:var(--text-muted)">{{ salary.coach.get_degree_display }}</div>{% endif %}
-          </td>
-          <td style="text-align:center;font-weight:700">{{ salary.sessions_attended }}</td>
-          <td style="font-family:monospace;font-size:.85rem">{{ salary.session_rate|floatformat:0 }}</td>
-          <td style="font-family:monospace;font-size:.85rem">{{ salary.base_amount|floatformat:0 }}</td>
-          <td style="font-family:monospace;font-size:.85rem;color:{% if salary.manual_adjustment > 0 %}var(--green){% elif salary.manual_adjustment < 0 %}var(--red){% else %}var(--text-muted){% endif %}">
-            {% if salary.manual_adjustment %}{{ salary.manual_adjustment|floatformat:0 }}{% else %}—{% endif %}
-          </td>
-          <td style="font-family:monospace;font-size:.9rem;font-weight:700;color:var(--navy)">{{ salary.final_amount|floatformat:0 }}</td>
-          <td>
-            {% if salary.status == 'paid' %}
-              <span class="badge badge-green" style="font-size:.68rem">✅ پرداخت‌شده</span>
-            {% elif salary.status == 'approved' %}
-              <span class="badge badge-teal" style="font-size:.68rem">☑️ تأییدشده</span>
-            {% elif salary.status == 'calculated' %}
-              <span class="badge badge-amber" style="font-size:.68rem">🔢 محاسبه‌شده</span>
-            {% endif %}
-          </td>
-          {% if request.user.is_finance_manager %}
-          <td>
-            <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-              <!-- لینک به صفحه محاسبه با امکان تعدیل دستی -->
-              <a href="{% url 'payroll:salary-calculate' salary.coach_id category.pk %}?year={{ month.year }}&month={{ month.month }}"
-                 class="btn btn-outline btn-sm" style="font-size:.7rem">✏️ ویرایش</a>
-              {% if salary.status == 'calculated' %}
-              <form method="post" action="{% url 'payroll:salary-approve' salary.pk %}" style="margin:0">
-                {% csrf_token %}
-                <button class="btn btn-teal btn-sm" style="font-size:.7rem" onclick="return confirm('تأیید شود؟')">☑️ تأیید</button>
-              </form>
-              {% elif salary.status == 'approved' %}
-              <form method="post" action="{% url 'payroll:salary-pay' salary.pk %}" style="margin:0">
-                {% csrf_token %}
-                <button class="btn btn-green btn-sm" style="font-size:.7rem" onclick="return confirm('پرداخت شود؟')">💸 پرداخت</button>
-              </form>
-              {% endif %}
-            </div>
-          </td>
+{% if salaries %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>مربی</th>
+        <th>جلسات</th>
+        <th>نرخ/جلسه</th>
+        <th>حقوق پایه</th>
+        <th>تعدیل</th>
+        <th>نهایی</th>
+        <th>وضعیت</th>
+        <th>فیش</th>
+        <th>اقدام</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sal in salaries %}
+      <tr style="{% if sal.status == 'confirmed' %}background:#f0fdf4{% elif sal.status == 'paid' %}background:#fffbeb{% endif %}">
+        <td style="font-weight:700;font-size:.88rem">{{ sal.coach.first_name }} {{ sal.coach.last_name }}</td>
+        <td style="text-align:center;font-family:monospace">{{ sal.sessions_attended }}</td>
+        <td style="font-family:monospace;font-size:.82rem">{{ sal.session_rate|floatformat:0 }}</td>
+        <td style="font-family:monospace;font-size:.82rem">{{ sal.base_amount|floatformat:0 }}</td>
+        <td style="font-family:monospace;font-size:.82rem;
+            color:{% if sal.manual_adjustment > 0 %}var(--green){% elif sal.manual_adjustment < 0 %}var(--red){% else %}var(--text-muted){% endif %}">
+          {% if sal.manual_adjustment != 0 %}
+          {{ sal.manual_adjustment|floatformat:0 }}
+          {% else %}—{% endif %}
+        </td>
+        <td style="font-family:monospace;font-weight:900">{{ sal.final_amount|floatformat:0 }}</td>
+        <td>
+          {% if sal.status == 'confirmed' %}
+          <span class="badge badge-green" style="font-size:.68rem">✅ تأیید مربی</span>
+          {% elif sal.status == 'paid' %}
+          <span class="badge badge-amber" style="font-size:.68rem">⏳ منتظر تأیید</span>
+          {% elif sal.status == 'approved' %}
+          <span class="badge badge-teal" style="font-size:.68rem">☑️ تأیید شده</span>
+          {% else %}
+          <span class="badge" style="font-size:.68rem;background:#e5e7eb">محاسبه شده</span>
           {% endif %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+        </td>
+        <td>
+          {% if sal.bank_receipt %}
+          <button onclick="openLB('{{ sal.bank_receipt.url }}')"
+                  class="btn btn-outline btn-sm" style="font-size:.7rem">📎 فیش</button>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <div style="display:flex;gap:.25rem;flex-wrap:wrap">
+            {% if sal.status == 'calculated' %}
+            <form method="post" action="{% url 'payroll:salary-approve' sal.pk %}" style="margin:0">
+              {% csrf_token %}<button class="btn btn-teal btn-sm" style="font-size:.7rem">☑️</button>
+            </form>
+            {% elif sal.status == 'approved' %}
+            <!-- آپلود فیش و پرداخت -->
+            <form method="post" action="{% url 'payroll:salary-pay' sal.pk %}"
+                  enctype="multipart/form-data" style="margin:0">
+              {% csrf_token %}
+              <label style="cursor:pointer" title="آپلود فیش بانکی و ثبت پرداخت">
+                <input type="file" name="bank_receipt" accept="image/jpeg,image/png,image/webp"
+                       style="display:none"
+                       onchange="if(this.files[0]&&confirm('فیش آپلود و پرداخت ثبت شود؟'))this.form.submit()">
+                <span class="btn btn-green btn-sm" style="font-size:.7rem">💸 آپلود فیش</span>
+              </label>
+            </form>
+            {% elif sal.status in 'paid,confirmed' and sal.bank_receipt %}
+            <!-- جایگزینی فیش -->
+            <form method="post" action="{% url 'payroll:salary-pay' sal.pk %}"
+                  enctype="multipart/form-data" style="margin:0">
+              {% csrf_token %}
+              <label style="cursor:pointer" title="جایگزینی فیش">
+                <input type="file" name="bank_receipt" accept="image/jpeg,image/png,image/webp"
+                       style="display:none"
+                       onchange="if(this.files[0]&&confirm('فیش جایگزین شود؟'))this.form.submit()">
+                <span class="btn btn-outline btn-sm" style="font-size:.7rem">🔄</span>
+              </label>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    {% if total_amount %}
+    <tfoot>
+      <tr style="background:var(--surface-1)">
+        <td colspan="5" style="font-weight:900;font-size:.85rem;padding:.6rem 1rem">جمع کل</td>
+        <td style="font-family:monospace;font-weight:900;font-size:.9rem">{{ total_amount|floatformat:0 }}</td>
+        <td colspan="3"></td>
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
 </div>
 {% else %}
-<div style="text-align:center;padding:3rem;color:var(--text-muted)">
-  <div style="font-size:2.5rem;margin-bottom:.5rem">💰</div>
-  <p style="font-weight:700">حقوقی برای این ماه محاسبه نشده</p>
-  {% if request.user.is_finance_manager %}
+<div style="padding:2.5rem;text-align:center;color:var(--text-muted)">
+  <div style="font-size:2rem;margin-bottom:.5rem">👨‍🏫</div>
+  <p style="font-weight:700">حقوقی محاسبه نشده</p>
   <a href="{% url 'payroll:salary-bulk' category.pk %}?year={{ month.year }}&month={{ month.month }}"
-     class="btn btn-navy btn-sm" style="margin-top:.75rem">⚡ محاسبه حقوق همه مربیان</a>
-  {% endif %}
+     class="btn btn-navy" style="margin-top:.75rem">🔢 محاسبه حقوق</a>
 </div>
 {% endif %}
+</div>
 
+<div id="lb" onclick="this.classList.remove('on')">
+  <img id="lb-img" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px">
+</div>
+<script>function openLB(u){document.getElementById('lb-img').src=u;document.getElementById('lb').classList.add('on');}</script>
 {% endblock %}

@@ -9,66 +9,127 @@
   <span class="sep">›</span><span class="cur">هزینه‌ها</span>
 {% endblock %}
 
+{% block extra_head %}
+<style>
+.range-inp {
+  padding:.45rem .65rem;border:1.5px solid var(--surface-2);border-radius:7px;
+  font-family:inherit;font-size:.82rem;width:120px;direction:ltr;
+}
+.range-inp:focus{outline:none;border-color:var(--navy)}
+.cat-breakdown { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.6rem; }
+.cat-chip { padding:.55rem .8rem; border-radius:8px; border:1.5px solid var(--surface-2); background:#fff; font-size:.8rem; }
+.cat-chip-name { font-weight:700; color:var(--navy); margin-bottom:.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cat-chip-nums { display:flex; justify-content:space-between; font-size:.72rem; }
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;place-items:center;cursor:zoom-out}
+#lb.on{display:grid}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <!-- Header -->
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
   <div>
     <h1 style="font-size:1.25rem;font-weight:900;color:var(--navy)">📊 هزینه‌ها و درآمدها</h1>
-    <p style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">تراکنش‌های مالی باشگاه</p>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem">پایش مالی باشگاه — تراکنش‌های صندوق</p>
   </div>
   <a href="{% url 'payroll:expense-create' %}" class="btn btn-amber">➕ ثبت تراکنش جدید</a>
 </div>
 
-<!-- Summary cards -->
+<!-- خلاصه -->
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.25rem">
   <div class="card" style="padding:1rem 1.25rem;border-right:4px solid var(--red)">
-    <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.3rem">کل هزینه‌ها</div>
-    <div style="font-size:1.35rem;font-weight:900;color:var(--red)">{{ total_expense|floatformat:0 }}</div>
+    <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.3rem">
+      کل هزینه‌ها{% if date_from or date_to or cat_filter %} (فیلترشده){% endif %}
+    </div>
+    <div style="font-size:1.3rem;font-weight:900;color:var(--red)">{{ total_expense|floatformat:0 }}</div>
     <div style="font-size:.72rem;color:var(--text-muted)">ریال</div>
   </div>
   <div class="card" style="padding:1rem 1.25rem;border-right:4px solid var(--green)">
-    <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.3rem">کل درآمدها</div>
-    <div style="font-size:1.35rem;font-weight:900;color:var(--green)">{{ total_income|floatformat:0 }}</div>
+    <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.3rem">
+      کل درآمدها{% if date_from or date_to or cat_filter %} (فیلترشده){% endif %}
+    </div>
+    <div style="font-size:1.3rem;font-weight:900;color:var(--green)">{{ total_income|floatformat:0 }}</div>
     <div style="font-size:.72rem;color:var(--text-muted)">ریال</div>
   </div>
   <div class="card" style="padding:1rem 1.25rem;border-right:4px solid {% if balance >= 0 %}var(--teal){% else %}var(--red){% endif %}">
     <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.3rem">خالص مانده</div>
-    <div style="font-size:1.35rem;font-weight:900;color:{% if balance >= 0 %}var(--teal){% else %}var(--red){% endif %}">
+    <div style="font-size:1.3rem;font-weight:900;color:{% if balance >= 0 %}var(--teal){% else %}var(--red){% endif %}">
       {% if balance >= 0 %}+{% endif %}{{ balance|floatformat:0 }}
     </div>
     <div style="font-size:.72rem;color:var(--text-muted)">ریال</div>
   </div>
 </div>
 
-<!-- Filter -->
+<!-- تفکیک دسته‌بندی -->
+{% if cat_breakdown %}
 <div class="card" style="padding:.85rem 1rem;margin-bottom:1rem">
-  <form method="get" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
-    <input type="text" name="q" value="{{ q }}"
-           placeholder="جستجو عنوان..."
-           style="padding:.55rem .85rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem;min-width:180px">
-    <select name="cat" style="padding:.55rem .7rem;border:1.5px solid var(--surface-2);border-radius:8px;font-family:inherit;font-size:.875rem">
-      <option value="">همه دسته‌ها</option>
-      {% for cat in categories %}
-      <option value="{{ cat.pk }}" {% if cat_filter == cat.pk|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
-      {% endfor %}
-    </select>
-    <div style="display:flex;gap:.4rem">
-      <a href="?{% if q %}q={{ q }}&{% endif %}kind=expense{% if cat_filter %}&cat={{ cat_filter }}{% endif %}"
-         class="btn btn-sm {% if kind_filter == 'expense' %}btn-red{% else %}btn-outline{% endif %}" style="{% if kind_filter == 'expense' %}border-color:var(--red);background:var(--red);color:#fff{% endif %}">
-        هزینه
-      </a>
-      <a href="?{% if q %}q={{ q }}&{% endif %}kind=income{% if cat_filter %}&cat={{ cat_filter }}{% endif %}"
-         class="btn btn-sm {% if kind_filter == 'income' %}btn-green{% else %}btn-outline{% endif %}" style="{% if kind_filter == 'income' %}border-color:var(--green);background:var(--green);color:#fff{% endif %}">
-        درآمد
-      </a>
+  <div style="font-size:.8rem;font-weight:700;color:var(--navy);margin-bottom:.65rem">📂 تفکیک بر اساس دسته</div>
+  <div class="cat-breakdown">
+    {% for cb in cat_breakdown %}
+    <div class="cat-chip {% if cb.kind == 'expense' %}{% else %}{% endif %}"
+         style="border-color:{% if cb.net < 0 %}#fca5a5{% else %}#86efac{% endif %}">
+      <div class="cat-chip-name" title="{{ cb.name }}">{{ cb.name }}</div>
+      <div class="cat-chip-nums">
+        <span style="color:var(--red)">−{{ cb.expense|floatformat:0 }}</span>
+        <span style="color:var(--green)">+{{ cb.income|floatformat:0 }}</span>
+      </div>
+      <div style="font-size:.7rem;font-weight:700;margin-top:.2rem;
+        color:{% if cb.net < 0 %}var(--red){% else %}var(--teal){% endif %}">
+        خالص: {% if cb.net >= 0 %}+{% endif %}{{ cb.net|floatformat:0 }}
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary btn-sm">🔍</button>
-    {% if q or cat_filter or kind_filter %}<a href="?" class="btn btn-outline btn-sm">✕ پاک</a>{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- فیلتر پیشرفته -->
+<div class="card" style="padding:.85rem 1rem;margin-bottom:1rem">
+  <form method="get" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end">
+    <!-- جستجو -->
+    <div>
+      <div style="font-size:.72rem;font-weight:700;margin-bottom:.2rem;color:var(--text-muted)">جستجو</div>
+      <input type="text" name="q" value="{{ q }}" placeholder="عنوان یا شرح..."
+             style="padding:.45rem .7rem;border:1.5px solid var(--surface-2);border-radius:7px;font-family:inherit;font-size:.82rem;min-width:150px">
+    </div>
+    <!-- دسته -->
+    <div>
+      <div style="font-size:.72rem;font-weight:700;margin-bottom:.2rem;color:var(--text-muted)">دسته</div>
+      <select name="cat" style="padding:.45rem .6rem;border:1.5px solid var(--surface-2);border-radius:7px;font-family:inherit;font-size:.82rem">
+        <option value="">همه</option>
+        {% for cat in categories %}
+        <option value="{{ cat.pk }}" {% if cat_filter == cat.pk|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- نوع -->
+    <div>
+      <div style="font-size:.72rem;font-weight:700;margin-bottom:.2rem;color:var(--text-muted)">نوع</div>
+      <div style="display:flex;gap:.3rem">
+        <a href="?{% if q %}q={{ q }}&{% endif %}kind=expense{% if cat_filter %}&cat={{ cat_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}"
+           class="btn btn-sm {% if kind_filter == 'expense' %}btn-red{% else %}btn-outline{% endif %}" style="font-size:.78rem;padding:.4rem .7rem">هزینه</a>
+        <a href="?{% if q %}q={{ q }}&{% endif %}kind=income{% if cat_filter %}&cat={{ cat_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}"
+           class="btn btn-sm {% if kind_filter == 'income' %}btn-green{% else %}btn-outline{% endif %}" style="font-size:.78rem;padding:.4rem .7rem">درآمد</a>
+      </div>
+    </div>
+    <!-- بازه زمانی -->
+    <div>
+      <div style="font-size:.72rem;font-weight:700;margin-bottom:.2rem;color:var(--text-muted)">از تاریخ (شمسی)</div>
+      <input type="text" name="date_from" value="{{ date_from }}" class="range-inp" placeholder="۱۴۰۳/۰۱/۰۱">
+    </div>
+    <div>
+      <div style="font-size:.72rem;font-weight:700;margin-bottom:.2rem;color:var(--text-muted)">تا تاریخ (شمسی)</div>
+      <input type="text" name="date_to" value="{{ date_to }}" class="range-inp" placeholder="۱۴۰۳/۱۲/۲۹">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">🔍 اعمال</button>
+    {% if q or cat_filter or kind_filter or date_from or date_to %}
+    <a href="?" class="btn btn-outline btn-sm" style="color:var(--red)">✕ پاک</a>
+    {% endif %}
   </form>
 </div>
 
-<!-- Table -->
+<!-- جدول -->
 {% if expenses %}
 <div class="card">
   <div class="table-wrap">
@@ -81,7 +142,7 @@
           <th>نوع</th>
           <th>مبلغ (ریال)</th>
           <th>ثبت‌کننده</th>
-          <th>پیوست</th>
+          <th>رسید</th>
         </tr>
       </thead>
       <tbody>
@@ -91,25 +152,29 @@
           <td>
             <strong style="font-size:.875rem">{{ exp.title }}</strong>
             {% if exp.description %}
-            <div style="font-size:.72rem;color:var(--text-muted);margin-top:.1rem">{{ exp.description|truncatechars:60 }}</div>
+            <div style="font-size:.72rem;color:var(--text-muted);margin-top:.1rem">{{ exp.description|truncatechars:55 }}</div>
             {% endif %}
           </td>
           <td style="font-size:.82rem">{{ exp.category.name }}</td>
           <td>
             {% if exp.transaction_type == 'expense' %}
-              <span class="badge badge-red">هزینه</span>
+            <span class="badge badge-red" style="font-size:.68rem">💸 هزینه</span>
             {% else %}
-              <span class="badge badge-green">درآمد</span>
+            <span class="badge badge-green" style="font-size:.68rem">💰 درآمد</span>
             {% endif %}
           </td>
-          <td style="font-size:.9rem;font-weight:700;text-align:left;
+          <td style="font-size:.9rem;font-weight:700;text-align:left;font-family:monospace;
               color:{% if exp.transaction_type == 'expense' %}var(--red){% else %}var(--green){% endif %}">
             {% if exp.transaction_type == 'expense' %}−{% else %}+{% endif %}{{ exp.amount|floatformat:0 }}
           </td>
           <td style="font-size:.78rem;color:var(--text-muted)">{{ exp.recorded_by.get_full_name|default:"—" }}</td>
           <td>
-            {% if exp.attachment %}
-            <a href="{{ exp.attachment.url }}" target="_blank" class="btn btn-outline btn-sm">📎</a>
+            {% if exp.receipt_image %}
+            <button type="button" class="btn btn-outline btn-sm"
+                    onclick="openLB('{{ exp.receipt_image.url }}')"
+                    style="font-size:.7rem;padding:.2rem .5rem">📷 رسید</button>
+            {% elif exp.attachment %}
+            <a href="{{ exp.attachment.url }}" target="_blank" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .5rem">📎</a>
             {% else %}—{% endif %}
           </td>
         </tr>
@@ -123,13 +188,11 @@
 {% if is_paginated %}
 <div style="display:flex;justify-content:center;gap:.4rem;margin-top:1rem">
   {% if page_obj.has_previous %}
-  <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">← قبلی</a>
+  <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if cat_filter %}&cat={{ cat_filter }}{% endif %}{% if kind_filter %}&kind={{ kind_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn btn-outline btn-sm">← قبلی</a>
   {% endif %}
-  <span style="padding:.5rem .85rem;font-size:.82rem;color:var(--text-muted)">
-    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
-  </span>
+  <span style="padding:.5rem .85rem;font-size:.82rem;color:var(--text-muted)">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-  <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">بعدی →</a>
+  <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if cat_filter %}&cat={{ cat_filter }}{% endif %}{% if kind_filter %}&kind={{ kind_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn btn-outline btn-sm">بعدی →</a>
   {% endif %}
 </div>
 {% endif %}
@@ -137,9 +200,18 @@
 {% else %}
 <div class="card" style="text-align:center;padding:3rem">
   <div style="font-size:3rem;margin-bottom:1rem">📊</div>
-  <h3 style="font-weight:800;margin-bottom:.5rem">هیچ تراکنشی ثبت نشده</h3>
-  <a href="{% url 'payroll:expense-create' %}" class="btn btn-amber" style="margin-top:1rem">➕ اولین تراکنش را ثبت کنید</a>
+  <h3 style="font-weight:800;margin-bottom:.5rem">هیچ تراکنشی با این فیلتر یافت نشد</h3>
+  {% if q or cat_filter or kind_filter or date_from or date_to %}
+  <a href="?" class="btn btn-outline" style="margin-top:.75rem">✕ پاک کردن فیلتر</a>
+  {% else %}
+  <a href="{% url 'payroll:expense-create' %}" class="btn btn-amber" style="margin-top:.75rem">➕ اولین تراکنش را ثبت کنید</a>
+  {% endif %}
 </div>
 {% endif %}
 
+<!-- lightbox -->
+<div id="lb" onclick="this.classList.remove('on')">
+  <img id="lb-img" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px">
+</div>
+<script>function openLB(u){document.getElementById('lb-img').src=u;document.getElementById('lb').classList.add('on');}</script>
 {% endblock %}

@@ -8,57 +8,66 @@
   <span class="sep">›</span><span class="cur">تراکنش جدید</span>
 {% endblock %}
 
+{% block extra_head %}
+<style>
+.upload-zone { border:2px dashed var(--surface-2); border-radius:10px; padding:1.25rem; text-align:center; cursor:pointer; transition:.15s; background:var(--surface-1); }
+.upload-zone:hover { border-color:var(--navy); background:#f0f4ff; }
+.upload-zone.has-file { border-color:var(--green); background:#f0fdf4; }
+.fg { margin-bottom:1rem; }
+.fg label { font-size:.85rem; font-weight:700; display:block; margin-bottom:.3rem; color:var(--navy); }
+.fg input, .fg select, .fg textarea {
+  width:100%; padding:.55rem .85rem; border:1.5px solid var(--surface-2); border-radius:8px;
+  font-family:inherit; font-size:.875rem; box-sizing:border-box; transition:border-color .15s;
+}
+.fg input:focus, .fg select:focus, .fg textarea:focus { outline:none; border-color:var(--navy); }
+.kind-btn { flex:1; display:flex; align-items:center; gap:.6rem; padding:.75rem 1rem; border:2px solid var(--surface-2); border-radius:10px; cursor:pointer; transition:.15s; user-select:none; }
+.kind-btn.ae { border-color:var(--red); background:#fef2f2; }
+.kind-btn.ai { border-color:var(--green); background:#f0fdf4; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:0 auto">
+<div style="max-width:640px;margin:0 auto">
   <div class="card" style="padding:0;overflow:hidden">
     <div style="height:4px;background:linear-gradient(90deg,var(--red),var(--amber))"></div>
     <div style="padding:1.5rem 1.75rem">
-
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
         <div style="width:42px;height:42px;background:linear-gradient(135deg,#ef4444,#f59e0b);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">📊</div>
         <div>
           <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">ثبت تراکنش مالی جدید</h1>
-          <p style="font-size:.78rem;color:var(--text-muted)">هزینه یا درآمد باشگاه را وارد کنید</p>
+          <p style="font-size:.78rem;color:var(--text-muted)">هزینه یا درآمد باشگاه را با رسید وارد کنید</p>
         </div>
       </div>
 
       {% if not has_categories %}
       <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#92400e;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
         <span>⚠️ هنوز هیچ دسته مالی تعریف نشده است.</span>
-        <a href="{% url 'payroll:expense-category-create' %}" class="btn btn-amber btn-sm">
-          ➕ ایجاد دسته جدید
-        </a>
+        <a href="{% url 'payroll:expense-category-create' %}" class="btn btn-amber btn-sm">➕ ایجاد دسته جدید</a>
       </div>
       {% endif %}
 
-      {% if form.errors %}
-      <div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#991b1b">
-        ⚠️ خطا:
-        {% for field in form %}{% for err in field.errors %}<div>• {{ field.label }}: {{ err }}</div>{% endfor %}{% endfor %}
-        {% for err in form.non_field_errors %}<div>• {{ err }}</div>{% endfor %}
-      </div>
+      {% if error %}
+      <div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#991b1b">⚠️ {{ error }}</div>
       {% endif %}
 
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
-        <!-- نوع تراکنش - radio بزرگ -->
-        <div style="margin-bottom:1.25rem">
-          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.5rem">نوع تراکنش <span style="color:var(--red)">*</span></label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
-            <label id="lbl-expense" style="display:flex;align-items:center;gap:.6rem;padding:.75rem 1rem;border:2px solid var(--red);border-radius:10px;cursor:pointer;background:#fef2f2;transition:.15s"
-                   onclick="setKind('expense')">
-              <input type="radio" name="transaction_type" value="expense" checked
-                     style="accent-color:var(--red);width:16px;height:16px">
+        <!-- نوع تراکنش -->
+        <div class="fg">
+          <label>نوع تراکنش <span style="color:var(--red)">*</span></label>
+          <div style="display:flex;gap:.6rem">
+            <label class="kind-btn ae" id="lbl-e" for="kind-e">
+              <input type="radio" id="kind-e" name="transaction_type" value="expense" checked
+                     style="accent-color:var(--red);width:16px;height:16px;flex-shrink:0" onchange="upd()">
               <div>
                 <div style="font-weight:800;font-size:.9rem;color:var(--red)">💸 هزینه</div>
                 <div style="font-size:.72rem;color:#b91c1c">پرداخت از صندوق</div>
               </div>
             </label>
-            <label id="lbl-income" style="display:flex;align-items:center;gap:.6rem;padding:.75rem 1rem;border:2px solid var(--surface-2);border-radius:10px;cursor:pointer;transition:.15s"
-                   onclick="setKind('income')">
-              <input type="radio" name="transaction_type" value="income"
-                     style="accent-color:var(--green);width:16px;height:16px">
+            <label class="kind-btn" id="lbl-i" for="kind-i">
+              <input type="radio" id="kind-i" name="transaction_type" value="income"
+                     style="accent-color:var(--green);width:16px;height:16px;flex-shrink:0" onchange="upd()">
               <div>
                 <div style="font-weight:800;font-size:.9rem;color:var(--green)">💰 درآمد</div>
                 <div style="font-size:.72rem;color:#047857">دریافت به صندوق</div>
@@ -67,54 +76,72 @@
           </div>
         </div>
 
-        <!-- ردیف عنوان + دسته -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-          <div>
-            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">عنوان <span style="color:var(--red)">*</span></label>
-            {{ form.title }}
-            {% if form.title.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.title.errors.0 }}</div>{% endif %}
+        <!-- عنوان + دسته -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="fg">
+            <label for="f-title">عنوان <span style="color:var(--red)">*</span></label>
+            <input type="text" id="f-title" name="title" required
+                   value="{{ prev.title|default:'' }}" placeholder="مثال: اجاره سالن...">
           </div>
-          <div>
-            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">
+          <div class="fg">
+            <label for="f-cat">
               دسته <span style="color:var(--red)">*</span>
-              <a href="{% url 'payroll:expense-category-create' %}" style="font-size:.72rem;font-weight:600;color:var(--amber);margin-right:.5rem">+ دسته جدید</a>
+              <a href="{% url 'payroll:expense-category-create' %}" style="font-size:.72rem;font-weight:600;color:var(--amber);margin-right:.4rem">+ جدید</a>
             </label>
-            {{ form.category }}
-            {% if form.category.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.category.errors.0 }}</div>{% endif %}
+            <select id="f-cat" name="category" required>
+              <option value="">انتخاب دسته...</option>
+              {% for cat in categories %}
+              <option value="{{ cat.pk }}" {% if prev.category == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
           </div>
         </div>
 
         <!-- مبلغ + تاریخ -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-          <div>
-            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">مبلغ (ریال) <span style="color:var(--red)">*</span></label>
-            {{ form.amount }}
-            {% if form.amount.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.amount.errors.0 }}</div>{% endif %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="fg">
+            <label for="f-amount">مبلغ (ریال) <span style="color:var(--red)">*</span></label>
+            <input type="number" id="f-amount" name="amount" required min="1"
+                   value="{{ prev.amount|default:'' }}" placeholder="5000000" style="font-family:monospace">
           </div>
-          <div>
-            <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">تاریخ (شمسی) <span style="color:var(--red)">*</span></label>
-            {{ form.date_jalali }}
-            <span style="font-size:.72rem;color:var(--text-muted)">فرمت: ۱۴۰۳/۰۶/۱۵</span>
-            {% if form.date_jalali.errors %}<div style="font-size:.72rem;color:var(--red);margin-top:.2rem">{{ form.date_jalali.errors.0 }}</div>{% endif %}
+          <div class="fg">
+            <label for="f-date">تاریخ شمسی <span style="color:var(--red)">*</span></label>
+            <input type="text" id="f-date" name="date_jalali" required
+                   value="{{ prev.date_jalali|default:'' }}" placeholder="۱۴۰۳/۰۶/۱۵" dir="ltr">
+            <span style="font-size:.7rem;color:var(--text-muted)">فرمت: YYYY/MM/DD</span>
           </div>
         </div>
 
         <!-- شرح -->
-        <div style="margin-bottom:1rem">
-          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">شرح (اختیاری)</label>
-          {{ form.description }}
+        <div class="fg">
+          <label for="f-desc">شرح (اختیاری)</label>
+          <textarea id="f-desc" name="description" rows="2" placeholder="توضیح بیشتر...">{{ prev.description|default:'' }}</textarea>
         </div>
 
-        <!-- پیوست -->
-        <div style="margin-bottom:1.5rem">
-          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.3rem">پیوست (اختیاری)</label>
-          {{ form.attachment }}
-          <span style="font-size:.72rem;color:var(--text-muted)">تصویر رسید یا فاکتور</span>
+        <!-- تصویر رسید -->
+        <div class="fg">
+          <label>تصویر رسید بانکی <span style="font-size:.72rem;color:var(--text-muted);font-weight:400">(اختیاری — فشرده‌سازی خودکار)</span></label>
+          <div class="upload-zone" id="uz" onclick="document.getElementById('f-receipt').click()">
+            <input type="file" id="f-receipt" name="receipt_image"
+                   accept="image/jpeg,image/png,image/webp" style="display:none" onchange="prev_r(this)">
+            <div id="uz-lbl">
+              <div style="font-size:1.75rem;margin-bottom:.35rem">📷</div>
+              <p style="font-size:.85rem;font-weight:700;margin:0">کلیک کنید یا تصویر را بکشید</p>
+              <p style="font-size:.72rem;color:var(--text-muted);margin:.25rem 0 0">JPEG، PNG، WebP — حداکثر ۵ مگابایت</p>
+            </div>
+          </div>
+          <div id="rp" style="display:none;margin-top:.6rem;text-align:center">
+            <img id="ri" style="max-height:150px;border-radius:8px;border:1px solid var(--surface-2)">
+            <div style="margin-top:.3rem">
+              <span id="rn" style="font-size:.78rem;color:var(--text-muted)"></span>
+              <button type="button" onclick="clr()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.78rem;margin-right:.5rem">✕ حذف</button>
+            </div>
+          </div>
         </div>
 
-        <div style="display:flex;gap:.6rem;justify-content:flex-end">
+        <div style="display:flex;gap:.6rem;justify-content:flex-end;padding-top:.75rem;border-top:1px solid var(--surface-2)">
           <a href="{% url 'payroll:expense-list' %}" class="btn btn-outline">انصراف</a>
-          <button type="submit" class="btn btn-amber" id="submit-btn">✅ ثبت تراکنش</button>
+          <button type="submit" class="btn btn-amber" id="sb">✅ ثبت هزینه</button>
         </div>
       </form>
     </div>
@@ -122,23 +149,38 @@
 </div>
 
 <script>
-function setKind(kind) {
-  const lblExpense = document.getElementById('lbl-expense');
-  const lblIncome  = document.getElementById('lbl-income');
-  const btn        = document.getElementById('submit-btn');
-  if (kind === 'expense') {
-    lblExpense.style.borderColor = 'var(--red)';
-    lblExpense.style.background  = '#fef2f2';
-    lblIncome.style.borderColor  = 'var(--surface-2)';
-    lblIncome.style.background   = '';
-    btn.textContent = '✅ ثبت هزینه';
-  } else {
-    lblIncome.style.borderColor  = 'var(--green)';
-    lblIncome.style.background   = '#f0fdf4';
-    lblExpense.style.borderColor = 'var(--surface-2)';
-    lblExpense.style.background  = '';
-    btn.textContent = '✅ ثبت درآمد';
-  }
+function upd(){
+  const e=document.getElementById('kind-e').checked;
+  document.getElementById('lbl-e').className='kind-btn'+(e?' ae':'');
+  document.getElementById('lbl-i').className='kind-btn'+(!e?' ai':'');
+  document.getElementById('sb').textContent=e?'✅ ثبت هزینه':'✅ ثبت درآمد';
 }
+function prev_r(inp){
+  if(!inp.files||!inp.files[0])return;
+  const f=inp.files[0];
+  if(f.size>5*1024*1024){alert('حداکثر ۵ مگابایت');inp.value='';return;}
+  const r=new FileReader();
+  r.onload=function(e){
+    document.getElementById('uz').classList.add('has-file');
+    document.getElementById('uz-lbl').innerHTML='<div style="font-size:1.5rem;margin-bottom:.3rem">✅</div><p style="font-size:.82rem;font-weight:700;margin:0">'+f.name+'</p>';
+    document.getElementById('ri').src=e.target.result;
+    document.getElementById('rn').textContent=f.name+' — '+(f.size/1024).toFixed(0)+' KB';
+    document.getElementById('rp').style.display='block';
+  };r.readAsDataURL(f);
+}
+function clr(){
+  document.getElementById('f-receipt').value='';
+  document.getElementById('uz').classList.remove('has-file');
+  document.getElementById('uz-lbl').innerHTML='<div style="font-size:1.75rem;margin-bottom:.35rem">📷</div><p style="font-size:.85rem;font-weight:700;margin:0">کلیک کنید یا تصویر را بکشید</p><p style="font-size:.72rem;color:var(--text-muted);margin:.25rem 0 0">JPEG، PNG، WebP — حداکثر ۵ مگابایت</p>';
+  document.getElementById('rp').style.display='none';
+}
+const uz=document.getElementById('uz');
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.style.borderColor='var(--navy)';});
+uz.addEventListener('dragleave',()=>uz.style.borderColor='');
+uz.addEventListener('drop',e=>{
+  e.preventDefault();uz.style.borderColor='';
+  const f=e.dataTransfer.files[0];
+  if(f){const inp=document.getElementById('f-receipt');const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;prev_r(inp);}
+});
 </script>
 {% endblock %}

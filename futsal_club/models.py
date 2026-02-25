@@ -693,7 +693,8 @@ class CoachSalary(models.Model):
     class SalaryStatus(models.TextChoices):
         CALCULATED = 'calculated', _('محاسبه شده')
         APPROVED   = 'approved',   _('تأیید شده')
-        PAID       = 'paid',       _('پرداخت شده')
+        PAID       = 'paid',       _('پرداخت شده — منتظر تأیید مربی')
+        CONFIRMED  = 'confirmed',  _('تأیید دریافت توسط مربی')
 
     coach           = models.ForeignKey(Coach, on_delete=models.PROTECT, related_name='salaries', verbose_name=_('مربی'))
     category        = models.ForeignKey(TrainingCategory, on_delete=models.PROTECT, related_name='coach_salaries', verbose_name=_('دسته آموزشی'))
@@ -706,6 +707,11 @@ class CoachSalary(models.Model):
     final_amount    = models.DecimalField(_('حقوق نهایی (ریال)'), max_digits=14, decimal_places=0)
     status          = models.CharField(_('وضعیت'), max_length=15, choices=SalaryStatus.choices, default=SalaryStatus.CALCULATED)
     paid_at         = jmodels.jDateTimeField(_('تاریخ پرداخت'), null=True, blank=True)
+    bank_receipt    = models.ImageField(
+        _('تصویر فیش بانکی'), upload_to='salary_receipts/%Y/%m/', null=True, blank=True
+    )
+    coach_confirmed    = models.BooleanField(_('تأیید مربی'), default=False)
+    coach_confirmed_at = jmodels.jDateTimeField(_('تاریخ تأیید مربی'), null=True, blank=True)
     processed_by    = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='processed_salaries', verbose_name=_('پردازش شده توسط')
@@ -765,6 +771,7 @@ class Expense(models.Model):
     date            = jmodels.jDateField(_('تاریخ'))
     description     = models.TextField(_('شرح'), blank=True)
     attachment      = models.FileField(_('پیوست'), upload_to='expenses/', null=True, blank=True)
+    receipt_image   = models.ImageField(_('تصویر رسید'), upload_to='expense_receipts/%Y/%m/', null=True, blank=True)
     recorded_by     = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='recorded_expenses', verbose_name=_('ثبت شده توسط')
@@ -823,6 +830,8 @@ class Notification(models.Model):
         SALARY_READY     = 'salary_ready',     _('آماده بودن حقوق')
         SALARY_PAID      = 'salary_paid',      _('پرداخت حقوق مربی')
         STAFF_INVOICE    = 'staff_invoice',    _('فاکتور دستی')
+        PAYMENT_REMINDER = 'payment_reminder', _('یادآوری پرداخت شهریه')
+        RECEIPT_UPLOADED = 'receipt_uploaded', _('رسید پرداخت آپلود شد')
         PLAYER_CHANGE    = 'player_change',    _('تغییر اطلاعات بازیکن')
         GENERAL          = 'general',          _('عمومی')
 
@@ -1034,9 +1043,10 @@ class StaffInvoice(models.Model):
     """
 
     class PaymentStatus(models.TextChoices):
-        PENDING  = 'pending',  _('در انتظار پرداخت')
-        PAID     = 'paid',     _('پرداخت شده')
-        CANCELED = 'canceled', _('لغو شده')
+        PENDING   = 'pending',   _('در انتظار پرداخت')
+        PAID      = 'paid',      _('پرداخت شده — منتظر تأیید گیرنده')
+        CONFIRMED = 'confirmed', _('تأیید دریافت توسط گیرنده')
+        CANCELED  = 'canceled',  _('لغو شده')
 
     recipient       = models.ForeignKey(
         CustomUser, on_delete=models.PROTECT,
@@ -1052,6 +1062,11 @@ class StaffInvoice(models.Model):
     zarinpal_ref_id     = models.CharField(_('شماره مرجع'), max_length=100, blank=True)
     zarinpal_authority  = models.CharField(_('Authority'), max_length=100, blank=True)
     paid_at         = jmodels.jDateTimeField(_('تاریخ پرداخت'), null=True, blank=True)
+    bank_receipt    = models.ImageField(
+        _('تصویر فیش بانکی'), upload_to='staff_receipts/%Y/%m/', null=True, blank=True
+    )
+    recipient_confirmed    = models.BooleanField(_('تأیید گیرنده'), default=False)
+    recipient_confirmed_at = jmodels.jDateTimeField(_('تاریخ تأیید گیرنده'), null=True, blank=True)
     created_by      = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL, null=True,
         related_name='issued_staff_invoices', verbose_name=_('صادرکننده')

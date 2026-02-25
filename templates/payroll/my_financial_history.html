@@ -5,6 +5,14 @@
   <span class="sep">›</span><span class="cur">تاریخچه مالی</span>
 {% endblock %}
 
+{% block extra_head %}
+<style>
+.receipt-thumb { width:48px; height:48px; border-radius:6px; object-fit:cover; border:1px solid var(--surface-2); cursor:zoom-in; }
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;place-items:center;cursor:zoom-out}
+#lb.on{display:grid}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
@@ -24,6 +32,14 @@
     <span class="stat-icon">⚠️</span>
   </div>
   {% endif %}
+  {% if pending_salary_count > 0 %}
+  <div class="stat-card red">
+    <div class="stat-label">حقوق در انتظار تأیید</div>
+    <div class="stat-value">{{ pending_salary_count }}</div>
+    <div class="stat-sub">فیش بانکی ارسال شده</div>
+    <span class="stat-icon">💰</span>
+  </div>
+  {% endif %}
   <div class="stat-card navy">
     <div class="stat-label">مجموع پرداخت‌ها</div>
     <div class="stat-value" style="font-size:1rem">{{ total_debit|floatformat:0 }}</div>
@@ -40,7 +56,7 @@
   {% endif %}
 </div>
 
-<!-- شهریه‌های معوق -->
+<!-- شهریه‌های معوق (بازیکن) -->
 {% if pending_invoices %}
 <div class="card" style="margin-bottom:1rem;border:2px solid var(--amber)">
   <div class="card-header" style="background:#fffbeb">
@@ -58,7 +74,119 @@
         <span class="badge {% if inv.status == 'debtor' %}badge-red{% else %}badge-amber{% endif %}" style="font-size:.68rem">
           {{ inv.get_status_display }}
         </span>
-        <a href="{% url 'payroll:invoice-pay' inv.pk %}" class="btn btn-green btn-sm" style="font-size:.72rem">پرداخت آنلاین</a>
+        <a href="{% url 'payroll:player-invoices' %}" class="btn btn-green btn-sm" style="font-size:.72rem">آپلود رسید</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- حقوق در انتظار تأیید (مربی) -->
+{% if pending_salaries %}
+<div class="card" style="margin-bottom:1rem;border:2px solid #fbbf24">
+  <div class="card-header" style="background:#fffbeb">
+    <span class="card-title" style="color:#92400e">⏳ حقوق در انتظار تأیید شما</span>
+  </div>
+  <div style="padding:.6rem 1rem">
+    {% for sal in pending_salaries %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--surface-2)">
+      <div style="display:flex;align-items:center;gap:.75rem">
+        {% if sal.bank_receipt %}
+        <img src="{{ sal.bank_receipt.url }}" class="receipt-thumb"
+             onclick="openLB('{{ sal.bank_receipt.url }}')" alt="فیش حقوق">
+        {% else %}
+        <div style="width:48px;height:48px;border-radius:6px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:1.2rem">📎</div>
+        {% endif %}
+        <div>
+          <div style="font-weight:700;font-size:.88rem">{{ sal.category.name }}</div>
+          <div style="font-size:.75rem;color:var(--text-muted)">
+            {{ sal.attendance_sheet.jalali_year }}/{% if sal.attendance_sheet.jalali_month < 10 %}0{% endif %}{{ sal.attendance_sheet.jalali_month }}
+            — {{ sal.sessions_attended }} جلسه
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.65rem">
+        <span style="font-family:monospace;font-weight:800;font-size:.9rem">{{ sal.final_amount|floatformat:0 }} ریال</span>
+        <a href="{% url 'payroll:coach-confirm-salary' sal.pk %}" class="btn btn-green btn-sm" style="font-size:.78rem">
+          ✅ بررسی و تأیید
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- فاکتورهای دستی در انتظار تأیید -->
+{% if pending_staff_invoices %}
+<div class="card" style="margin-bottom:1rem;border:2px solid #a78bfa">
+  <div class="card-header" style="background:#f5f3ff">
+    <span class="card-title" style="color:#5b21b6">⏳ فاکتورهای دستی در انتظار تأیید</span>
+  </div>
+  <div style="padding:.6rem 1rem">
+    {% for inv in pending_staff_invoices %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--surface-2)">
+      <div style="display:flex;align-items:center;gap:.75rem">
+        {% if inv.bank_receipt %}
+        <img src="{{ inv.bank_receipt.url }}" class="receipt-thumb"
+             onclick="openLB('{{ inv.bank_receipt.url }}')" alt="فیش فاکتور">
+        {% else %}
+        <div style="width:48px;height:48px;border-radius:6px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:1.2rem">📄</div>
+        {% endif %}
+        <div>
+          <div style="font-weight:700;font-size:.88rem">{{ inv.title }}</div>
+          <div style="font-size:.75rem;color:var(--text-muted)">{{ inv.created_at|date:"Y/m/d" }}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.65rem">
+        <span style="font-family:monospace;font-weight:800;font-size:.9rem">{{ inv.amount|floatformat:0 }} ریال</span>
+        <a href="{% url 'payroll:staff-invoice-confirm' inv.pk %}" class="btn btn-green btn-sm" style="font-size:.78rem">
+          ✅ بررسی و تأیید
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- فیش‌های پرداخت تأییدشده -->
+{% if confirmed_salaries or confirmed_staff_invoices %}
+<div class="card" style="margin-bottom:1rem">
+  <div class="card-header"><span class="card-title">✅ فیش‌های تأیید شده</span></div>
+  <div style="padding:.6rem 1rem">
+    {% for sal in confirmed_salaries %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--surface-2)">
+      <div>
+        <strong style="font-size:.88rem">حقوق {{ sal.category.name }}</strong>
+        <span style="font-size:.75rem;color:var(--text-muted);margin-right:.5rem">
+          {{ sal.attendance_sheet.jalali_year }}/{% if sal.attendance_sheet.jalali_month < 10 %}0{% endif %}{{ sal.attendance_sheet.jalali_month }}
+        </span>
+        <span style="background:#d1fae5;color:#065f46;border-radius:6px;font-size:.65rem;padding:.15rem .45rem;font-weight:700">✅ تأیید شده</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.65rem">
+        <span style="font-family:monospace;font-weight:700">{{ sal.final_amount|floatformat:0 }} ریال</span>
+        {% if sal.bank_receipt %}
+        <button type="button" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .5rem"
+                onclick="openLB('{{ sal.bank_receipt.url }}')">📎 فیش</button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% for inv in confirmed_staff_invoices %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--surface-2)">
+      <div>
+        <strong style="font-size:.88rem">{{ inv.title }}</strong>
+        <span style="font-size:.75rem;color:var(--text-muted);margin-right:.5rem">{{ inv.created_at|date:"Y/m/d" }}</span>
+        <span style="background:#d1fae5;color:#065f46;border-radius:6px;font-size:.65rem;padding:.15rem .45rem;font-weight:700">✅ تأیید شده</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.65rem">
+        <span style="font-family:monospace;font-weight:700">{{ inv.amount|floatformat:0 }} ریال</span>
+        {% if inv.bank_receipt %}
+        <button type="button" class="btn btn-outline btn-sm" style="font-size:.7rem;padding:.2rem .5rem"
+                onclick="openLB('{{ inv.bank_receipt.url }}')">📎 فیش</button>
+        {% endif %}
       </div>
     </div>
     {% endfor %}
@@ -91,9 +219,9 @@
           <td style="font-size:.82rem">{{ tx.description }}</td>
           <td>
             {% if tx.direction == 'credit' %}
-            <span class="badge badge-green" style="font-size:.68rem">بستانکار ↓</span>
+            <span class="badge badge-green" style="font-size:.68rem">دریافت ↓</span>
             {% else %}
-            <span class="badge badge-red" style="font-size:.68rem">بدهکار ↑</span>
+            <span class="badge badge-red" style="font-size:.68rem">پرداخت ↑</span>
             {% endif %}
           </td>
           <td style="font-weight:700;font-size:.875rem;font-family:monospace;
@@ -105,8 +233,6 @@
       </tbody>
     </table>
   </div>
-
-  <!-- Pagination -->
   {% if is_paginated %}
   <div style="display:flex;justify-content:center;gap:.4rem;padding:.85rem">
     {% if page_obj.has_previous %}
@@ -118,7 +244,6 @@
     {% endif %}
   </div>
   {% endif %}
-
   {% else %}
   <div style="padding:2.5rem;text-align:center;color:var(--text-muted)">
     <div style="font-size:2.5rem;opacity:.4;margin-bottom:.75rem">📊</div>
@@ -126,4 +251,9 @@
   </div>
   {% endif %}
 </div>
+
+<div id="lb" onclick="this.classList.remove('on')">
+  <img id="lb-img" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px">
+</div>
+<script>function openLB(u){document.getElementById('lb-img').src=u;document.getElementById('lb').classList.add('on');}</script>
 {% endblock %}

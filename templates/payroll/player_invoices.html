@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}فاکتورهای من{% endblock %}
+{% block nav_my_invoices %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span><span class="cur">فاکتورهای من</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.inv-card { background:#fff; border:1.5px solid var(--surface-2); border-radius:var(--radius); overflow:hidden; margin-bottom:.75rem; }
+.inv-header { display:flex; align-items:center; justify-content:space-between; padding:.75rem 1rem; border-bottom:1px solid var(--surface-2); background:var(--surface-1); }
+.inv-body { padding:.85rem 1rem; }
+.upload-zone { border:2px dashed var(--surface-2); border-radius:10px; padding:1.1rem; text-align:center; cursor:pointer; transition:.15s; }
+.upload-zone:hover { border-color:var(--navy); background:#f0f4ff; }
+.upload-zone.has-file { border-color:var(--green); background:#f0fdf4; }
+input[type=file] { display:none; }
+.status-pending  { background:#fef3c7; color:#92400e; }
+.status-debtor   { background:#fee2e2; color:#991b1b; }
+.status-pending_confirm { background:#dbeafe; color:#1e3a8a; }
+.status-paid     { background:#d1fae5; color:#065f46; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">🧾 فاکتورهای شهریه من</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">رسید پرداخت را بارگذاری کنید تا مدیر مالی تأیید کند</p>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← قبل</a>
+    <span style="font-weight:800;font-size:.95rem;color:var(--navy);background:var(--surface-1);padding:.35rem .75rem;border-radius:8px">
+      {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
+    </span>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">بعد →</a>
+  </div>
+</div>
+
+{% if messages %}{% for msg in messages %}
+<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.65rem;
+  background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
+  color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">
+  {{ msg }}</div>
+{% endfor %}{% endif %}
+
+{% if no_player %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:2.5rem;margin-bottom:.75rem">⚠️</div>
+  <p style="font-weight:700">پروفایل بازیکن برای این حساب تعریف نشده است.</p>
+</div>
+{% else %}
+
+<!-- فاکتورهای این ماه -->
+{% if month_invoices %}
+<div style="margin-bottom:1.5rem">
+  <h2 style="font-size:.92rem;font-weight:800;color:var(--navy);margin-bottom:.75rem">
+    📋 فاکتورهای {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
+  </h2>
+  {% for inv in month_invoices %}
+  <div class="inv-card {% if inv.status == 'debtor' %}border-danger{% endif %}">
+    <div class="inv-header">
+      <div>
+        <strong style="font-size:.9rem">{{ inv.category.name }}</strong>
+        <span style="font-size:.78rem;color:var(--text-muted);margin-right:.5rem">
+          {{ inv.jalali_year }}/{% if inv.jalali_month < 10 %}0{% endif %}{{ inv.jalali_month }}
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.65rem">
+        <span style="font-family:monospace;font-weight:800;font-size:.9rem">{{ inv.final_amount|floatformat:0 }} ریال</span>
+        <span class="badge status-{{ inv.status }}" style="font-size:.68rem;border-radius:99px;padding:.2rem .65rem;font-weight:700">
+          {% if inv.status == 'pending' %}⏳ در انتظار پرداخت
+          {% elif inv.status == 'debtor' %}🔴 بدهکار
+          {% elif inv.status == 'pending_confirm' %}📎 در انتظار تأیید
+          {% elif inv.status == 'paid' %}✅ پرداخت شده
+          {% endif %}
+        </span>
+      </div>
+    </div>
+    <div class="inv-body">
+      {% if inv.status == 'paid' %}
+      <p style="font-size:.82rem;color:var(--green);font-weight:700;margin:0">
+        ✅ پرداخت تأیید شده توسط سیستم
+        {% if inv.confirmed_by %} — {{ inv.confirmed_by.get_full_name }}{% endif %}
+      </p>
+      {% elif inv.status == 'pending_confirm' %}
+      <p style="font-size:.82rem;color:#1d4ed8;font-weight:600;margin:0">
+        📎 رسید بارگذاری شده — در انتظار بررسی مدیر مالی
+      </p>
+      {% if inv.receipt_image %}
+      <a href="{{ inv.receipt_image.url }}" target="_blank"
+         style="font-size:.78rem;color:var(--navy);text-decoration:underline;display:inline-block;margin-top:.35rem">
+        👁️ مشاهده رسید ارسالی
+      </a>
+      {% endif %}
+      {% else %}
+      <!-- فرم آپلود رسید -->
+      <form method="post" enctype="multipart/form-data" id="form_{{ inv.pk }}">
+        {% csrf_token %}
+        <input type="hidden" name="invoice_pk" value="{{ inv.pk }}">
+        <div class="upload-zone" id="zone_{{ inv.pk }}"
+             onclick="document.getElementById('file_{{ inv.pk }}').click()">
+          <input type="file" id="file_{{ inv.pk }}" name="receipt_image"
+                 accept="image/jpeg,image/png,image/webp"
+                 onchange="previewFile(this, 'zone_{{ inv.pk }}', 'form_{{ inv.pk }}')">
+          <div id="zone_label_{{ inv.pk }}">
+            <div style="font-size:1.5rem;margin-bottom:.4rem">📸</div>
+            <p style="font-size:.82rem;font-weight:700;margin:0">کلیک کنید یا تصویر را اینجا بکشید</p>
+            <p style="font-size:.73rem;color:var(--text-muted);margin:.2rem 0 0">JPEG، PNG، WebP — حداکثر ۵ مگابایت</p>
+          </div>
+        </div>
+        <div style="margin-top:.65rem;display:flex;gap:.5rem;justify-content:flex-end">
+          <button type="submit" class="btn btn-navy btn-sm" id="submit_{{ inv.pk }}" disabled>
+            📤 ارسال رسید
+          </button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:2.5rem;margin-bottom:1.5rem">
+  <div style="font-size:2.5rem;margin-bottom:.5rem">🧾</div>
+  <p style="font-weight:700;color:var(--text-muted)">فاکتوری برای این ماه صادر نشده</p>
+</div>
+{% endif %}
+
+<!-- تاریخچه ۱۲ ماه اخیر -->
+{% if all_invoices %}
+<div>
+  <h2 style="font-size:.92rem;font-weight:800;color:var(--navy);margin-bottom:.75rem">📊 تاریخچه ۱۲ ماه اخیر</h2>
+  <div class="card">
+    <div style="overflow-x:auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ماه</th>
+            <th>دسته</th>
+            <th>مبلغ (ریال)</th>
+            <th>وضعیت</th>
+            <th>تاریخ پرداخت</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in all_invoices %}
+          <tr>
+            <td style="font-family:monospace;font-size:.85rem;font-weight:700">
+              {{ inv.jalali_year }}/{% if inv.jalali_month < 10 %}0{% endif %}{{ inv.jalali_month }}
+            </td>
+            <td style="font-size:.85rem">{{ inv.category.name }}</td>
+            <td style="font-family:monospace;font-size:.88rem">{{ inv.final_amount|floatformat:0 }}</td>
+            <td>
+              <span class="badge status-{{ inv.status }}" style="font-size:.67rem;border-radius:99px;padding:.18rem .6rem">
+                {% if inv.status == 'pending' %}⏳ در انتظار
+                {% elif inv.status == 'debtor' %}🔴 بدهکار
+                {% elif inv.status == 'pending_confirm' %}📎 انتظار تأیید
+                {% elif inv.status == 'paid' %}✅ پرداخت شده
+                {% endif %}
+              </span>
+            </td>
+            <td style="font-size:.78rem;color:var(--text-muted)">
+              {% if inv.paid_at %}{{ inv.paid_at|date:"Y/m/d" }}{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+
+<script>
+function previewFile(input, zoneId, formId) {
+  const zone   = document.getElementById(zoneId);
+  const label  = document.getElementById(zoneId.replace('zone_', 'zone_label_'));
+  const submit = document.getElementById(formId.replace('form_', 'submit_'));
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      alert('حداکثر اندازه فایل ۵ مگابایت است.');
+      input.value = '';
+      return;
+    }
+    zone.classList.add('has-file');
+    label.innerHTML = '<div style="font-size:1.25rem;margin-bottom:.3rem">✅</div><p style="font-size:.82rem;font-weight:700;margin:0">' + file.name + '</p><p style="font-size:.72rem;color:var(--text-muted);margin:.2rem 0 0">' + (file.size/1024).toFixed(0) + ' KB</p>';
+    if (submit) submit.disabled = false;
+  }
+}
+</script>
+{% endblock %}
