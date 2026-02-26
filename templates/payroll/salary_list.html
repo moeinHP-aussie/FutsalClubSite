@@ -87,9 +87,12 @@
         </td>
         <td>
           <div style="display:flex;gap:.25rem;flex-wrap:wrap">
+            <!-- لینک تنظیم دستی مبلغ -->
+            <a href="{% url 'payroll:salary-calculate' sal.coach.pk category.pk %}?year={{ month.year }}&month={{ month.month }}"
+               class="btn btn-outline btn-sm" style="font-size:.7rem" title="تعدیل دستی">✏️</a>
             {% if sal.status == 'calculated' %}
             <form method="post" action="{% url 'payroll:salary-approve' sal.pk %}" style="margin:0">
-              {% csrf_token %}<button class="btn btn-teal btn-sm" style="font-size:.7rem">☑️</button>
+              {% csrf_token %}<button class="btn btn-teal btn-sm" style="font-size:.7rem" title="تأیید">☑️</button>
             </form>
             {% elif sal.status == 'approved' %}
             <!-- آپلود فیش و پرداخت -->

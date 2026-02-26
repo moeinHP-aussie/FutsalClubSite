@@ -379,9 +379,15 @@ class SendPaymentReminderView(FinanceOnlyMixin, View):
             month = parse_jalali_month_from_request(
                 request.POST.get("year"), request.POST.get("month")
             )
-            unpaid = PlayerInvoice.objects.filter(
+            cat_pk = request.POST.get("category_pk", "").strip()
+            invoice_filter = dict(
                 jalali_year=month.year, jalali_month=month.month,
                 status__in=["pending", "debtor"],
+            )
+            if cat_pk:
+                invoice_filter["category_id"] = cat_pk
+            unpaid = PlayerInvoice.objects.filter(
+                **invoice_filter
             ).select_related("player__user", "category")
             count = 0
             for inv in unpaid:
@@ -1379,38 +1385,216 @@ class ExpenseCategoryListView(FinanceAccessMixin, ListView):
 #  تعیین نرخ مربیان
 # ═══════════════════════════════════════════════════════════════════
 
-class CoachRateManageView(FinanceOnlyMixin, TemplateView):
-    template_name = "payroll/coach_rate_manage.html"
+
+# ═══════════════════════════════════════════════════════════════════
+#  7. حضور و غیاب — نمای فقط‌خواندنی برای مدیر مالی
+# ═══════════════════════════════════════════════════════════════════
+
+class FinanceAttendanceCatsView(FinanceAccessMixin, TemplateView):
+    """لیست دسته‌های آموزشی برای مشاهده حضور و غیاب"""
+    template_name = "payroll/finance_attendance_cats.html"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        month = parse_jalali_month_from_request(
+            self.request.GET.get("year"),
+            self.request.GET.get("month"),
+        )
+        categories = TrainingCategory.objects.filter(is_active=True).prefetch_related("players")
+        # اضافه کردن آمار حضور + پرداخت هر دسته
+        cat_data = []
+        for cat in categories:
+            sheet = AttendanceSheet.objects.filter(
+                category=cat, jalali_year=month.year, jalali_month=month.month
+            ).first()
+            inv_qs = PlayerInvoice.objects.filter(
+                category=cat, jalali_year=month.year, jalali_month=month.month
+            )
+            cat_data.append({
+                "category":    cat,
+                "player_count": cat.players.count(),
+                "has_sheet":   sheet is not None,
+                "sheet":       sheet,
+                "session_count": sheet.session_dates.count() if sheet else 0,
+                "paid_count":  inv_qs.filter(status="paid").count(),
+                "pending_count": inv_qs.filter(status__in=["pending","debtor"]).count(),
+                "invoice_count": inv_qs.count(),
+            })
         ctx.update({
-            "categories": TrainingCategory.objects.filter(is_active=True).prefetch_related(
-                "coach_rates__coach"
-            ).order_by("name"),
-            "coaches": Coach.objects.filter(is_active=True).select_related("user").order_by("last_name"),
-            "rates":   CoachCategoryRate.objects.select_related("coach", "category").order_by(
-                "category__name", "coach__last_name"
-            ),
+            "categories": cat_data,
+            "month":      month,
+            "prev_month": month.prev_month,
+            "next_month": month.next_month,
         })
         return ctx
 
-    def post(self, request):
-        coach_pk    = request.POST.get("coach_id", "")
-        category_pk = request.POST.get("category_id", "")
-        try:
-            rate = Decimal(request.POST.get("session_rate", "0"))
-            coach    = Coach.objects.get(pk=coach_pk)
-            category = TrainingCategory.objects.get(pk=category_pk)
-        except Exception as e:
-            messages.error(request, f"خطا: {e}")
-            return redirect("payroll:coach-rate-manage")
 
-        obj, created = CoachCategoryRate.objects.update_or_create(
-            coach=coach, category=category,
-            defaults={"session_rate": rate, "is_active": True},
+class FinanceAttendanceSheetView(FinanceAccessMixin, TemplateView):
+    """حضور و غیاب یک دسته — نمای ماتریسی با وضعیت پرداخت"""
+    template_name = "payroll/finance_attendance_sheet.html"
+
+    def get_context_data(self, **kwargs):
+        ctx      = super().get_context_data(**kwargs)
+        category = get_object_or_404(TrainingCategory, pk=self.kwargs["category_pk"])
+        month    = parse_jalali_month_from_request(
+            self.request.GET.get("year"),
+            self.request.GET.get("month"),
         )
-        messages.success(request,
-            f"نرخ {coach} در {category}: {rate:,.0f} ریال/جلسه "
-            f"({'ایجاد' if created else 'به‌روز'} شد).")
+        sheet = AttendanceSheet.objects.filter(
+            category=category,
+            jalali_year=month.year,
+            jalali_month=month.month,
+        ).prefetch_related("session_dates").first()
+
+        # بازیکنان دسته + فاکتور + حضور
+        players_in_cat = category.players.all().order_by("last_name", "first_name")
+        sessions = list(sheet.session_dates.order_by("date")) if sheet else []
+
+        # ماتریس حضور
+        from ..models import PlayerAttendance
+        all_attendance = {}
+        if sessions:
+            atts = PlayerAttendance.objects.filter(
+                session__in=sessions
+            ).select_related("player", "session")
+            for att in atts:
+                all_attendance[(att.player_id, att.session_id)] = att.status
+
+        # فاکتورهای ماه
+        invoices_map = {}
+        for inv in PlayerInvoice.objects.filter(
+            category=category, jalali_year=month.year, jalali_month=month.month
+        ).select_related("player"):
+            invoices_map[inv.player_id] = inv
+
+        # ساخت داده ترکیبی
+        rows = []
+        for player in players_in_cat:
+            inv = invoices_map.get(player.pk)
+            att_row = []
+            present_count = 0
+            for session in sessions:
+                status = all_attendance.get((player.pk, session.pk), None)
+                att_row.append(status)
+                if status == "present":
+                    present_count += 1
+            rows.append({
+                "player":        player,
+                "invoice":       inv,
+                "att_row":       att_row,
+                "present_count": present_count,
+                "absent_count":  sum(1 for s in att_row if s == "absent"),
+                "excused_count": sum(1 for s in att_row if s == "excused"),
+            })
+
+        # آمار مربیان — ساختار سازگار با template بدون lookup filter
+        from ..models import CoachAttendance
+        coach_att_map = {}  # coach_id → {session_id: status}
+        coach_obj_map = {}  # coach_id → coach
+        if sessions:
+            coach_atts = CoachAttendance.objects.filter(
+                session__in=sessions
+            ).select_related("coach", "session")
+            for ca in coach_atts:
+                coach_obj_map[ca.coach_id] = ca.coach
+                if ca.coach_id not in coach_att_map:
+                    coach_att_map[ca.coach_id] = {}
+                coach_att_map[ca.coach_id][ca.session_id] = ca.status
+
+        # ساختار list-of-lists برای template (بدون filter سفارشی)
+        coach_rows = []
+        for coach_id, att_by_session in coach_att_map.items():
+            att_row = [att_by_session.get(s.pk) for s in sessions]
+            present = sum(1 for a in att_row if a == "present")
+            coach_rows.append({
+                "coach":         coach_obj_map[coach_id],
+                "att_row":       att_row,
+                "present_count": present,
+            })
+
+        ctx.update({
+            "category":   category,
+            "month":      month,
+            "prev_month": month.prev_month,
+            "next_month": month.next_month,
+            "sheet":      sheet,
+            "sessions":   sessions,
+            "rows":       rows,
+            "coach_rows": coach_rows,
+        })
+        return ctx
+
+
+class FinanceSessionDetailView(FinanceAccessMixin, TemplateView):
+    """جزئیات یک جلسه — حضور بازیکنان و مربیان"""
+    template_name = "payroll/finance_session_detail.html"
+
+    def get_context_data(self, **kwargs):
+        from ..models import SessionDate, PlayerAttendance, CoachAttendance
+        ctx     = super().get_context_data(**kwargs)
+        session = get_object_or_404(SessionDate, pk=self.kwargs["session_pk"])
+        attendances = PlayerAttendance.objects.filter(
+            session=session
+        ).select_related("player").order_by("player__last_name")
+        ctx.update({
+            "session":     session,
+            "category":    session.sheet.category,
+            "attendances": attendances,
+        })
+        return ctx
+
+
+class CoachRateManageView(FinanceOnlyMixin, TemplateView):
+    template_name = "payroll/coach_rate_manage.html"
+
+    def _build_context(self, ctx):
+        categories = list(TrainingCategory.objects.filter(is_active=True).order_by("name"))
+        coaches    = list(Coach.objects.filter(is_active=True).select_related("user").order_by("last_name", "first_name"))
+        # ساختن نقشه نرخ‌ها
+        rates_map = {}  # (coach_id, cat_id) → session_rate
+        for cr in CoachCategoryRate.objects.select_related("coach", "category"):
+            rates_map[(cr.coach_id, cr.category_id)] = cr.session_rate
+        coaches_with_rates = []
+        for coach in coaches:
+            cat_rates = []
+            for cat in categories:
+                field_name = f"rate_{coach.pk}_{cat.pk}"
+                value = rates_map.get((coach.pk, cat.pk), "")
+                cat_rates.append({"field_name": field_name, "value": value, "cat": cat})
+            coaches_with_rates.append({"coach": coach, "cat_rates": cat_rates})
+        ctx.update({
+            "categories":         categories,
+            "coaches_with_rates": coaches_with_rates,
+        })
+        return ctx
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        return self._build_context(ctx)
+
+    def post(self, request):
+        """ذخیره دسته‌جمعی همه نرخ‌های ارسال‌شده از گرید"""
+        categories = list(TrainingCategory.objects.filter(is_active=True))
+        coaches    = list(Coach.objects.filter(is_active=True))
+        saved = 0
+        deleted = 0
+        for coach in coaches:
+            for cat in categories:
+                field_name = f"rate_{coach.pk}_{cat.pk}"
+                raw = request.POST.get(field_name, "").strip()
+                if not raw or raw == "0":
+                    del_count, _ = CoachCategoryRate.objects.filter(coach=coach, category=cat).delete()
+                    deleted += del_count
+                else:
+                    try:
+                        rate = Decimal(raw)
+                        if rate > 0:
+                            CoachCategoryRate.objects.update_or_create(
+                                coach=coach, category=cat,
+                                defaults={"session_rate": rate, "is_active": True},
+                            )
+                            saved += 1
+                    except Exception:
+                        pass
+        messages.success(request, f"نرخ‌ها ذخیره شد — {saved} نرخ ثبت، {deleted} نرخ حذف.")
         return redirect("payroll:coach-rate-manage")

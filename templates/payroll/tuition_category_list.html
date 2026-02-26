@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}مدیریت شهریه{% endblock %}
+{% block nav_tuition %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
+  <span class="sep">›</span><span class="cur">مدیریت شهریه</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.cat-card { background:#fff; border:1.5px solid var(--surface-2); border-radius:14px; overflow:hidden; }
+.cat-card:hover { border-color:var(--navy); box-shadow:0 4px 16px rgba(0,0,50,.08); }
+.cat-progress-bar { height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden; }
+.cat-progress-fill { height:100%; border-radius:3px; transition:width .4s; }
+.cat-actions { display:flex; gap:.45rem; padding:.85rem 1rem; border-top:1px solid var(--surface-2); flex-wrap:wrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">🧾 مدیریت شهریه</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">مدیریت فاکتور، رسید و تأیید پرداخت بازیکنان</p>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← قبل</a>
+    <span style="font-weight:800;font-size:.92rem;background:var(--surface-1);padding:.3rem .75rem;border-radius:8px">
+      {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
+    </span>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">بعد →</a>
+    {% if request.user.is_finance_manager %}
+    <form method="post" action="{% url 'payroll:invoice-generate-all' %}" style="margin:0"
+          onsubmit="return confirm('برای همه دسته‌ها فاکتور صادر شود؟')">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ month.year }}">
+      <input type="hidden" name="month" value="{{ month.month }}">
+      <button class="btn btn-navy btn-sm">📤 صدور همه</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if messages %}{% for msg in messages %}
+<div style="border-radius:8px;padding:.65rem 1rem;font-size:.85rem;margin-bottom:.65rem;
+  background:{% if msg.tags == 'success' %}#dcfce7{% elif msg.tags == 'error' %}#fee2e2{% else %}#fef9c3{% endif %};
+  color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#854d0e{% endif %}">
+  {{ msg }}
+</div>
+{% endfor %}{% endif %}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem">
+{% for item in cat_data %}
+<div class="cat-card">
+  <!-- نوار رنگی وضعیت -->
+  <div style="height:4px;background:
+    {% if item.pending_confirm > 0 %}#f59e0b
+    {% elif item.pending > 0 %}#3b82f6
+    {% elif item.paid == item.total and item.total > 0 %}#10b981
+    {% else %}var(--surface-2){% endif %}"></div>
+
+  <div style="padding:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem">
+      <div>
+        <div style="font-weight:900;font-size:.95rem;color:var(--navy)">{{ item.category.name }}</div>
+        <div style="font-size:.72rem;color:var(--text-muted)">{{ item.total }} بازیکن
+          {% if item.total == 0 %} — فاکتور صادر نشده{% endif %}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;align-items:flex-end">
+        {% if item.pending_confirm > 0 %}
+        <span style="background:#fef3c7;color:#92400e;border-radius:8px;font-size:.7rem;padding:.2rem .55rem;font-weight:700">
+          📎 {{ item.pending_confirm }} رسید
+        </span>
+        {% endif %}
+        {% if item.pending > 0 or item.debtor > 0 %}
+        <span style="background:#fee2e2;color:#991b1b;border-radius:8px;font-size:.7rem;padding:.2rem .55rem;font-weight:700">
+          ⏳ {{ item.pending }} معوق
+        </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- نوار پیشرفت -->
+    {% if item.total > 0 %}
+    <div class="cat-progress-bar" style="margin-bottom:.75rem">
+      <div class="cat-progress-fill" style="background:var(--green);width:{% widthratio item.paid item.total 100 %}%"></div>
+    </div>
+    {% endif %}
+
+    <!-- آمار -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.75rem">
+      <div style="text-align:center;background:#f0fdf4;border-radius:6px;padding:.4rem">
+        <div style="font-weight:900;color:var(--green);font-size:.9rem">{{ item.paid }}</div>
+        <div style="font-size:.63rem;color:var(--text-muted)">پرداخت‌شده</div>
+      </div>
+      <div style="text-align:center;background:#fffbeb;border-radius:6px;padding:.4rem">
+        <div style="font-weight:900;color:#d97706;font-size:.9rem">{{ item.pending }}</div>
+        <div style="font-size:.63rem;color:var(--text-muted)">معوق</div>
+      </div>
+      <div style="text-align:center;background:#fef3c7;border-radius:6px;padding:.4rem">
+        <div style="font-weight:900;color:#f59e0b;font-size:.9rem">{{ item.pending_confirm }}</div>
+        <div style="font-size:.63rem;color:var(--text-muted)">رسید دارد</div>
+      </div>
+    </div>
+
+    <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.5rem">
+      جمع دریافتی: <strong style="color:var(--green);font-family:monospace">{{ item.collected|floatformat:0 }}</strong> ریال
+    </div>
+  </div>
+
+  <!-- دکمه‌ها -->
+  <div class="cat-actions">
+    <a href="{% url 'payroll:invoice-list' item.category.pk %}?year={{ month.year }}&month={{ month.month }}"
+       class="btn btn-navy btn-sm" style="flex:1;text-align:center;font-size:.8rem">
+      🧾 فاکتور و پرداخت
+    </a>
+    <a href="{% url 'payroll:finance-attendance-sheet' item.category.pk %}?year={{ month.year }}&month={{ month.month }}"
+       class="btn btn-outline btn-sm" style="font-size:.78rem" title="حضور و غیاب">
+      📋 حضور
+    </a>
+    {% if request.user.is_finance_manager %}
+    <form method="post" action="{% url 'payroll:invoice-generate' item.category.pk %}" style="margin:0">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ month.year }}">
+      <input type="hidden" name="month" value="{{ month.month }}">
+      <button class="btn btn-outline btn-sm" title="صدور فاکتور"
+              onclick="return confirm('فاکتور دسته {{ item.category.name }} صادر شود؟')">📤</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">
+  <div style="font-size:2.5rem;margin-bottom:.75rem">🏫</div>
+  <p style="font-weight:700">هیچ دسته آموزشی فعالی وجود ندارد</p>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

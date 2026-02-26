@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}مشاهده حضور و غیاب{% endblock %}
+{% block title %}حضور و غیاب رده‌ها{% endblock %}
 {% block nav_finance %}active{% endblock %}
 
 {% block breadcrumb %}
@@ -9,23 +9,77 @@
 {% endblock %}
 
 {% block content %}
-<div style="margin-bottom:1.25rem">
-  <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📋 مشاهده فرم‌های حضور و غیاب</h1>
-  <p style="font-size:.82rem;color:var(--text-muted)">انتخاب دسته برای مشاهده — بدون امکان ویرایش</p>
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <div>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📋 حضور و غیاب رده‌های آموزشی</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">مشاهده ماتریس حضور + وضعیت شهریه — فقط‌خواندنی</p>
+  </div>
+  <div style="display:flex;gap:.4rem;align-items:center">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← قبل</a>
+    <span style="font-weight:800;font-size:.9rem;background:var(--surface-1);padding:.3rem .75rem;border-radius:8px">
+      {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
+    </span>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">بعد →</a>
+  </div>
 </div>
 
-<div class="grid-auto">
-  {% for cat in categories %}
-  <div class="card" style="padding:1.25rem">
-    <div style="font-size:1.5rem;margin-bottom:.5rem">🗂️</div>
-    <h3 style="font-size:.95rem;font-weight:800;color:var(--navy);margin-bottom:.35rem">{{ cat.name }}</h3>
-    <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.85rem">{{ cat.players.count }} بازیکن</p>
-    <a href="{% url 'payroll:finance-attendance-sheet' cat.pk %}" class="btn btn-outline btn-sm" style="width:100%;text-align:center;justify-content:center">
-      👁️ مشاهده جلسات
-    </a>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">
+  {% for item in categories %}
+  <div style="background:#fff;border:1.5px solid var(--surface-2);border-radius:12px;overflow:hidden">
+    <!-- نوار بالا — رنگ‌بندی بر اساس وضعیت -->
+    <div style="height:4px;background:{% if item.has_sheet %}{% if item.paid_count == item.invoice_count and item.invoice_count > 0 %}var(--green){% elif item.pending_count > 0 %}#f59e0b{% else %}var(--teal){% endif %}{% else %}var(--surface-2){% endif %}"></div>
+    <div style="padding:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.65rem">
+        <div>
+          <div style="font-weight:900;font-size:.92rem;color:var(--navy)">{{ item.category.name }}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ item.player_count }} بازیکن</div>
+        </div>
+        {% if item.has_sheet %}
+        <span style="background:#dbeafe;color:#1e3a8a;border-radius:6px;font-size:.68rem;padding:.2rem .5rem;font-weight:700">
+          {{ item.session_count }} جلسه
+        </span>
+        {% else %}
+        <span style="background:var(--surface-2);color:var(--text-muted);border-radius:6px;font-size:.68rem;padding:.2rem .5rem">
+          بدون جلسه
+        </span>
+        {% endif %}
+      </div>
+
+      <!-- آمار شهریه -->
+      {% if item.invoice_count > 0 %}
+      <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+        <div style="flex:1;text-align:center;background:#f0fdf4;border-radius:6px;padding:.35rem">
+          <div style="font-weight:900;color:var(--green);font-size:.9rem">{{ item.paid_count }}</div>
+          <div style="font-size:.62rem;color:var(--text-muted)">پرداخت</div>
+        </div>
+        <div style="flex:1;text-align:center;background:#fffbeb;border-radius:6px;padding:.35rem">
+          <div style="font-weight:900;color:#d97706;font-size:.9rem">{{ item.pending_count }}</div>
+          <div style="font-size:.62rem;color:var(--text-muted)">معوق</div>
+        </div>
+        <div style="flex:1;text-align:center;background:#f1f5f9;border-radius:6px;padding:.35rem">
+          <div style="font-weight:900;color:var(--text-muted);font-size:.9rem">{{ item.invoice_count }}</div>
+          <div style="font-size:.62rem;color:var(--text-muted)">کل</div>
+        </div>
+      </div>
+      {% else %}
+      <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.75rem">فاکتور شهریه‌ای صادر نشده</div>
+      {% endif %}
+
+      <div style="display:flex;gap:.4rem">
+        <a href="{% url 'payroll:finance-attendance-sheet' item.category.pk %}?year={{ month.year }}&month={{ month.month }}"
+           class="btn btn-navy btn-sm" style="flex:1;text-align:center;font-size:.78rem">
+          📋 حضور + شهریه
+        </a>
+        <a href="{% url 'payroll:invoice-list' item.category.pk %}?year={{ month.year }}&month={{ month.month }}"
+           class="btn btn-outline btn-sm" style="font-size:.78rem">🧾</a>
+      </div>
+    </div>
   </div>
   {% empty %}
-  <div style="text-align:center;color:var(--text-muted);padding:2rem">هیچ دسته‌ای یافت نشد</div>
+  <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">
+    <div style="font-size:2.5rem;margin-bottom:.75rem">📋</div>
+    <p style="font-weight:700">هیچ دسته آموزشی فعالی وجود ندارد</p>
+  </div>
   {% endfor %}
 </div>
 {% endblock %}

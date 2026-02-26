@@ -1,76 +1,215 @@
 {% extends "base.html" %}
-{% block title %}حضور و غیاب — {{ category.name }}{% endblock %}
+{% block title %}حضور و غیاب + شهریه — {{ category.name }}{% endblock %}
 {% block nav_finance %}active{% endblock %}
 
 {% block breadcrumb %}
   <span class="sep">›</span>
   <a href="{% url 'payroll:finance-dashboard' %}" style="text-decoration:none;color:inherit">مالی</a>
   <span class="sep">›</span>
-  <a href="{% url 'payroll:finance-attendance-cats' %}" style="text-decoration:none;color:inherit">حضور و غیاب</a>
+  <a href="{% url 'payroll:tuition-categories' %}?year={{ month.year }}&month={{ month.month }}" style="text-decoration:none;color:inherit">شهریه</a>
   <span class="sep">›</span><span class="cur">{{ category.name }}</span>
 {% endblock %}
 
+{% block extra_head %}
+<style>
+.att-table { border-collapse:collapse; min-width:100%; }
+.att-table th, .att-table td { border:1px solid var(--surface-2); padding:.35rem .5rem; font-size:.78rem; white-space:nowrap; }
+.att-table thead th { background:var(--surface-1); font-weight:700; text-align:center; }
+.att-table .sticky-col { position:sticky; right:0; background:#fff; z-index:1; border-left:2px solid var(--surface-2); min-width:140px; text-align:right; padding-right:.75rem; }
+.att-table thead .sticky-col { background:var(--surface-1); }
+.att-p  { background:#dcfce7; color:#15803d; text-align:center; font-size:.75rem; font-weight:700; }
+.att-a  { background:#fee2e2; color:#991b1b; text-align:center; font-size:.75rem; }
+.att-e  { background:#fef9c3; color:#92400e; text-align:center; font-size:.75rem; }
+.att-n  { background:var(--surface-1); text-align:center; color:var(--text-muted); font-size:.72rem; }
+.pay-paid    { background:#d1fae5; color:#065f46; }
+.pay-pending { background:#fef3c7; color:#92400e; }
+.pay-debtor  { background:#fee2e2; color:#991b1b; }
+.pay-confirm { background:#dbeafe; color:#1e3a8a; }
+.pay-none    { background:var(--surface-1); color:var(--text-muted); }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
   <div>
-    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📋 حضور و غیاب — {{ category.name }}</h1>
-    <p style="font-size:.82rem;color:var(--text-muted)">فقط مشاهده — امکان تغییر وجود ندارد</p>
+    <h1 style="font-size:1.1rem;font-weight:900;color:var(--navy)">📋 {{ category.name }} — حضور و غیاب + شهریه</h1>
+    <p style="font-size:.82rem;color:var(--text-muted)">
+      {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
+      {% if sheet %} | {{ sessions|length }} جلسه{% endif %}
+      <span style="background:#dbeafe;color:#1e3a8a;border-radius:6px;font-size:.7rem;padding:.15rem .45rem;font-weight:700;margin-right:.5rem">👁️ فقط‌خواندنی</span>
+    </p>
   </div>
-  <div style="display:flex;gap:.5rem;align-items:center">
-    <span style="background:#dbeafe;color:#1e3a8a;border-radius:8px;padding:.3rem .75rem;font-size:.75rem;font-weight:700">👁️ فقط‌خواندنی</span>
-    <a href="{% url 'payroll:finance-attendance-cats' %}" class="btn btn-outline btn-sm">← بازگشت</a>
+  <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline btn-sm">← قبل</a>
+    <span style="font-weight:800;font-size:.88rem;background:var(--surface-1);padding:.3rem .65rem;border-radius:6px">
+      {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }}
+    </span>
+    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline btn-sm">بعد →</a>
+    <a href="{% url 'payroll:invoice-list' category.pk %}?year={{ month.year }}&month={{ month.month }}"
+       class="btn btn-navy btn-sm">🧾 مشاهده فاکتورها</a>
+    <a href="{% url 'payroll:tuition-categories' %}?year={{ month.year }}&month={{ month.month }}"
+       class="btn btn-outline btn-sm">← بازگشت</a>
   </div>
 </div>
 
-{% if sheets %}
-{% for sheet in sheets %}
-<div class="card" style="margin-bottom:1rem">
-  <div class="card-header">
-    <span class="card-title">{{ sheet.jalali_year }}/{% if sheet.jalali_month < 10 %}0{% endif %}{{ sheet.jalali_month }}</span>
-    <div style="display:flex;gap:.5rem;align-items:center">
-      {% if sheet.is_finalized %}
-      <span class="badge badge-green" style="font-size:.72rem">✅ نهایی</span>
-      {% else %}
-      <span class="badge badge-amber" style="font-size:.72rem">در جریان</span>
-      {% endif %}
-      <span style="font-size:.75rem;color:var(--text-muted)">{{ sheet.session_dates.count }} جلسه</span>
-    </div>
-  </div>
-
-  {% with sessions=sheet.session_dates.all %}
-  {% if sessions %}
-  <div style="padding:.6rem .85rem">
-    {% for session in sessions %}
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--surface-2)">
-      <div>
-        <strong style="font-size:.875rem">{{ session.date }}</strong>
-        <span style="font-size:.72rem;color:var(--text-muted);margin-right:.3rem">جلسه {{ session.session_number }}</span>
-        {% if session.notes %}
-        <span style="font-size:.75rem;color:var(--text-muted)">— {{ session.notes }}</span>
-        {% endif %}
-      </div>
-      <div style="display:flex;gap:.75rem;align-items:center">
-        <span style="font-size:.78rem;color:var(--green);font-weight:700">
-          ✅ {{ session.player_records.count }} حاضر
-        </span>
-        <span style="font-size:.78rem;color:var(--amber)">
-          مربی: {% if session.coach_records.filter.exists %}✅{% else %}—{% endif %}
-        </span>
-        <a href="{% url 'payroll:finance-session-detail' session.pk %}" class="btn btn-outline btn-sm" style="font-size:.72rem">جزئیات</a>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div style="padding:1rem;text-align:center;color:var(--text-muted);font-size:.85rem">جلسه‌ای ثبت نشده</div>
-  {% endif %}
-  {% endwith %}
+{% if not sheet %}
+<div class="card" style="text-align:center;padding:2.5rem">
+  <div style="font-size:2.5rem;margin-bottom:.75rem">📋</div>
+  <h3 style="font-weight:800;margin-bottom:.5rem">لیست حضور این ماه ثبت نشده</h3>
+  <p style="font-size:.85rem;color:var(--text-muted)">
+    برای این دسته در ماه {{ month.year }}/{% if month.month < 10 %}0{% endif %}{{ month.month }} جلسه‌ای ثبت نشده است.
+  </p>
 </div>
-{% endfor %}
+{% elif not sessions %}
+<div class="card" style="text-align:center;padding:2rem;color:var(--text-muted)">
+  <p>لیست حضور وجود دارد اما جلسه‌ای ثبت نشده.</p>
+</div>
 {% else %}
-<div style="text-align:center;padding:3rem;color:var(--text-muted)">
-  <div style="font-size:2.5rem;margin-bottom:.5rem">📋</div>
-  <p style="font-weight:700">هیچ شیت حضوری برای این دسته ثبت نشده</p>
+
+<!-- راهنما -->
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;font-size:.75rem;align-items:center">
+  <span style="font-weight:700;color:var(--text-muted)">حضور:</span>
+  <span class="att-p" style="padding:.2rem .5rem;border-radius:4px">✅ حاضر</span>
+  <span class="att-a" style="padding:.2rem .5rem;border-radius:4px">❌ غایب</span>
+  <span class="att-e" style="padding:.2rem .5rem;border-radius:4px">⚠️ موجه</span>
+  <span style="margin-right:.75rem;font-weight:700;color:var(--text-muted)">شهریه:</span>
+  <span class="pay-paid" style="padding:.2rem .5rem;border-radius:4px">✅ پرداخت</span>
+  <span class="pay-confirm" style="padding:.2rem .5rem;border-radius:4px">📎 رسید</span>
+  <span class="pay-pending" style="padding:.2rem .5rem;border-radius:4px">⏳ معوق</span>
+  <span class="pay-debtor" style="padding:.2rem .5rem;border-radius:4px">🔴 بدهکار</span>
 </div>
+
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="overflow-x:auto">
+    <table class="att-table">
+      <thead>
+        <tr>
+          <th class="sticky-col">بازیکن</th>
+          {% for session in sessions %}
+          <th style="text-align:center;min-width:52px" title="{{ session.date }}">
+            <div>ج{{ session.session_number }}</div>
+            <div style="font-size:.65rem;font-weight:400;color:var(--text-muted)">{{ session.date }}</div>
+          </th>
+          {% endfor %}
+          <th style="min-width:80px;text-align:center">حاضر/کل</th>
+          <th style="min-width:95px;text-align:center">شهریه</th>
+          {% if request.user.is_finance_manager %}<th style="min-width:70px;text-align:center">اقدام</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="sticky-col">
+            <div style="font-weight:700;font-size:.85rem">{{ row.player.first_name }} {{ row.player.last_name }}</div>
+            {% if row.player.phone %}<div style="font-size:.68rem;color:var(--text-muted)">{{ row.player.phone }}</div>{% endif %}
+          </td>
+          {% for att in row.att_row %}
+          {% if att == 'present' %}
+          <td class="att-p">✅</td>
+          {% elif att == 'absent' %}
+          <td class="att-a">❌</td>
+          {% elif att == 'excused' %}
+          <td class="att-e">⚠️</td>
+          {% else %}
+          <td class="att-n">—</td>
+          {% endif %}
+          {% endfor %}
+          <!-- خلاصه حضور -->
+          <td style="text-align:center;font-size:.8rem">
+            <span style="font-weight:700;color:var(--green)">{{ row.present_count }}</span>
+            <span style="color:var(--text-muted)">/{{ sessions|length }}</span>
+            {% if row.absent_count > 0 %}
+            <span style="font-size:.68rem;color:var(--red)"> ({{ row.absent_count }} غ)</span>
+            {% endif %}
+          </td>
+          <!-- وضعیت شهریه -->
+          <td class="{% if row.invoice %}{% if row.invoice.status == 'paid' %}pay-paid{% elif row.invoice.status == 'pending_confirm' %}pay-confirm{% elif row.invoice.status == 'debtor' %}pay-debtor{% else %}pay-pending{% endif %}{% else %}pay-none{% endif %}"
+              style="text-align:center;font-size:.78rem">
+            {% if row.invoice %}
+              {% if row.invoice.status == 'paid' %}✅{% elif row.invoice.status == 'pending_confirm' %}📎{% elif row.invoice.status == 'debtor' %}🔴{% else %}⏳{% endif %}
+              <div style="font-size:.68rem;font-family:monospace;margin-top:.1rem">{{ row.invoice.final_amount|floatformat:0 }}</div>
+            {% else %}—{% endif %}
+          </td>
+          {% if request.user.is_finance_manager %}
+          <td style="text-align:center">
+            {% if row.invoice and row.invoice.status == 'pending_confirm' %}
+            <a href="{% url 'payroll:invoice-list' category.pk %}?year={{ month.year }}&month={{ month.month }}&status=pending_confirm"
+               class="btn btn-amber btn-sm" style="font-size:.68rem;padding:.2rem .45rem">بررسی</a>
+            {% elif row.invoice and row.invoice.status != 'paid' and row.invoice.player.user %}
+            <form method="post" action="{% url 'payroll:send-reminder' %}" style="margin:0"
+                  onsubmit="return confirm('یادآوری ارسال شود؟')">
+              {% csrf_token %}
+              <input type="hidden" name="invoice_pk" value="{{ row.invoice.pk }}">
+              <button class="btn btn-outline btn-sm" style="font-size:.68rem;padding:.2rem .45rem"
+                      title="ارسال یادآوری">🔔</button>
+            </form>
+            {% else %}—{% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{{ sessions|length|add:4 }}" style="text-align:center;padding:2rem;color:var(--text-muted)">
+            هیچ بازیکنی در این دسته ثبت نشده
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <!-- خلاصه ستون‌ها -->
+      {% if rows %}
+      <tfoot>
+        <tr style="background:var(--surface-1);font-weight:700">
+          <td class="sticky-col" style="font-size:.78rem">جمع حاضران</td>
+          {% for session in sessions %}
+          <td style="text-align:center;font-size:.78rem;color:var(--green)">
+            {{ session.player_records.count }}
+          </td>
+          {% endfor %}
+          <td colspan="{% if request.user.is_finance_manager %}3{% else %}2{% endif %}"></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+
+{% if coach_rows %}
+<!-- حضور مربیان -->
+<div class="card" style="margin-top:1rem">
+  <div class="card-header"><span class="card-title">👨‍🏫 حضور مربیان</span></div>
+  <div style="overflow-x:auto">
+    <table class="att-table">
+      <thead>
+        <tr>
+          <th class="sticky-col">مربی</th>
+          {% for session in sessions %}
+          <th style="text-align:center;min-width:46px" title="{{ session.date }}">ج{{ session.session_number }}</th>
+          {% endfor %}
+          <th style="text-align:center">حاضر/کل</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for crow in coach_rows %}
+        <tr>
+          <td class="sticky-col">{{ crow.coach.first_name }} {{ crow.coach.last_name }}</td>
+          {% for att in crow.att_row %}
+            {% if att == 'present' %}<td class="att-p">✅</td>
+            {% elif att == 'absent' %}<td class="att-a">❌</td>
+            {% elif att == 'excused' %}<td class="att-e">⚠️</td>
+            {% else %}<td class="att-n">—</td>
+            {% endif %}
+          {% endfor %}
+          <td style="text-align:center;font-size:.8rem">
+            <span style="font-weight:700;color:var(--green)">{{ crow.present_count }}</span>
+            <span style="color:var(--text-muted)">/{{ sessions|length }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
 {% endif %}
 {% endblock %}
