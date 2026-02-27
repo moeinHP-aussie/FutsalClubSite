@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ورود — باشگاه فوتسال اسپاد</title>
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Font Awesome برای آیکون‌ها -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -52,9 +54,61 @@
     .deco-circle.c2 { width: 320px; height: 320px; bottom: -80px; left: 20%; border-color: rgba(14,165,233,.12); }
     .deco-circle.c3 { width: 200px; height: 200px; top: 40%; right: 30%; border-color: rgba(245,158,11,.06); }
 
+    /* ===== افکت‌های ویژه بصری ===== */
+    /* ذرات نورانی متحرک */
+    .glow-particles {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 1;
+    }
+    
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(245, 158, 11, 0.3);
+      border-radius: 50%;
+      box-shadow: 0 0 10px 2px rgba(245, 158, 11, 0.5);
+      animation: floatParticle 8s infinite ease-in-out;
+    }
+    
+    @keyframes floatParticle {
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+      25% { transform: translate(10px, -15px) scale(1.5); opacity: 0.8; }
+      50% { transform: translate(-5px, -25px) scale(1); opacity: 0.4; }
+      75% { transform: translate(-15px, -10px) scale(0.8); opacity: 0.6; }
+    }
+    
+    /* خطوط نورانی متحرک */
+    .light-lines {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+    
+    .light-line {
+      position: absolute;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.5), transparent);
+      animation: moveLine 6s infinite linear;
+    }
+    
+    .light-line:nth-child(1) { top: 20%; animation-delay: 0s; }
+    .light-line:nth-child(2) { top: 50%; animation-delay: 2s; opacity: 0.3; background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.5), transparent); }
+    .light-line:nth-child(3) { top: 80%; animation-delay: 4s; }
+    
+    @keyframes moveLine {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(100%); }
+    }
+
     .visual-content {
-      position: relative; z-index: 2;
-      text-align: center; padding: 3rem;
+      position: relative; 
+      z-index: 3;
+      text-align: center; 
+      padding: 3rem;
     }
 
     .club-logo-wrap {
@@ -65,7 +119,14 @@
       box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 0 4px rgba(245,158,11,.25);
       overflow: hidden;
       animation: logoIn .6s cubic-bezier(.34,1.56,.64,1) both;
+      /* افکت نئون اضافه */
+      transition: box-shadow 0.3s ease;
     }
+    
+    .club-logo-wrap:hover {
+      box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 0 4px rgba(245,158,11,.5), 0 0 30px rgba(245,158,11,0.7);
+    }
+
     .club-logo-wrap img {
       width: 100%; height: 100%; object-fit: cover;
     }
@@ -80,13 +141,28 @@
       color: #fff;
       line-height: 1.1;
       animation: fadeUp .5s .15s both;
+      text-shadow: 0 0 10px rgba(245,158,11,0.3), 0 0 20px rgba(245,158,11,0.2);
+      transition: text-shadow 0.3s ease;
     }
-    .club-name span { color: #f59e0b; }
+    
+    .club-name:hover {
+      text-shadow: 0 0 15px rgba(245,158,11,0.6), 0 0 30px rgba(245,158,11,0.4), 0 0 45px rgba(245,158,11,0.2);
+    }
+    
+    .club-name span { 
+      color: #f59e0b;
+      text-shadow: 0 0 10px rgba(245,158,11,0.5);
+    }
 
     .club-tagline {
       font-size: .95rem; color: rgba(255,255,255,.45);
       margin-top: .75rem; font-weight: 400;
       animation: fadeUp .5s .25s both;
+      transition: color 0.3s ease;
+    }
+    
+    .club-tagline:hover {
+      color: rgba(255,255,255,.8);
     }
 
     /* آمار باشگاه */
@@ -99,7 +175,15 @@
     .stat-num {
       font-size: 1.6rem; font-weight: 900; color: #f59e0b;
       line-height: 1;
+      text-shadow: 0 0 10px rgba(245,158,11,0.4);
+      transition: transform 0.3s ease, text-shadow 0.3s ease;
     }
+    
+    .stat-num:hover {
+      transform: scale(1.1);
+      text-shadow: 0 0 15px rgba(245,158,11,0.8), 0 0 30px rgba(245,158,11,0.5);
+    }
+    
     .stat-lbl {
       font-size: .7rem; color: rgba(255,255,255,.35);
       margin-top: .2rem; font-weight: 500;
@@ -117,11 +201,24 @@
       background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.1);
       color: rgba(255,255,255,.55);
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+    .age-badge:hover {
+      background: rgba(245,158,11,.25);
+      border-color: rgba(245,158,11,.6);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(245,158,11,0.3);
+      transform: translateY(-2px);
     }
     .age-badge.highlight {
       background: rgba(245,158,11,.15);
       border-color: rgba(245,158,11,.3);
       color: #fcd34d;
+    }
+    .age-badge.highlight:hover {
+      background: rgba(245,158,11,.35);
+      color: #fff;
     }
 
     @keyframes fadeUp {
@@ -264,6 +361,62 @@
     .message-warning { background: #fef3c7; color: #92400e; }
     .message-info    { background: #dbeafe; color: #1e3a8a; }
 
+    /* ===== لینک‌های پایین صفحه با آیکون Font Awesome ===== */
+    .footer-links {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      gap: 0.5rem;
+    }
+
+    .social-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: #4b5563;
+      transition: all 0.2s ease;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .social-link:hover {
+      background: #f1f5f9;
+      transform: translateY(-2px);
+    }
+
+    .social-link i {
+      font-size: 1.2rem;
+      transition: all 0.2s ease;
+    }
+
+    .social-link span {
+      font-weight: 500;
+    }
+
+    /* رنگ آیکون‌ها در hover */
+    .instagram-link:hover i {
+      color: #e4405f;
+    }
+
+    .instagram-link:hover span {
+      color: #e4405f;
+    }
+
+    .email-link:hover i {
+      color: #0078d4;
+    }
+
+    .email-link:hover span {
+      color: #0078d4;
+    }
+
     /* ── Mobile: stack panels ── */
     @media (max-width: 768px) {
       body { flex-direction: column; overflow: auto; }
@@ -273,6 +426,8 @@
       .club-stats { gap: 1.5rem; }
       .age-badges { display: none; }
       .login-panel { flex: none; padding: 1.5rem; }
+      .footer-links { flex-direction: column; gap: 0.5rem; }
+      .social-link { width: 100%; }
     }
   </style>
 </head>
@@ -280,6 +435,21 @@
 
 <!-- ── Visual Panel ─────────────────────────────────── -->
 <div class="visual-panel">
+  <!-- افکت‌های ویژه -->
+  <div class="glow-particles">
+    <div class="particle" style="top: 20%; left: 10%; animation-duration: 7s;"></div>
+    <div class="particle" style="top: 60%; left: 80%; animation-duration: 9s; width: 6px; height: 6px;"></div>
+    <div class="particle" style="top: 30%; left: 50%; animation-duration: 6s; width: 3px; height: 3px;"></div>
+    <div class="particle" style="top: 70%; left: 20%; animation-duration: 8s; width: 5px; height: 5px;"></div>
+    <div class="particle" style="top: 40%; left: 70%; animation-duration: 10s;"></div>
+  </div>
+  
+  <div class="light-lines">
+    <div class="light-line"></div>
+    <div class="light-line"></div>
+    <div class="light-line"></div>
+  </div>
+  
   <div class="deco-circle c1"></div>
   <div class="deco-circle c2"></div>
   <div class="deco-circle c3"></div>
@@ -292,7 +462,7 @@
     <div class="club-name">
       باشگاه فوتسال<br><span>اسپاد</span>
     </div>
-    <div class="club-tagline">سیستم جامع مدیریت کارکنان و بازیکنان </div>
+    <div class="club-tagline">سیستم جامع مدیریت کارکنان و بازیکنان</div>
 
     <div class="club-stats">
       <div class="stat-item">
@@ -375,6 +545,19 @@
     <a href="{% url 'registration:apply' %}" class="btn-register">
       🏃 ثبت‌نام بازیکن جدید
     </a>
+    
+    <!-- لینک‌های پایین صفحه با آیکون Font Awesome -->
+    <div class="footer-links">
+      <a href="https://www.instagram.com/fc.espad" target="_blank" class="social-link instagram-link">
+        <i class="fab fa-instagram"></i>
+        <span>دنبال کردن باشگاه اسپاد در instagram</span>
+      </a>
+      
+      <a href="mailto:moein.hp@outlook.com" class="social-link email-link">
+        <i class="far fa-envelope"></i>
+        <span>ارتباط با توسعه دهنده</span>
+      </a>
+    </div>
 
   </div>
 </div>

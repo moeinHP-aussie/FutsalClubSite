@@ -77,7 +77,7 @@ class AttendanceMatrixRow:
 @dataclass
 class AttendanceMatrixResult:
     """خروجی کامل ماتریس حضور و غیاب برای یک دسته در یک ماه."""
-    sheet: AttendanceSheet
+    sheet: Optional[AttendanceSheet]
     category: TrainingCategory
     jalali_month: JalaliMonth
     session_dates: List[SessionDate]
@@ -106,9 +106,25 @@ class AttendanceService:
     ) -> Tuple[AttendanceSheet, bool]:
         """
         لیست حضور و غیاب ماهانه را دریافت یا ایجاد می‌کند.
-        همچنین SessionDate‌ها را بر اساس TrainingSchedule پر می‌کند.
-        Returns: (sheet, created)
+
+        قوانین:
+        - ماه جاری: ساخته می‌شود و SessionDate‌ها با زمان‌بندی sync می‌شوند.
+        - ماه‌های گذشته: فقط دریافت می‌شود (اگر وجود داشته باشد) — تغییری نمی‌کند.
+        - ماه‌های آینده: شیت ساخته نمی‌شود؛ None برمی‌گرداند.
+
+        Returns: (sheet | None, created: bool)
         """
+        current = JalaliMonth.current()
+
+        # ماه آینده → شیت ساخته نمی‌شود
+        if (jalali_month.year, jalali_month.month) > (current.year, current.month):
+            existing = AttendanceSheet.objects.filter(
+                category=category,
+                jalali_year=jalali_month.year,
+                jalali_month=jalali_month.month,
+            ).first()
+            return existing, False  # None if not exists
+
         sheet, created = AttendanceSheet.objects.get_or_create(
             category=category,
             jalali_year=jalali_month.year,
@@ -121,6 +137,9 @@ class AttendanceService:
                 "لیست حضور و غیاب جدید ایجاد شد: %s — %s",
                 category, jalali_month
             )
+        elif (jalali_month.year, jalali_month.month) == (current.year, current.month):
+            # ماه جاری: جلسات جدید را اضافه می‌کند (بدون حذف قدیمی‌ها)
+            cls._sync_session_dates(sheet, category, jalali_month)
 
         return sheet, created
 
@@ -161,6 +180,50 @@ class AttendanceService:
             len(session_objects), category, jalali_month
         )
         return session_objects
+
+    @classmethod
+    def _sync_session_dates(
+        cls,
+        sheet: AttendanceSheet,
+        category: TrainingCategory,
+        jalali_month: JalaliMonth,
+    ) -> None:
+        """
+        برای ماه جاری: جلسات جدید را اضافه می‌کند اما جلسات موجود را حذف نمی‌کند.
+        وقتی زمان‌بندی تغییر می‌کند، جلسات تازه اضافه می‌شوند.
+        جلسات قدیمی که حضور و غیاب ثبت شده‌اند دست نمی‌خورند.
+        """
+        schedules = category.schedules.all()
+        if not schedules.exists():
+            return
+
+        weekdays = [s.weekday for s in schedules]
+        matching_days = jalali_month.days_for_weekdays(weekdays)
+
+        existing_dates = set(
+            sheet.session_dates.values_list("date", flat=True)
+        )
+
+        added = 0
+        # شماره‌گذاری از بعد از آخرین جلسه موجود
+        from django.db.models import Max as _Max
+        last_num = sheet.session_dates.aggregate(m=_Max('session_number'))['m'] or 0
+
+        for idx, jdate in enumerate(matching_days, start=1):
+            greg_date = jdate.togregorian()
+            if greg_date not in existing_dates:
+                SessionDate.objects.get_or_create(
+                    sheet=sheet,
+                    date=greg_date,
+                    defaults={"session_number": last_num + idx},
+                )
+                added += 1
+
+        if added:
+            logger.info(
+                "%d جلسه جدید به ماتریس %s — %s اضافه شد.",
+                added, category, jalali_month
+            )
 
     # ── 2. Attendance Recording ─────────────────────────────────────
 
@@ -269,6 +332,17 @@ class AttendanceService:
         ستون‌ها: جلسات ماه
         """
         sheet, _ = cls.get_or_create_sheet(category, jalali_month)
+
+        # ماه آینده ممکن است هنوز شیت نداشته باشد
+        if sheet is None:
+            return AttendanceMatrixResult(
+                sheet=None,
+                category=category,
+                jalali_month=jalali_month,
+                session_dates=[],
+                player_rows=[],
+                coach_rows=[],
+            )
 
         session_dates = list(
             sheet.session_dates.order_by("date")

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load attendance_extras %}
 {% block title %}اعلان‌های من{% endblock %}
 {% block nav_notifications %}active{% endblock %}
 
@@ -81,8 +82,8 @@
       <div class="notif-item-title">{{ n.title }}</div>
       <div class="notif-item-msg">{{ n.message }}</div>
       <div class="notif-item-time">
-        {{ n.created_at|timesince }} پیش
-        {% if n.is_read and n.read_at %}· خوانده شد: {{ n.read_at|timesince }} پیش{% endif %}
+        {{ n.created_at|jalali_timesince }} پیش
+        {% if n.is_read and n.read_at %}· خوانده شد: {{ n.read_at|jalali_timesince }} پیش{% endif %}
       </div>
     </div>
 

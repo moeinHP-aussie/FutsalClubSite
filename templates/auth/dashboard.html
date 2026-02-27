@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load attendance_extras %}
 {% block title %}داشبورد — باشگاه فوتسال{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
 
@@ -61,18 +60,22 @@
   <a href="{% url 'comms:announcement-create' %}" class="btn btn-outline btn-sm">📣 اطلاعیه</a>
 </div>
 
-<!-- رده سنی -->
 {% if age_category_stats %}
 <div class="card" style="margin-bottom:1rem">
   <div class="card-header">
-    <span class="card-title">🧒 رده‌های سنی</span>
+    <span class="card-title">🧒 توزیع رده‌های سنی</span>
     <a href="{% url 'training:stats' %}" class="btn btn-outline btn-sm">جزئیات ←</a>
   </div>
-  <div style="padding:.65rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem">
+  <div style="padding:.75rem 1rem">
     {% for cat, cnt, pct in age_category_stats %}
-    <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:8px;padding:.4rem .85rem;display:flex;align-items:center;gap:.5rem">
-      <span style="font-size:.8rem;font-weight:700;color:#0369a1">{{ cat }}</span>
-      <span style="background:#0369a1;color:#fff;border-radius:99px;padding:.05rem .45rem;font-size:.72rem;font-weight:900">{{ cnt }}</span>
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.45rem">
+      <span style="min-width:80px;font-size:.8rem;font-weight:700;color:var(--navy);text-align:right">{{ cat }}</span>
+      <div style="flex:1;height:20px;background:var(--surface-2);border-radius:99px;overflow:hidden">
+        <div style="height:100%;background:var(--teal);border-radius:99px;width:{{ pct|default:1 }}%;display:flex;align-items:center;justify-content:flex-end;padding-left:.4rem">
+          <span style="font-size:.65rem;font-weight:800;color:#fff">{{ cnt }}</span>
+        </div>
+      </div>
+      <span style="font-size:.8rem;font-weight:700;min-width:30px;color:var(--text-muted)">{{ cnt }}</span>
     </div>
     {% endfor %}
   </div>
@@ -80,7 +83,7 @@
 {% endif %}
 
 {% if recent_players %}
-<div class="card">
+<div class="card" style="margin-bottom:1rem">
   <div class="card-header">
     <span class="card-title">آخرین بازیکنان ثبت‌نام شده</span>
     <a href="{% url 'registration:applicant-list' %}" class="btn btn-outline btn-sm">همه ←</a>
@@ -107,84 +110,6 @@
 </div>
 {% endif %}
 
-<!-- ── رده‌های سنی ─────────────────────────────────────────── -->
-{% if age_category_stats %}
-<div class="card" style="margin-bottom:1rem">
-  <div class="card-header">
-    <span class="card-title">🧒 توزیع رده‌های سنی</span>
-    <a href="{% url 'training:player-list' %}?view=age" class="btn btn-outline btn-sm">نمایش کامل</a>
-  </div>
-  <div style="padding:.75rem 1rem">
-    {% for cat, cnt, pct in age_category_stats %}
-    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.45rem">
-      <span style="min-width:80px;font-size:.8rem;font-weight:700;color:var(--navy);text-align:right">{{ cat }}</span>
-      <div style="flex:1;height:20px;background:var(--surface-2);border-radius:99px;overflow:hidden">
-        <div style="height:100%;background:var(--teal);border-radius:99px;width:{{ pct|default:1 }}%;display:flex;align-items:center;justify-content:flex-end;padding-left:.4rem">
-          <span style="font-size:.65rem;font-weight:800;color:#fff">{{ cnt }}</span>
-        </div>
-      </div>
-      <span style="font-size:.8rem;font-weight:700;min-width:30px;color:var(--text-muted)">{{ cnt }}</span>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-<!-- ── فید تغییرات اخیر ──────────────────────────────────── -->
-{% if recent_changes %}
-<div class="card" style="margin-bottom:1rem">
-  <div class="card-header">
-    <span class="card-title">🔔 تغییرات اخیر بازیکنان</span>
-  </div>
-  <div style="padding:.6rem .85rem">
-    {% for log in recent_changes %}
-    <div style="display:flex;align-items:flex-start;gap:.65rem;padding:.55rem 0;border-bottom:1px solid var(--surface-2)">
-      <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;
-        {% if log.change_type == 'insurance' %}background:#d1fae5{% elif log.change_type == 'tech' %}background:#ede9fe{% elif log.change_type == 'profile' %}background:#dbeafe{% else %}background:#fef3c7{% endif %}">
-        {% if log.change_type == 'insurance' %}🛡️{% elif log.change_type == 'tech' %}⚽{% elif log.change_type == 'profile' %}👤{% else %}🧠{% endif %}
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:.82rem;font-weight:700">
-          <a href="{% url 'training:player-profile' log.player.pk %}"
-             style="color:var(--navy);text-decoration:none">{{ log.player.first_name }} {{ log.player.last_name }}</a>
-        </div>
-        <div style="font-size:.75rem;color:var(--text-muted)">{{ log.description }}</div>
-        <div style="font-size:.7rem;color:var(--text-light);margin-top:.1rem">
-          {{ log.created_at|date:"Y/m/d H:i" }} · {{ log.changed_by.get_full_name|default:log.changed_by.username }}
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-<!-- ── اعلان‌های خوانده‌نشده ─────────────────────────────── -->
-{% if unread_notifications %}
-<div class="card" style="margin-bottom:1rem">
-  <div class="card-header">
-    <span class="card-title">📬 اعلان‌های جدید</span>
-    <span style="background:var(--red);color:#fff;border-radius:99px;padding:.15rem .55rem;font-size:.72rem;font-weight:800">
-      {{ unread_notifications.count }}
-    </span>
-  </div>
-  <div style="padding:.6rem .85rem">
-    {% for notif in unread_notifications %}
-    <div style="display:flex;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--surface-2);align-items:flex-start">
-      <span style="font-size:1rem">
-        {% if notif.type == 'player_change' %}🔔{% elif notif.type == 'insurance_expiry' %}⚠️{% else %}💬{% endif %}
-      </span>
-      <div style="flex:1">
-        <div style="font-size:.82rem;font-weight:700">{{ notif.title }}</div>
-        <div style="font-size:.75rem;color:var(--text-muted);margin-top:.1rem">{{ notif.message|truncatechars:80 }}</div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-<!-- فید تغییرات -->
 {% if recent_changes %}
 <div class="card" style="margin-bottom:1rem">
   <div class="card-header">
@@ -222,6 +147,31 @@
 </div>
 {% endif %}
 
+{% if unread_notifications %}
+<div class="card" style="margin-bottom:1rem">
+  <div class="card-header">
+    <span class="card-title">📬 اعلان‌های جدید</span>
+    <span style="background:var(--red);color:#fff;border-radius:99px;padding:.15rem .55rem;font-size:.72rem;font-weight:800">
+      {{ unread_notifications|length }}
+    </span>
+  </div>
+  <div style="padding:.6rem .85rem">
+    {% for notif in unread_notifications %}
+    <div style="display:flex;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--surface-2);align-items:flex-start">
+      <span style="font-size:1rem">
+        {% if notif.type == 'insurance_expiry' %}⚠️{% else %}🔔{% endif %}
+      </span>
+      <div style="flex:1">
+        <div style="font-size:.82rem;font-weight:700">{{ notif.title }}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-top:.1rem">{{ notif.message|truncatechars:80 }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
 {% elif user.is_finance_manager %}
 {# ═══════════════════ داشبورد مالی ═══════════════════ #}
 <div class="page-header">
@@ -249,6 +199,7 @@
     <span class="stat-icon">💳</span>
   </div>
 </div>
+
 
 {% elif user.is_coach %}
 {# ═══════════════════ داشبورد مربی ═══════════════════ #}
@@ -278,48 +229,6 @@
   <a href="{% url 'comms:announcement-list' %}" class="btn btn-outline">📢 اعلانات</a>
 </div>
 
-<!-- ── فید تغییرات بازیکنان مربی ──────────────────────── -->
-{% if recent_changes %}
-<div class="card" style="margin-top:1rem">
-  <div class="card-header"><span class="card-title">🔔 تغییرات اخیر بازیکنانم</span></div>
-  <div style="padding:.6rem .85rem">
-    {% for log in recent_changes %}
-    <div style="display:flex;align-items:flex-start;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
-      <span style="font-size:.9rem">
-        {% if log.change_type == 'insurance' %}🛡️{% elif log.change_type == 'tech' %}⚽{% else %}👤{% endif %}
-      </span>
-      <div style="flex:1">
-        <a href="{% url 'training:player-profile' log.player.pk %}"
-           style="font-size:.82rem;font-weight:700;color:var(--navy);text-decoration:none">
-           {{ log.player.first_name }} {{ log.player.last_name }}
-        </a>
-        <div style="font-size:.75rem;color:var(--text-muted)">{{ log.description }}</div>
-        <div style="font-size:.7rem;color:var(--text-light)">{{ log.created_at|date:"Y/m/d H:i" }}</div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-{% if unread_notifications %}
-<div class="card" style="margin-top:.75rem">
-  <div class="card-header">
-    <span class="card-title">📬 اعلان‌های جدید</span>
-    <span style="background:var(--red);color:#fff;border-radius:99px;padding:.15rem .55rem;font-size:.72rem;font-weight:800">{{ unread_notifications.count }}</span>
-  </div>
-  <div style="padding:.6rem .85rem">
-    {% for notif in unread_notifications %}
-    <div style="padding:.45rem 0;border-bottom:1px solid var(--surface-2);font-size:.82rem">
-      <div style="font-weight:700">{{ notif.title }}</div>
-      <div style="font-size:.75rem;color:var(--text-muted);margin-top:.15rem">{{ notif.message|truncatechars:80 }}</div>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-<!-- فید تغییرات مربی -->
 {% if recent_changes %}
 <div class="card" style="margin-top:1rem">
   <div class="card-header"><span class="card-title">🔔 تغییرات اخیر بازیکنان من</span></div>
@@ -327,7 +236,10 @@
     {% for log in recent_changes %}
     <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--surface-2)">
       <span style="font-size:1rem">
-        {% if log.action == 'insurance_updated' %}🛡️{% elif log.action == 'tech_updated' %}⚽{% elif log.action == 'profile_updated' %}✏️{% else %}📝{% endif %}
+        {% if log.action == 'insurance_updated' %}🛡️
+        {% elif log.action == 'tech_updated' %}⚽
+        {% elif log.action == 'profile_updated' %}✏️
+        {% else %}📝{% endif %}
       </span>
       <div style="flex:1">
         <span style="font-size:.82rem;font-weight:700">{{ log.player.first_name }} {{ log.player.last_name }}</span>
@@ -341,6 +253,24 @@
   </div>
 </div>
 {% endif %}
+
+{% if unread_notifications %}
+<div class="card" style="margin-top:.75rem">
+  <div class="card-header">
+    <span class="card-title">📬 اعلان‌های جدید</span>
+    <span style="background:var(--red);color:#fff;border-radius:99px;padding:.15rem .55rem;font-size:.72rem;font-weight:800">{{ unread_notifications|length }}</span>
+  </div>
+  <div style="padding:.6rem .85rem">
+    {% for notif in unread_notifications %}
+    <div style="padding:.45rem 0;border-bottom:1px solid var(--surface-2);font-size:.82rem">
+      <div style="font-weight:700">{{ notif.title }}</div>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:.15rem">{{ notif.message|truncatechars:80 }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 
 {% elif user.is_player %}
 {# ═══════════════════ داشبورد بازیکن ═══════════════════ #}
@@ -357,8 +287,42 @@
   <div>
     <strong>{{ my_pending_invoices }} فاکتور پرداخت‌نشده دارید</strong>
     <div style="margin-top:.25rem">
-      <a href="{% url 'payroll:invoice-list-player' %}" class="btn btn-amber btn-sm">مشاهده فاکتورها</a>
+      <a href="{% url 'payroll:player-invoices' %}" class="btn btn-amber btn-sm">مشاهده فاکتورها</a>
     </div>
+  </div>
+</div>
+{% endif %}
+
+{% if my_schedules %}
+<div class="card mb-2">
+  <div class="card-header">
+    <span class="card-title">🗓️ برنامه هفتگی تمرین</span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>روز</th>
+          <th>ساعت شروع</th>
+          <th>ساعت پایان</th>
+          <th>مکان / سالن</th>
+          <th>دسته آموزشی</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sch in my_schedules %}
+        <tr>
+          <td><strong>{{ sch.get_weekday_display }}</strong></td>
+          <td style="font-family:monospace">{{ sch.start_time|time:"H:i" }}</td>
+          <td style="font-family:monospace">
+            {% if sch.end_time %}{{ sch.end_time|time:"H:i" }}{% else %}<span style="color:var(--text-light)">—</span>{% endif %}
+          </td>
+          <td>{% if sch.location %}<span style="font-size:.82rem">📍 {{ sch.location }}</span>{% else %}<span style="color:var(--text-light)">—</span>{% endif %}</td>
+          <td><span class="badge badge-navy">{{ sch.category.name }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endif %}
@@ -367,6 +331,7 @@
   <a href="{% url 'comms:notification-list' %}" class="btn btn-outline">🔔 اعلان‌های من</a>
   <a href="{% url 'comms:announcement-list' %}" class="btn btn-outline">📢 اطلاعیه‌ها</a>
 </div>
+
 
 {% else %}
 {# ═══════════════════ متقاضی جدید ═══════════════════ #}

@@ -276,6 +276,12 @@
       {% csrf_token %}
       <button type="submit" class="btn btn-green">✅ نهایی کردن</button>
     </form>
+    {% else %}
+    <form method="post" action="{% url 'attendance:sheet-unfinalize' matrix.sheet.pk %}"
+          onsubmit="return confirm('آیا می‌خواهید این لیست را از حالت نهایی خارج کنید؟')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-amber">🔓 خروج از حالت نهایی</button>
+    </form>
     {% endif %}
   </div>
 </div>
@@ -566,6 +572,33 @@ const SESSION_URLS = {
   {% endfor %}
 };
 
+// ── CSRF token از DOM (مطمئن‌تر از cookie) ──────────────────
+function getCSRF() {
+  const el = document.querySelector('[name=csrfmiddlewaretoken]');
+  return el ? el.value : '';
+}
+
+// ── POST helper برای ماتریس ──────────────────────────────────
+async function matrixPost(url, data) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRF(),
+    },
+    body: JSON.stringify(data),
+  });
+  // همیشه body را می‌خوانیم تا خطای سرور را ببینیم
+  let body;
+  try { body = await res.json(); } catch { body = null; }
+  if (!res.ok) {
+    const errText = (body && body.error) ? body.error : `HTTP ${res.status}`;
+    console.error("Server error detail:", body);
+    throw new Error(errText);
+  }
+  return body;
+}
+
 // ── On status change ─────────────────────────────────────────
 function onStatusChange(sel, type) {
   const sid    = parseInt(sel.dataset.session);
@@ -606,7 +639,7 @@ function updatePendingUI() {
   if (indicator) indicator.style.display = total > 0 ? "flex" : "none";
 }
 
-// ── Save All ─────────────────────────────────────────────────
+// ── Save All (sequential — avoids SQLite locking) ───────────
 async function saveAll() {
   const btn = document.getElementById("save-btn");
   if (!btn || Object.keys(pending).length === 0) return;
@@ -616,18 +649,29 @@ async function saveAll() {
   showLoading();
 
   let ok = 0, fail = 0;
-  const promises = Object.entries(pending).map(async ([sid, data]) => {
+  // Sequential (not parallel) to prevent SQLite "database is locked"
+  for (const [sid, data] of Object.entries(pending)) {
     try {
       const url = SESSION_URLS[sid];
-      const res = await apiPost(url, data);
-      if (res.success) { ok++; delete pending[sid]; }
-      else             fail++;
-    } catch { fail++; }
-  });
+      if (!url) {
+        console.error("❌ No URL for session id:", sid, "Available:", Object.keys(SESSION_URLS));
+        fail++; continue;
+      }
+      console.log("→ Saving session", sid, "URL:", url, "Data:", JSON.stringify(data));
+      const res = await matrixPost(url, data);
+      console.log("← Response:", res);
+      if (res && res.success) { ok++; delete pending[sid]; }
+      else {
+        fail++;
+        console.error("❌ Save failed for session", sid, "Response:", res);
+      }
+    } catch (e) {
+      fail++;
+      console.error("❌ Exception for session", sid, "Error:", e.message);
+    }
+  }
 
-  await Promise.all(promises);
   hideLoading();
-
   btn.disabled = false;
   btn.textContent = "💾 ذخیره همه";
 

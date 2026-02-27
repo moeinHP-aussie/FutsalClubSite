@@ -140,7 +140,7 @@
   <div>
     <strong>{{ ins_expiring }} بازیکن</strong> بیمه‌شان ظرف کمتر از ۱ ماه منقضی می‌شود.
   </div>
-  <a href="{% url 'training:player-list' %}?ins=expiring" class="btn btn-amber btn-sm" style="margin-right:auto">مشاهده</a>
+  <a href="{% url 'training:insurance-list' %}?status=expiring" class="btn btn-amber btn-sm" style="margin-right:auto">مشاهده لیست</a>
 </div>
 {% endif %}
 {% if ins_expired %}
@@ -149,6 +149,7 @@
   <div>
     <strong>{{ ins_expired }} بازیکن</strong> بیمه‌شان منقضی شده است.
   </div>
+  <a href="{% url 'training:insurance-list' %}?status=expired" class="btn btn-sm" style="margin-right:auto;background:#dc2626;color:#fff">مشاهده لیست</a>
 </div>
 {% endif %}
 
@@ -159,21 +160,21 @@
     <div class="stat-label">بازیکن فعال</div>
     <div class="stat-icon">👥</div>
   </div>
-  <div class="stat-card c-teal">
+  <a href="{% url 'training:insurance-list' %}?status=active" class="stat-card c-teal" style="text-decoration:none;cursor:pointer">
     <div class="stat-num">{{ ins_active }}</div>
     <div class="stat-label">دارای بیمه</div>
     <div class="stat-icon">🛡️</div>
-  </div>
-  <div class="stat-card c-red">
+  </a>
+  <a href="{% url 'training:insurance-list' %}?status=none" class="stat-card c-red" style="text-decoration:none;cursor:pointer">
     <div class="stat-num">{{ ins_none }}</div>
     <div class="stat-label">بدون بیمه</div>
     <div class="stat-icon">❌</div>
-  </div>
-  <div class="stat-card c-amber">
+  </a>
+  <a href="{% url 'training:insurance-list' %}?status=expiring" class="stat-card c-amber" style="text-decoration:none;cursor:pointer">
     <div class="stat-num">{{ ins_expiring }}</div>
     <div class="stat-label">بیمه رو به انقضا</div>
     <div class="stat-icon">⚠️</div>
-  </div>
+  </a>
   <div class="stat-card c-green">
     <div class="stat-num">{{ foot_left }}</div>
     <div class="stat-label">پای چپ</div>
@@ -184,11 +185,7 @@
     <div class="stat-label">دروازه‌بان</div>
     <div class="stat-icon">🥅</div>
   </div>
-  <div class="stat-card c-teal">
-    <div class="stat-num">{{ under_16 }}</div>
-    <div class="stat-label">زیر ۱۶ سال</div>
-    <div class="stat-icon">🧒</div>
-  </div>
+  
   <div class="stat-card c-gray">
     <div class="stat-num">{{ unassigned_count }}</div>
     <div class="stat-label">بدون دسته</div>

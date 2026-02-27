@@ -51,11 +51,12 @@ logger = logging.getLogger(__name__)
 
 class FinanceAccessMixin(LoginRequiredMixin, RoleRequiredMixin):
     """مدیر مالی + مدیر فنی"""
-    allowed_roles = ["finance_manager", "technical_director", "superuser"]
+    # نام‌ها باید با فیلدهای BooleanField در مدل User مطابقت داشته باشند
+    allowed_roles = ["is_finance_manager", "is_technical_director"]
 
 class FinanceOnlyMixin(LoginRequiredMixin, RoleRequiredMixin):
     """فقط مدیر مالی"""
-    allowed_roles = ["finance_manager", "superuser"]
+    allowed_roles = ["is_finance_manager"]
 
 
 # ───────────────────── helpers ─────────────────────────────────────
@@ -1362,15 +1363,19 @@ class ExpenseCategoryCreateView(FinanceAccessMixin, View):
     def post(self, request):
         name = request.POST.get("name", "").strip()
         if not name:
-            messages.error(request, "نام دسته الزامی است.")
-            return render(request, self.template_name, {})
+            return render(request, self.template_name, {
+                "error": "نام دسته الزامی است.",
+                "form_data": request.POST,
+            })
+        is_active = request.POST.get("is_active") == "on"
         ExpenseCategory.objects.create(
             name=name,
             description=request.POST.get("description", "").strip(),
+            is_active=is_active,
             created_by=request.user,
         )
         messages.success(request, f"دسته «{name}» ایجاد شد.")
-        return redirect("payroll:expense-list")
+        return redirect("payroll:expense-category-list")
 
 
 class ExpenseCategoryListView(FinanceAccessMixin, ListView):

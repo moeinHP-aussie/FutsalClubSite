@@ -153,6 +153,20 @@ class PlayerMoveView(LoginRequiredMixin, RoleRequiredMixin, View):
                 return JsonResponse({"ok": False, "error": "دسته مقصد یافت نشد"}, status=404)
             cat.players.add(player)
 
+        # ثبت لاگ جابجایی دسته
+        try:
+            from ..services.activity_service import log_player_change
+            from ..models import PlayerActivityLog
+            from_name = TrainingCategory.objects.filter(pk=from_cat).values_list("name", flat=True).first() if from_cat else "بدون دسته"
+            to_name   = TrainingCategory.objects.filter(pk=to_cat).values_list("name", flat=True).first() if to_cat else "بدون دسته"
+            log_player_change(
+                player=player, actor=request.user,
+                action=PlayerActivityLog.ActionType.CATEGORY_CHANGED,
+                detail=f"از «{from_name}» به «{to_name}»",
+            )
+        except Exception:
+            pass
+
         return JsonResponse({
             "ok":    True,
             "player": _player_card_data(player),
@@ -293,4 +307,89 @@ class StatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
 
         import json
         ctx["charts_json"] = json.dumps(ctx["charts_data"], ensure_ascii=False)
+        return ctx
+
+
+# ══════════════════════════════════════════════════════════════════
+#  لیست بیمه بازیکنان
+# ══════════════════════════════════════════════════════════════════
+
+class InsuranceListView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """
+    نمایش بازیکنان بر اساس وضعیت بیمه.
+    فیلتر از طریق query string: ?status=none | expired | expiring | active
+    """
+    template_name = "training/insurance_list.html"
+    allowed_roles = ["is_technical_director", "is_coach", "is_finance_manager"]
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        status_filter = self.request.GET.get("status", "none")
+        today_g = date.today()
+
+        approved = Player.objects.filter(
+            status="approved", is_archived=False
+        ).prefetch_related("categories").order_by("last_name", "first_name")
+
+        # ── آمار کلی برای نوار بالا ──────────────────────────────
+        ins_none_count = approved.filter(insurance_status="none").count()
+        ins_active_all = approved.filter(insurance_status="active").exclude(
+            insurance_expiry_date__isnull=True
+        )
+
+        expired_ids   = []
+        expiring_ids  = []
+        for p in ins_active_all:
+            try:
+                exp_g = p.insurance_expiry_date.togregorian()
+                diff  = (exp_g - today_g).days
+                if diff < 0:
+                    expired_ids.append(p.pk)
+                elif diff <= 30:
+                    expiring_ids.append(p.pk)
+            except Exception:
+                pass
+
+        ctx["ins_none_count"]    = ins_none_count
+        ctx["ins_expired_count"] = len(expired_ids)
+        ctx["ins_expiring_count"]= len(expiring_ids)
+        ctx["ins_active_count"]  = (
+            approved.filter(insurance_status="active").count()
+            - len(expired_ids)
+        )
+        ctx["status_filter"] = status_filter
+
+        # ── لیست بازیکنان بر اساس فیلتر ─────────────────────────
+        if status_filter == "none":
+            players = approved.filter(insurance_status="none")
+        elif status_filter == "expired":
+            players = approved.filter(pk__in=expired_ids)
+        elif status_filter == "expiring":
+            players = approved.filter(pk__in=expiring_ids)
+        elif status_filter == "active":
+            all_problem_ids = expired_ids + expiring_ids
+            players = approved.filter(insurance_status="active").exclude(
+                pk__in=all_problem_ids
+            )
+        else:
+            players = approved.none()
+
+        # اطلاعات تکمیلی روزهای مانده برای هر بازیکن
+        player_data = []
+        for p in players:
+            days_left = None
+            if p.insurance_expiry_date:
+                try:
+                    exp_g = p.insurance_expiry_date.togregorian()
+                    days_left = (exp_g - today_g).days
+                except Exception:
+                    pass
+            player_data.append({
+                "player":    p,
+                "days_left": days_left,
+                "cats":      p.categories.filter(is_active=True),
+            })
+
+        ctx["player_data"]  = player_data
+        ctx["player_count"] = len(player_data)
         return ctx

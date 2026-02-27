@@ -7,6 +7,7 @@ from ..views.attendance_views import (
     AttendanceMatrixView,
     AttendanceSheetListView,
     FinalizeAttendanceSheetView,
+    UnfinalizeAttendanceSheetView,
     PlayerAttendanceHistoryView,
     RecordSessionAttendanceView,
     SessionAttendanceDetailView,
@@ -39,6 +40,11 @@ urlpatterns = [
         "sheet/<int:sheet_pk>/finalize/",
         FinalizeAttendanceSheetView.as_view(),
         name="sheet-finalize",
+    ),
+    path(
+        "sheet/<int:sheet_pk>/unfinalize/",
+        UnfinalizeAttendanceSheetView.as_view(),
+        name="sheet-unfinalize",
     ),
     path(
         "player/<int:player_pk>/history/",

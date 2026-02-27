@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load attendance_extras %}
 {% block title %}اطلاعیه‌ها{% endblock %}
 {% block nav_announcements %}active{% endblock %}
 
@@ -52,6 +53,15 @@
 }
 .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
 .empty-state h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+
+/* دکمه حذف */
+.btn-delete-ann {
+  background: none; border: 1px solid #fca5a5;
+  color: #dc2626; border-radius: 6px; padding: .25rem .55rem;
+  font-size: .72rem; cursor: pointer; transition: background .15s;
+  line-height: 1;
+}
+.btn-delete-ann:hover { background: #fee2e2; }
 </style>
 {% endblock %}
 
@@ -81,11 +91,21 @@
           {{ ann.author.get_full_name }}
         </div>
         <div style="font-size:.7rem;color:var(--text-light)">
-          {{ ann.published_at|timesince }} پیش
+          {{ ann.published_at|jalali_timesince }}
         </div>
       </div>
       {% if ann.is_pinned %}
         <span class="badge badge-amber" style="margin-right:auto">📌 سنجاق‌شده</span>
+      {% endif %}
+
+      {# دکمه حذف — فقط برای نویسنده یا مدیر فنی #}
+      {% if request.user == ann.author or request.user.is_technical_director %}
+      <form method="post" action="{% url 'comms:announcement-delete' ann.pk %}"
+            style="margin-right:auto;margin-left:0"
+            onsubmit="return confirm('آیا از حذف این اطلاعیه مطمئن هستید؟')">
+        {% csrf_token %}
+        <button type="submit" class="btn-delete-ann" title="حذف اطلاعیه">🗑️ حذف</button>
+      </form>
       {% endif %}
     </div>
 
@@ -93,7 +113,7 @@
     <div class="ann-body">{{ ann.body|linebreaksbr }}</div>
 
     <div class="ann-footer">
-      <span>{{ ann.published_at|date:"Y/m/d — H:i" }}</span>
+      <span>{{ ann.published_at|jalali_date_short }}</span>
       <div class="ann-cats">
         {% for cat in ann.categories.all %}
           <span class="badge badge-navy">{{ cat.name }}</span>
@@ -134,9 +154,3 @@
 </div>
 {% endif %}
 {% endblock %}
-
-
-{# ══════════════════════════════════════════════════════════════════
-   NOTIFICATION LIST  — templates/comms/notification_list.html
-══════════════════════════════════════════════════════════════════ #}
-{% comment %}NOTIFICATION LIST TEMPLATE — save as notification_list.html{% endcomment %}

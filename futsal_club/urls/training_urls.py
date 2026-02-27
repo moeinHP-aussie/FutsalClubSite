@@ -10,7 +10,7 @@ URL های مربوط به:
   - لیست و پروفایل بازیکنان
 """
 from django.urls import path
-from ..views.organize_views import OrganizeView, PlayerMoveView, StatsView
+from ..views.organize_views import OrganizeView, PlayerMoveView, StatsView, InsuranceListView
 from ..views.category_views import (
     # دسته‌های آموزشی
     CategoryListView,
@@ -109,4 +109,8 @@ urlpatterns = [
     # ── آمارگیری ─────────────────────────────────────────────────
     path("stats/",
          StatsView.as_view(),                 name="stats"),
+
+    # ── لیست بیمه بازیکنان ───────────────────────────────────
+    path("insurance/",
+         InsuranceListView.as_view(),          name="insurance-list"),
 ]

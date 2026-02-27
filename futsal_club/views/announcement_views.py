@@ -99,11 +99,8 @@ class NotificationListView(LoginRequiredMixin, ListView):
 class NotificationMarkReadView(LoginRequiredMixin, View):
     def get(self, request, pk: int):
         notif = Notification.objects.filter(pk=pk, recipient=request.user).first()
-        if notif:
-            notif.mark_as_read()
-        # ✅ اصلاح: next باید URL path باشد نه URL name — از reverse استفاده می‌کنیم
-        from django.urls import reverse
-        next_url = request.GET.get("next") or reverse("comms:notification-list")
+        if notif: notif.mark_as_read()
+        next_url = request.GET.get("next", "comms:notification-list")
         return redirect(next_url)
 
 
@@ -116,3 +113,23 @@ class NotificationMarkAllReadView(LoginRequiredMixin, View):
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"success": True})
         return redirect("comms:notification-list")
+
+
+class AnnouncementDeleteView(LoginRequiredMixin, View):
+    """حذف اطلاعیه — فقط توسط نویسنده یا مدیر فنی"""
+
+    def post(self, request, pk: int):
+        ann = Announcement.objects.filter(pk=pk).first()
+        if not ann:
+            messages.error(request, "اطلاعیه پیدا نشد.")
+            return redirect("comms:announcement-list")
+
+        # فقط نویسنده یا مدیر فنی می‌تواند حذف کند
+        if ann.author != request.user and not request.user.is_technical_director:
+            messages.error(request, "شما اجازه حذف این اطلاعیه را ندارید.")
+            return redirect("comms:announcement-list")
+
+        title = ann.title
+        ann.delete()
+        messages.success(request, f"اطلاعیه «{title}» حذف شد.")
+        return redirect("comms:announcement-list")

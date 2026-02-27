@@ -22,8 +22,10 @@ from ..mixins import RoleRequiredMixin
 from ..models import (
     AttendanceSheet,
     Coach,
-    CoachCategoryRate,   # ✅ اصلاح: import مفقود اضافه شد
+    CoachCategoryRate,
+    CoachAttendance,
     Player,
+    PlayerAttendance,
     SessionDate,
     TrainingCategory,
 )
@@ -312,6 +314,36 @@ class FinalizeAttendanceSheetView(LoginRequiredMixin, RoleRequiredMixin, View):
 
 
 # ────────────────────────────────────────────────────────────────────
+#  4b. Unfinalize Sheet View
+# ────────────────────────────────────────────────────────────────────
+
+class UnfinalizeAttendanceSheetView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """
+    خروج از حالت نهایی لیست حضور و غیاب — فقط مدیر فنی.
+    POST  /attendance/sheet/<sheet_pk>/unfinalize/
+    """
+    allowed_roles     = ["is_technical_director"]
+    http_method_names = ["post"]
+
+    def post(self, request, sheet_pk: int):
+        sheet = get_object_or_404(AttendanceSheet, pk=sheet_pk)
+
+        if not sheet.is_finalized:
+            messages.warning(request, "این لیست در حال حاضر نهایی نشده است.")
+        else:
+            sheet.is_finalized = False
+            sheet.finalized_at = None
+            sheet.finalized_by = None
+            sheet.save(update_fields=["is_finalized", "finalized_at", "finalized_by"])
+            messages.success(request, f"لیست {sheet} از حالت نهایی خارج شد.")
+
+        return redirect(
+            "attendance:matrix",
+            category_pk=sheet.category_id,
+        )
+
+
+# ────────────────────────────────────────────────────────────────────
 #  5. Sheet List View
 # ────────────────────────────────────────────────────────────────────
 
@@ -341,9 +373,40 @@ class AttendanceSheetListView(AttendancePermissionMixin, ListView):
 #  6. Player Attendance History View
 # ────────────────────────────────────────────────────────────────────
 
-class PlayerAttendanceHistoryView(AttendancePermissionMixin, TemplateView):
-    """تاریخچه حضور یک بازیکن در چند ماه گذشته."""
+class PlayerAttendanceHistoryView(LoginRequiredMixin, TemplateView):
+    """تاریخچه حضور یک بازیکن در چند ماه گذشته.
+    
+    دسترسی:
+    - بازیکن: فقط تاریخچه خودش
+    - مربی / مدیر فنی / مدیر مالی: تاریخچه هر بازیکن
+    """
     template_name = "attendance/player_history.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        # بازیکن فقط می‌تواند تاریخچه خودش را ببیند
+        player_pk = int(kwargs.get("player_pk", 0))
+        is_staff = (
+            request.user.is_superuser
+            or request.user.is_technical_director
+            or request.user.is_coach
+            or request.user.is_finance_manager
+        )
+        if not is_staff:
+            # باید بازیکن باشد و همان بازیکن
+            if not request.user.is_player:
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied()
+            try:
+                own_player = request.user.player_profile
+                if own_player.pk != player_pk:
+                    from django.core.exceptions import PermissionDenied
+                    raise PermissionDenied()
+            except Exception:
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied()
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -356,17 +419,32 @@ class PlayerAttendanceHistoryView(AttendancePermissionMixin, TemplateView):
             current = current.prev_month
             months.append(current)
 
-        monthly_stats = {}
+        # لیست ماه‌ها با آمار — برای استفاده ساده در template
+        months_data = []
         for month in months:
-            monthly_stats[str(month)] = AttendanceService.get_player_monthly_stats(
-                player, month
-            )
+            stats = AttendanceService.get_player_monthly_stats(player, month)
+            months_data.append({
+                "month": month,
+                "stats": stats,   # {cat_name: {present, absent, excused, total} or None}
+            })
+
+        # برنامه هفتگی بازیکن از دسته‌های فعالش
+        from ..models import TrainingSchedule
+        weekday_order = ['sat','sun','mon','tue','wed','thu','fri']
+        schedules = (
+            TrainingSchedule.objects
+            .filter(category__players=player, category__is_active=True)
+            .select_related('category')
+            .order_by('weekday', 'start_time')
+        )
+        # مرتب‌سازی بر اساس ترتیب روزهای هفته
+        schedules = sorted(schedules, key=lambda s: (weekday_order.index(s.weekday), s.start_time))
 
         ctx.update(
             {
-                "player":        player,
-                "monthly_stats": monthly_stats,
-                "months":        months,
+                "player":      player,
+                "months_data": months_data,
+                "schedules":   schedules,
             }
         )
         return ctx

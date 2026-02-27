@@ -22,31 +22,54 @@
         </div>
       </div>
 
-      {% if form.errors %}
+      {% if error %}
       <div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:.85rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#991b1b">
-        ⚠️ {% for field in form %}{% for err in field.errors %}<div>• {{ field.label }}: {{ err }}</div>{% endfor %}{% endfor %}
+        ⚠️ {{ error }}
       </div>
       {% endif %}
 
       <form method="post">
         {% csrf_token %}
+
         <div style="margin-bottom:1rem">
-          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">نام دسته <span style="color:var(--red)">*</span></label>
-          {{ form.name }}
+          <label for="id_name" style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">
+            نام دسته <span style="color:var(--red)">*</span>
+          </label>
+          <input type="text" id="id_name" name="name" required maxlength="120"
+                 value="{{ form_data.name|default:'' }}"
+                 placeholder="مثال: اجاره سالن"
+                 style="width:100%;padding:.6rem .85rem;border:1.5px solid #d1d5db;border-radius:8px;
+                        font-family:inherit;font-size:.9rem;box-sizing:border-box;direction:rtl;
+                        outline:none;transition:border-color .2s"
+                 onfocus="this.style.borderColor='var(--primary,#6366f1)'"
+                 onblur="this.style.borderColor='#d1d5db'">
         </div>
+
         <div style="margin-bottom:1rem">
-          <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">توضیحات</label>
-          {{ form.description }}
+          <label for="id_description" style="font-size:.85rem;font-weight:700;display:block;margin-bottom:.35rem">
+            توضیحات
+          </label>
+          <textarea id="id_description" name="description" rows="3"
+                    placeholder="توضیح اختیاری..."
+                    style="width:100%;padding:.6rem .85rem;border:1.5px solid #d1d5db;border-radius:8px;
+                           font-family:inherit;font-size:.9rem;box-sizing:border-box;resize:vertical;direction:rtl;
+                           outline:none;transition:border-color .2s"
+                    onfocus="this.style.borderColor='var(--primary,#6366f1)'"
+                    onblur="this.style.borderColor='#d1d5db'">{{ form_data.description|default:'' }}</textarea>
         </div>
+
         <div style="margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem">
-          {{ form.is_active }}
-          <label for="{{ form.is_active.id_for_label }}" style="font-size:.875rem;font-weight:600;cursor:pointer">فعال</label>
+          <input type="checkbox" id="id_is_active" name="is_active" checked
+                 style="width:18px;height:18px;cursor:pointer;accent-color:#22c55e">
+          <label for="id_is_active" style="font-size:.875rem;font-weight:600;cursor:pointer">فعال</label>
         </div>
+
         <div style="display:flex;gap:.6rem;justify-content:flex-end">
-          <a href="{% url 'payroll:expense-create' %}" class="btn btn-outline">انصراف</a>
+          <a href="{% url 'payroll:expense-category-list' %}" class="btn btn-outline">انصراف</a>
           <button type="submit" class="btn btn-amber">✅ ایجاد دسته</button>
         </div>
       </form>
+
     </div>
   </div>
 </div>

@@ -155,10 +155,21 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             try:
                 player = Player.objects.get(user=user, is_archived=False)
                 ctx["my_player"] = player
-                from ..models import PlayerInvoice
+                from ..models import PlayerInvoice, TrainingSchedule
                 ctx["my_pending_invoices"] = PlayerInvoice.objects.filter(
                     player=player, status="pending"
                 ).count()
+                weekday_order = ['sat','sun','mon','tue','wed','thu','fri']
+                schedules = list(
+                    TrainingSchedule.objects
+                    .filter(category__players=player, category__is_active=True)
+                    .select_related('category')
+                    .order_by('weekday', 'start_time')
+                )
+                ctx["my_schedules"] = sorted(
+                    schedules,
+                    key=lambda s: (weekday_order.index(s.weekday), s.start_time)
+                )
             except Player.DoesNotExist:
                 pass
 

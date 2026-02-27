@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}وضعیت بیمه بازیکنان{% endblock %}
+{% block nav_stats %}active{% endblock %}
+
+{% block breadcrumb %}
+  <span class="sep">›</span>
+  <a href="{% url 'training:stats' %}" style="text-decoration:none;color:inherit">آمارگیری</a>
+  <span class="sep">›</span>
+  <span class="cur">وضعیت بیمه</span>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Tab Bar ──────────────────────────────────────────────── */
+.ins-tabs {
+  display: flex; gap: .4rem; flex-wrap: wrap;
+  background: var(--surface);
+  border-radius: 12px; padding: .4rem;
+  margin-bottom: 1.5rem;
+}
+.ins-tab {
+  flex: 1; min-width: 120px;
+  display: flex; flex-direction: column; align-items: center;
+  padding: .75rem 1rem; border-radius: 9px; cursor: pointer;
+  text-decoration: none; transition: background .18s, box-shadow .18s;
+  border: 2px solid transparent;
+  gap: .25rem;
+}
+.ins-tab:hover { background: var(--white); box-shadow: var(--shadow-sm); }
+.ins-tab.active { background: var(--white); box-shadow: var(--shadow); border-color: var(--current-color, var(--navy)); }
+.ins-tab .tab-num { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+.ins-tab .tab-label { font-size: .72rem; color: var(--text-muted); font-weight: 600; }
+
+.tab-none    { --current-color: #ef4444; }
+.tab-expired { --current-color: #dc2626; }
+.tab-expiring{ --current-color: #f59e0b; }
+.tab-active  { --current-color: #10b981; }
+
+.tab-none .tab-num    { color: #ef4444; }
+.tab-expired .tab-num { color: #dc2626; }
+.tab-expiring .tab-num{ color: #f59e0b; }
+.tab-active .tab-num  { color: #10b981; }
+
+/* ── Player Cards ─────────────────────────────────────────── */
+.ins-player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+.ins-card {
+  background: var(--white);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  display: flex; gap: .9rem; align-items: center;
+  transition: box-shadow .18s, transform .12s;
+  position: relative;
+  overflow: hidden;
+}
+.ins-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.ins-card::before {
+  content: "";
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 4px; border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--stripe-color, var(--navy));
+}
+.ins-card.c-none    { --stripe-color: #ef4444; }
+.ins-card.c-expired { --stripe-color: #dc2626; }
+.ins-card.c-expiring{ --stripe-color: #f59e0b; }
+.ins-card.c-active  { --stripe-color: #10b981; }
+
+.ins-avatar {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--teal), var(--navy));
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem; font-weight: 700; color: var(--white);
+}
+.ins-name { font-size: .95rem; font-weight: 700; color: var(--text-main); }
+.ins-cats {
+  display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .3rem;
+}
+.ins-cat-badge {
+  font-size: .68rem; padding: .1rem .45rem; border-radius: 20px;
+  background: var(--surface); color: var(--text-muted); font-weight: 600;
+}
+.ins-meta {
+  margin-right: auto; text-align: left; flex-shrink: 0;
+}
+.ins-date {
+  font-size: .78rem; font-weight: 700;
+}
+.ins-days {
+  font-size: .7rem; color: var(--text-muted); margin-top: .15rem;
+}
+.days-expired  { color: #dc2626; }
+.days-expiring { color: #d97706; }
+.days-ok       { color: #059669; }
+
+/* ── Empty State ─────────────────────────────────────────── */
+.empty-ins {
+  text-align: center; padding: 4rem 2rem; color: var(--text-muted);
+}
+.empty-ins .ei-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-ins h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🛡️ وضعیت بیمه بازیکنان</h1>
+    <p>پیگیری و مدیریت وضعیت بیمه</p>
+  </div>
+  <a href="{% url 'training:stats' %}" class="btn btn-outline">← بازگشت به آمارگیری</a>
+</div>
+
+<!-- ── Tab Bar ───────────────────────────────────────────── -->
+<div class="ins-tabs">
+  <a href="?status=none"
+     class="ins-tab tab-none {% if status_filter == 'none' %}active{% endif %}">
+    <span class="tab-num">{{ ins_none_count }}</span>
+    <span class="tab-label">❌ بدون بیمه</span>
+  </a>
+  <a href="?status=expired"
+     class="ins-tab tab-expired {% if status_filter == 'expired' %}active{% endif %}">
+    <span class="tab-num">{{ ins_expired_count }}</span>
+    <span class="tab-label">🚨 بیمه منقضی</span>
+  </a>
+  <a href="?status=expiring"
+     class="ins-tab tab-expiring {% if status_filter == 'expiring' %}active{% endif %}">
+    <span class="tab-num">{{ ins_expiring_count }}</span>
+    <span class="tab-label">⚠️ رو به انقضا (۳۰ روز)</span>
+  </a>
+  <a href="?status=active"
+     class="ins-tab tab-active {% if status_filter == 'active' %}active{% endif %}">
+    <span class="tab-num">{{ ins_active_count }}</span>
+    <span class="tab-label">✅ بیمه فعال</span>
+  </a>
+</div>
+
+<!-- ── Header ────────────────────────────────────────────── -->
+<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+  <div style="font-size:.85rem;color:var(--text-muted)">
+    {% if status_filter == 'none' %}بازیکنانی که اطلاعات بیمه‌ای ثبت نشده:
+    {% elif status_filter == 'expired' %}بازیکنانی که بیمه‌شان منقضی شده:
+    {% elif status_filter == 'expiring' %}بازیکنانی که بیمه‌شان ظرف ۳۰ روز منقضی می‌شود:
+    {% else %}بازیکنانی که بیمه فعال و معتبر دارند:
+    {% endif %}
+    <strong>{{ player_count }} نفر</strong>
+  </div>
+  {% if player_count %}
+  <a href="?status={{ status_filter }}&export=csv" class="btn btn-outline btn-sm" style="margin-right:auto">
+    📥 دانلود اکسل
+  </a>
+  {% endif %}
+</div>
+
+{% if player_data %}
+<!-- ── Player Cards Grid ─────────────────────────────────── -->
+<div class="ins-player-grid">
+  {% for item in player_data %}
+  <div class="ins-card c-{{ status_filter }}">
+    <div class="ins-avatar">
+      {{ item.player.first_name|slice:":1" }}{{ item.player.last_name|slice:":1" }}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div class="ins-name">
+        <a href="{% url 'training:player-profile' item.player.pk %}"
+           style="text-decoration:none;color:inherit;hover:underline">
+          {{ item.player.first_name }} {{ item.player.last_name }}
+        </a>
+      </div>
+      <div class="ins-cats">
+        {% for cat in item.cats %}
+          <span class="ins-cat-badge">{{ cat.name }}</span>
+        {% empty %}
+          <span class="ins-cat-badge" style="color:#94a3b8">بدون دسته</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="ins-meta">
+      {% if item.player.insurance_expiry_date %}
+        <div class="ins-date">
+          {{ item.player.insurance_expiry_date }}
+        </div>
+        {% if item.days_left is not None %}
+          {% if item.days_left < 0 %}
+            <div class="ins-days days-expired">{{ item.days_left|cut:"-" }} روز پیش منقضی شد</div>
+          {% elif item.days_left == 0 %}
+            <div class="ins-days days-expired">امروز منقضی می‌شود</div>
+          {% elif item.days_left <= 7 %}
+            <div class="ins-days days-expiring">{{ item.days_left }} روز دیگر</div>
+          {% elif item.days_left <= 30 %}
+            <div class="ins-days days-expiring">{{ item.days_left }} روز دیگر</div>
+          {% else %}
+            <div class="ins-days days-ok">{{ item.days_left }} روز دیگر</div>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <div class="ins-date" style="color:var(--text-light)">—</div>
+        <div class="ins-days">تاریخ ثبت نشده</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<!-- ── Empty State ───────────────────────────────────────── -->
+<div class="card">
+  <div class="empty-ins">
+    <div class="ei-icon">
+      {% if status_filter == 'none' %}✅
+      {% elif status_filter == 'expired' %}🎉
+      {% elif status_filter == 'expiring' %}✅
+      {% else %}🛡️
+      {% endif %}
+    </div>
+    <h3>
+      {% if status_filter == 'none' %}همه بازیکنان بیمه دارند!
+      {% elif status_filter == 'expired' %}هیچ بیمه منقضی‌شده‌ای وجود ندارد
+      {% elif status_filter == 'expiring' %}هیچ بیمه رو به انقضایی وجود ندارد
+      {% else %}هیچ بازیکنی با بیمه فعال یافت نشد
+      {% endif %}
+    </h3>
+    <p style="margin-top:.5rem;font-size:.875rem">
+      {% if status_filter == 'none' %}وضعیت بیمه همه بازیکنان در سیستم ثبت شده.
+      {% elif status_filter == 'expired' %}بیمه تمامی بازیکنان معتبر است.
+      {% elif status_filter == 'expiring' %}هیچ بیمه‌ای در ماه آینده منقضی نمی‌شود.
+      {% endif %}
+    </p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
